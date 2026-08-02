@@ -1,0 +1,10 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReportCard from '../../components/ReportCard.astro';
+const reports = (await getCollection('reports')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+<BaseLayout title="Engineering Reports · opensource_community" description="Reproducible reports on GPU software adaptation and performance engineering.">
+  <section class="page-head"><div class="eyebrow">Evidence over claims</div><h1>Engineering Reports</h1><p>Build notes, compatibility analysis, benchmarks, and carefully scoped conclusions. Full Chinese reports are available now; English editions are planned.</p></section>
+  <section class="section"><div class="grid">{reports.map(({ data }) => <ReportCard {...data} />)}</div></section>
+</BaseLayout>
