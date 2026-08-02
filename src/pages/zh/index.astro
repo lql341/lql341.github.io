@@ -1,0 +1,10 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReportCard from '../../components/ReportCard.astro';
+const reports = (await getCollection('reports')).filter((item) => item.data.featured).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+<BaseLayout lang="zh" title="opensource_community · 异构计算工程实践" description="开源软件适配、GPU 性能分析与可复现工程实践。">
+  <section class="hero"><div class="eyebrow">HPC · GPU 软件 · 开源工程</div><h1>让异构计算实践可复现、可验证、可分享。</h1><p class="lead">持续整理 GPU 软件移植、性能分析和开源工程实践。个人介绍与职业信息将在下一轮内容完善中补充。</p><div class="actions"><a class="button primary" href="/projects/">查看项目</a><a class="button" href="/reports/">阅读报告</a></div></section>
+  <section class="section"><div class="section-head"><div><div class="eyebrow">精选内容</div><h2>工程报告</h2></div><p>明确记录测试环境、方法、结果与结论边界。</p></div><div class="grid">{reports.map(({ data }) => <ReportCard {...data} />)}</div></section>
+</BaseLayout>
