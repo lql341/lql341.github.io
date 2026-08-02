@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hashcat 海光 DCU HIP 后端适配与性能对比报告</title>
+  <style>
+    :root {
+      --ink: #172126;
+      --muted: #5d6b72;
+      --paper: #f5f1e8;
+      --card: #fffdf7;
+      --line: #d8d0c0;
+      --accent: #006b61;
+      --accent-soft: #dcece8;
+      --warn: #9a4b00;
+      --warn-soft: #fff1df;
+      --code: #182326;
+      --hip: #00796f;
+      --opencl: #b65d00;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(0,107,97,.035) 1px, transparent 1px),
+        linear-gradient(rgba(0,107,97,.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 24px 24px;
+      font-family: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+
+    .page { max-width: 1180px; margin: 0 auto; padding: 48px 30px 80px; }
+    header {
+      position: relative;
+      overflow: hidden;
+      padding: 54px 56px;
+      color: #f8fffC;
+      background: #12383a;
+      border-radius: 3px;
+      box-shadow: 0 18px 50px rgba(23,33,38,.15);
+    }
+    header::after {
+      content: "HIP / DCU";
+      position: absolute;
+      right: -18px;
+      bottom: -40px;
+      font: 800 96px/1 monospace;
+      color: rgba(255,255,255,.055);
+      transform: rotate(-4deg);
+    }
+    .kicker { color: #89d4c8; font: 700 13px/1.4 monospace; letter-spacing: .15em; }
+    h1 { max-width: 850px; margin: 16px 0 14px; font-size: clamp(32px, 5vw, 58px); line-height: 1.14; letter-spacing: -.03em; }
+    .subtitle { max-width: 820px; margin: 0; color: #d5e8e5; font-size: 18px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 9px 20px; margin-top: 28px; color: #bcd6d2; font: 13px/1.5 monospace; }
+
+    nav {
+      margin: 24px 0 36px;
+      padding: 20px 24px;
+      background: rgba(255,253,247,.9);
+      border: 1px solid var(--line);
+    }
+    nav strong { margin-right: 15px; }
+    nav a { display: inline-block; margin: 4px 14px 4px 0; color: var(--accent); text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+
+    section { margin: 42px 0; scroll-margin-top: 20px; }
+    h2 { margin: 0 0 20px; padding-bottom: 9px; border-bottom: 2px solid var(--accent); font-size: 28px; line-height: 1.25; }
+    h3 { margin: 30px 0 12px; font-size: 20px; }
+    h4 { margin: 22px 0 8px; font-size: 16px; }
+    p { margin: 10px 0; }
+    ul, ol { padding-left: 24px; }
+    li { margin: 7px 0; }
+    code { padding: .12em .35em; color: #07554f; background: #e5efec; border-radius: 2px; font-family: "SFMono-Regular", Consolas, monospace; }
+    pre {
+      overflow-x: auto;
+      margin: 14px 0;
+      padding: 18px 20px;
+      color: #eaf5f3;
+      background: var(--code);
+      border-left: 4px solid #43b6a7;
+      font: 13px/1.65 "SFMono-Regular", Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    pre code { padding: 0; color: inherit; background: none; }
+
+    .summary-grid, .two-col, .three-col {
+      display: grid;
+      gap: 16px;
+    }
+    .summary-grid { grid-template-columns: repeat(4, 1fr); margin: 24px 0; }
+    .two-col { grid-template-columns: repeat(2, 1fr); }
+    .three-col { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      padding: 20px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 5px 16px rgba(23,33,38,.045);
+    }
+    .metric { display: block; margin: 5px 0; color: var(--accent); font: 800 28px/1.2 monospace; }
+    .label { color: var(--muted); font-size: 13px; }
+    .callout { margin: 18px 0; padding: 17px 20px; background: var(--accent-soft); border-left: 4px solid var(--accent); }
+    .warning { background: var(--warn-soft); border-left-color: var(--warn); }
+    .status-ok { color: #006b45; font-weight: 700; }
+    .status-limit { color: var(--warn); font-weight: 700; }
+
+    .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 14px; }
+    th, td { padding: 11px 13px; text-align: left; vertical-align: top; border-bottom: 1px solid #e4ded2; }
+    th { color: #fff; background: #245457; font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+    tr:nth-child(even) td { background: #faf7ef; }
+    td.num { text-align: right; font-family: monospace; white-space: nowrap; }
+
+    .bar-row { display: grid; grid-template-columns: 90px 1fr 115px; align-items: center; gap: 12px; margin: 12px 0; }
+    .bar-track { height: 18px; background: #ded8cc; }
+    .bar { height: 100%; }
+    .bar.hip { width: 99.995%; background: var(--hip); }
+    .bar.opencl { width: 99.990%; background: var(--opencl); }
+    .bar-label { font: 700 13px monospace; }
+
+    .timeline { border-left: 3px solid #a8cfc8; margin-left: 9px; padding-left: 24px; }
+    .step { position: relative; margin: 0 0 25px; }
+    .step::before { content: ""; position: absolute; left: -32px; top: 7px; width: 13px; height: 13px; background: var(--accent); border: 3px solid var(--paper); border-radius: 50%; }
+    .step-title { font-weight: 800; }
+    .file { color: #37464c; font-family: monospace; }
+    .small { color: var(--muted); font-size: 13px; }
+    footer { margin-top: 55px; padding-top: 18px; color: var(--muted); border-top: 1px solid var(--line); font-size: 13px; }
+
+    @media (max-width: 900px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .three-col { grid-template-columns: 1fr; }
+      header { padding: 40px 30px; }
+    }
+    @media (max-width: 650px) {
+      .page { padding: 18px 12px 50px; }
+      .summary-grid, .two-col { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 75px 1fr; }
+      .bar-row .bar-label { grid-column: 2; }
+      h2 { font-size: 24px; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { max-width: none; padding: 0; }
+      header { box-shadow: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      nav { display: none; }
+      section { break-inside: auto; }
+      .card, pre, table { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+<div style="width:min(1180px,calc(100% - 32px));margin:18px auto 0"><a href="./" style="color:#00796f;text-decoration:none;font-weight:700">← 返回测试报告</a></div>
+<main class="page">
+  <header>
+    <div class="kicker">ENGINEERING REPORT / 2026-08-01</div>
+    <h1>Hashcat 海光 DCU<br>HIP 后端适配与性能对比</h1>
+    <p class="subtitle">面向 DTK 25.04.2、HIP 6.3.25422 与 gfx936/BW DCU 的 ABI 兼容适配、构建方法、功能验证及 OpenCL 基线对比。</p>
+    <div class="meta">
+      <span>项目目录：<code>/path/to/hashcat</code></span>
+      <span>测试节点：计算节点（名称已脱敏）</span>
+      <span>Hashcat：v7.1.2</span>
+      <span>作者：opensource_community</span>
+    </div>
+  </header>
+
+  <nav aria-label="目录">
+    <strong>目录</strong>
+    <a href="#summary">摘要</a>
+    <a href="#environment">环境</a>
+      <a href="#problem">兼容性分析</a>
+    <a href="#changes">代码修改</a>
+    <a href="#debug">调试过程</a>
+    <a href="#build">编译过程</a>
+    <a href="#validation">功能验证</a>
+    <a href="#performance">性能对比</a>
+    <a href="#conclusion">结论与限制</a>
+    <a href="#appendix">附录</a>
+  </nav>
+
+  <section id="summary">
+    <h2>1. 执行摘要</h2>
+    <p>hashcat v7.1.2 已包含 HIP 后端，但其内置 HIP ABI 与海光 DTK 25.04.2 的 <code>libgalaxyhip.so</code> 存在版本差异，设备初始化流程因而无法完成。本次适配增加显式、可选的 <code>DTK_HIP=1</code> 构建模式，对齐设备属性枚举与 <code>hipDeviceProp_t</code> 布局，并调整 DTK 动态库的退出生命周期。验证结果表明，适配后的 HIP 后端可完成设备枚举、HIPRTC 内核编译、实际任务运行、benchmark 及正常退出。</p>
+
+    <div class="summary-grid">
+      <div class="card"><span class="label">HIP 设备枚举</span><span class="metric">通过</span><span class="small">BW / 80 MCU / 64 GB</span></div>
+      <div class="card"><span class="label">HIP SHA2-256</span><span class="metric">5.914 GH/s</span><span class="small">45 秒持续负载</span></div>
+      <div class="card"><span class="label">OpenCL SHA2-256</span><span class="metric">5.913 GH/s</span><span class="small">45 秒持续负载</span></div>
+      <div class="card"><span class="label">性能差异</span><span class="metric">&lt; 0.01%</span><span class="small">可视为相同</span></div>
+    </div>
+
+    <div class="callout">
+      <strong>核心结论：</strong>HIP 适配链路已通过功能验证。在本报告所述 SHA2-256 大密钥空间测试中，HIP 与 OpenCL 的吞吐、功耗、温度和利用率接近。该适配的主要价值在于完善 HIP 可用性并为后续定向优化建立基础；现有数据不足以支持通用性能提升的结论。
+    </div>
+  </section>
+
+  <section id="environment">
+    <h2>2. 测试环境与产物</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>软件环境</h3>
+        <ul>
+          <li>Hashcat：<code>v7.1.2</code></li>
+          <li>DTK：<code>25.04.2</code></li>
+          <li>HIP：<code>6.3.25422</code></li>
+          <li>OpenCL：<code>OpenCL 2.1s C-3000-APP (3452.0)</code></li>
+          <li>内核：<code>5.10.134-17.1.3.sga8.x86_64</code></li>
+          <li>系统：Sugon OS 8.9</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>硬件环境</h3>
+        <ul>
+      <li>测试节点：<code>&lt;compute-node&gt;</code>（名称已脱敏）</li>
+          <li>DCU 名称：<code>BW</code></li>
+          <li>ISA：<code>gfx936:sramecc+:xnack-</code></li>
+          <li>设备类型：<code>HCU</code></li>
+          <li>计算单元：<code>80</code></li>
+          <li>显存：<code>65520 MB</code></li>
+          <li>核心频率：<code>1500 MHz</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>最终二进制</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>用途</th><th>路径</th><th>大小</th><th>SHA-256</th></tr></thead>
+        <tbody>
+          <tr><td>DTK HIP 适配版</td><td><code>hashcat-hip-dtk</code></td><td class="num">1,332,656 B</td><td><code>be0b2201c913828488dfe07ce64eef3f481c97ae4cfe41d4af8ffc1549df1e36</code></td></tr>
+          <tr><td>OpenCL 基线版本</td><td><code>hashcat-opencl-original</code></td><td class="num">1,332,656 B</td><td><code>a25c3b28ad1c980aef71457ff0cc7d367dd0e4165ab2dc6ac9d20fcb48208994</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small">二进制示例路径为 <code>/path/to/hashcat/</code>。OpenCL 基线版本单独保留，以便开展回归验证与性能对比。</p>
+  </section>
+
+  <section id="problem">
+    <h2>3. 兼容性现象与原因分析</h2>
+    <h3>3.1 登录节点与计算节点的区别</h3>
+    <p>登录节点未提供 <code>/dev/kfd</code>，因此该环境仅适合检查二进制中的 HIP 符号，不具备设备运行验证条件。进入已分配的 DCU 计算节点后，<code>rocminfo</code>、<code>hy-smi</code> 与 OpenCL 均可正常识别设备。</p>
+    <pre><code>rocminfo:
+  Name:           gfx936
+  Marketing Name: BW
+  Device Type:    HCU
+  Compute Unit:   80</code></pre>
+
+    <h3>3.2 适配前的 HIP 初始化现象</h3>
+    <pre><code>./hashcat -II --backend-ignore-cuda --backend-ignore-opencl
+
+hashcat (v7.1.2) starting in backend information mode
+hipDeviceGetAttribute(): invalid argument
+No devices found/left.</code></pre>
+    <p>同一环境下 OpenCL 能够识别 <code>BW</code> 设备，可据此排除硬件、任务分配、驱动和设备权限等基础因素，并将分析范围收敛至 hashcat HIP 主机侧 API 兼容层。</p>
+
+    <h3>3.3 ABI 差异</h3>
+    <p>hashcat 为保持动态加载能力，在 <code>include/ext_hip.h</code> 内复制了 HIP 类型定义，而不是编译时直接依赖系统 HIP 头文件。hashcat v7.1.2 内置定义来自更新的 ROCm ABI；DTK 25.04.2 的 <code>hip_runtime_defines.h</code> 使用不同的旧版布局。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>DTK 属性</th><th>DTK 25.04.2 数值</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>hipDeviceAttributeMaxThreadsPerBlock</code></td><td class="num">18</td><td>最大线程块</td></tr>
+          <tr><td><code>hipDeviceAttributeMaxSharedMemoryPerBlock</code></td><td class="num">25</td><td>共享内存</td></tr>
+          <tr><td><code>hipDeviceAttributeTotalConstantMemory</code></td><td class="num">26</td><td>常量内存</td></tr>
+          <tr><td><code>hipDeviceAttributeWarpSize</code></td><td class="num">27</td><td>Wave/Warp 宽度</td></tr>
+          <tr><td><code>hipDeviceAttributeClockRate</code></td><td class="num">29</td><td>设备时钟</td></tr>
+          <tr><td><code>hipDeviceAttributeMultiprocessorCount</code></td><td class="num">32</td><td>计算单元数量</td></tr>
+          <tr><td><code>hipDeviceAttributeComputeCapabilityMajor/Minor</code></td><td class="num">36 / 37</td><td>计算能力</td></tr>
+          <tr><td><code>hipDeviceAttributePciBusId/PciDeviceId</code></td><td class="num">39 / 40</td><td>PCI 地址</td></tr>
+          <tr><td><code>hipDeviceAttributeIntegrated</code></td><td class="num">42</td><td>统一内存判断</td></tr>
+          <tr><td><code>hipDeviceAttributeKernelExecTimeout</code></td><td class="num">79</td><td>内核超时属性</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>辅助探测程序还确认 DTK 的 <code>sizeof(hipDeviceProp_t) = 792</code>，关键字段偏移包括：<code>totalGlobalMem=256</code>、<code>regsPerBlock=272</code>、<code>warpSize=276</code>、<code>clockRate=308</code>、<code>major=328</code>、<code>multiProcessorCount=336</code>、<code>gcnArchName=396</code>。这与 hashcat 原定义明显不同。</p>
+  </section>
+
+  <section id="changes">
+    <h2>4. 代码修改说明</h2>
+    <p>实现遵循“默认构建行为保持不变、DTK 适配显式启用”的原则，改动集中在构建入口、HIP 类型定义、设备属性初始化、动态加载与适配说明文档。</p>
+
+    <div class="timeline">
+      <div class="step">
+        <div class="step-title">步骤 1：增加独立构建开关</div>
+        <div class="file">src/Makefile</div>
+        <p>新增 <code>DTK_HIP ?= 0</code>。只有执行 <code>make DTK_HIP=1</code> 时才定义 <code>HC_HIP_DTK</code>，普通构建仍使用原始 ROCm ABI。</p>
+        <pre><code>DTK_HIP ?= 0
+
+ifeq ($(DTK_HIP),1)
+CFLAGS += -DHC_HIP_DTK
+endif</code></pre>
+      </div>
+
+      <div class="step">
+        <div class="step-title">步骤 2：对齐 DTK 设备属性枚举</div>
+        <div class="file">include/ext_hip.h</div>
+        <p>在 <code>HC_HIP_DTK</code> 条件分支下显式定义 hashcat 实际使用的 DTK 属性编号。原始完整枚举保留在 <code>#else</code> 分支，不影响默认 ROCm 构建。</p>
+      </div>
+
+      <div class="step">
+        <div class="step-title">步骤 3：对齐 792 字节设备属性结构</div>
+        <div class="file">include/ext_hip.h</div>
+        <p>按 DTK 25.04.2 的字段顺序重建 <code>hipDeviceProp_t</code>，保证 <code>hipGetDeviceProperties()</code> 写入的内存布局与 hashcat 读取方式一致，尤其是 <code>regsPerBlock</code>、<code>gcnArchName</code> 等字段。</p>
+      </div>
+
+      <div class="step">
+        <div class="step-title">步骤 4：兼容缺失的寄存器属性</div>
+        <div class="file">src/backend.c</div>
+        <p>DTK 旧版结构没有 <code>regsPerMultiprocessor</code> 字段，而且属性编号 69 的运行时查询返回 <code>hipErrorInvalidValue</code>。DTK 分支使用已验证可用的 <code>prop.regsPerBlock</code> 作为保守兼容值。</p>
+        <pre><code>#if defined (HC_HIP_DTK)
+device_param-&gt;regsPerMultiprocessor = prop.regsPerBlock;
+#else
+device_param-&gt;regsPerMultiprocessor = prop.regsPerMultiprocessor;
+#endif</code></pre>
+      </div>
+
+      <div class="step">
+      <div class="step-title">步骤 5：完善诊断日志</div>
+        <div class="file">src/ext_hip.c</div>
+      <p>诊断日志同时输出设备编号和属性编号，便于将运行时状态定位到具体 ABI 项；并校正 <code>hipGetDeviceProperties</code> 对应的日志标识。</p>
+        <pre><code>hipDeviceGetAttribute(dev=0, attrib=69): invalid argument</code></pre>
+      </div>
+
+      <div class="step">
+      <div class="step-title">步骤 6：调整动态库退出生命周期</div>
+        <div class="file">src/ext_hip.c / src/ext_hiprtc.c</div>
+        <p>DTK 的 HIP/HIPRTC DSO 注册了 C++ 退出回调。hashcat 提前 <code>dlclose()</code> 后，libstdc++ 在进程退出阶段仍调用这些回调，导致跳转到已卸载地址。DTK 构建因此不提前关闭这两个 DSO，交由操作系统在进程终止时回收。</p>
+      </div>
+
+      <div class="step">
+        <div class="step-title">步骤 7：保留产物和适配文档</div>
+        <div class="file">.gitignore / docs/dtk-hip-adaptation.md</div>
+      <p>构建产物不纳入版本控制，并补充构建、验证与版本边界说明；OpenCL 基线版本单独保存，用于回归验证和性能对比。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="debug">
+    <h2>5. 调试过程与关键转折</h2>
+    <ol>
+      <li><strong>确认二进制包含 HIP：</strong>检查到 <code>hipInit</code>、<code>hipDeviceGetAttribute</code>、<code>hiprtcCompileProgram</code> 等符号，以及 <code>--backend-ignore-hip</code> 参数。</li>
+      <li><strong>排除无卡节点误判：</strong>登录节点缺少 <code>/dev/kfd</code>；切换到已分配的计算节点后，DCU 与驱动均正常。</li>
+      <li><strong>建立 OpenCL 基线：</strong>原始二进制可通过 OpenCL 识别 BW，并完成 MD5 benchmark，证明硬件与 hashcat 核心功能正常。</li>
+      <li><strong>增强日志后锁定枚举：</strong>首个失败属性从不透明的错误变为 <code>attrib=69</code>，随后使用 DTK 头文件编译探测程序逐项核对数值和结构偏移。</li>
+      <li><strong>第一次 ABI 修复：</strong>同步属性枚举与结构体后，设备枚举推进到寄存器属性；运行时确认属性 69 不受 DTK 支持。</li>
+      <li><strong>寄存器兼容处理：</strong>辅助程序显示 <code>prop.regsPerBlock=196608</code>，而属性 69 返回错误，因此采用该值作为保守兼容数据。</li>
+      <li><strong>HIP 设备枚举成功：</strong>hashcat 能显示 HIP 6.3.25422、BW、80 MCU、65520 MB 和 PCI 地址。</li>
+      <li><strong>HIPRTC 验证：</strong>MD5 与 NTLM benchmark 成功，证明 <code>gfx936</code> 的运行时编译、module 加载和 kernel launch 链路可用。</li>
+      <li><strong>发现退出阶段 SIGSEGV：</strong>计算结果已经输出，但退出码为 139。使用 GDB 定位到 libstdc++ 的 <code>atexit_thread.cc:75</code>，栈顶为无符号的已卸载地址。</li>
+      <li><strong>修复 DSO 生命周期：</strong>DTK 分支保留 HIP/HIPRTC DSO 到进程退出，随后 benchmark 退出码恢复为 0。</li>
+      <li><strong>正确性验证：</strong>实际 MD5 字典攻击通过 self-test，并恢复 <code>e11c594e6a2f4eb499cceadfca988595:13LEXON</code>。</li>
+    </ol>
+
+    <h3>GDB 关键回溯</h3>
+    <pre><code>Thread 1 "hashcat-hip-dtk" received signal SIGSEGV
+0x000015552f2620e0 in ?? ()
+#0  0x000015552f2620e0 in ?? ()
+#1  (anonymous namespace)::run
+    at libstdc++-v3/libsupc++/atexit_thread.cc:75
+#2  __run_exit_handlers () from /lib64/libc.so.6
+#3  exit () from /lib64/libc.so.6</code></pre>
+    <p>该回溯与“动态库已卸载，但退出处理器仍保留函数地址”一致。修改 DSO 生命周期后，同一测试正常退出，验证了判断。</p>
+  </section>
+
+  <section id="build">
+    <h2>6. Git 与编译过程</h2>
+    <h3>6.1 Git 建档</h3>
+    <p>为保证适配过程可追溯，可先建立源码基线，再在独立分支记录 DTK HIP 适配变更。以下命令展示一种参考流程。</p>
+    <pre><code>cd /path/to/hashcat
+git init -b dtk-hip-adaptation
+git add -A
+git commit -m "baseline: import hashcat 7.1.2 source tree"
+
+# 完成修改与验证后
+git add .gitignore include/ext_hip.h src/Makefile \
+  src/backend.c src/ext_hip.c src/ext_hiprtc.c \
+  docs/dtk-hip-adaptation.md
+git commit -m "feat: adapt HIP backend for DTK 25.04.2"</code></pre>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>提交</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>cb48d9d</code></td><td>Hashcat v7.1.2 源码树基线</td></tr>
+          <tr><td><code>提交标识已脱敏</code></td><td>DTK 25.04.2 HIP 后端适配</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.2 编译步骤</h3>
+    <div class="callout warning">
+      <strong>构建注意事项：</strong>当前 Makefile 的对象文件名不包含预处理宏信息。在普通构建与 <code>DTK_HIP=1</code> 构建之间切换时，应执行 <code>make clean</code>，避免复用 ABI 配置不同的对象文件。
+    </div>
+    <pre><code>cd /path/to/hashcat
+
+# 保留原始二进制
+cp -p hashcat hashcat-opencl-original
+
+# 清理并构建 DTK 专用版本
+make clean
+make DTK_HIP=1 ENABLE_LTO=0
+mv hashcat hashcat-hip-dtk
+
+# 基本检查
+./hashcat-hip-dtk --version
+sha256sum hashcat-hip-dtk hashcat-opencl-original</code></pre>
+    <p><code>ENABLE_LTO=0</code> 用于降低适配调试期间的链接复杂度并保持构建可预测性。核心适配由 <code>DTK_HIP=1</code> 启用。</p>
+
+    <h3>6.3 在 DCU 节点验证</h3>
+    <pre><code>ssh &lt;compute-node&gt;
+cd /path/to/hashcat
+
+# 只启用 HIP
+./hashcat-hip-dtk -II \
+  --backend-ignore-cuda \
+  --backend-ignore-opencl
+
+# 只启用 OpenCL
+./hashcat-opencl-original -II \
+  --backend-ignore-cuda \
+  --backend-ignore-hip</code></pre>
+  </section>
+
+  <section id="validation">
+    <h2>7. 功能与正确性验证</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>验证项</th><th>命令/方式</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>HIP 设备枚举</td><td><code>-II --backend-ignore-cuda --backend-ignore-opencl</code></td><td class="status-ok">通过</td></tr>
+          <tr><td>HIPRTC 优化内核</td><td>MD5 benchmark</td><td class="status-ok">通过</td></tr>
+          <tr><td>MD5 benchmark</td><td><code>-b -m 0</code></td><td class="status-ok">39342.9 MH/s</td></tr>
+          <tr><td>NTLM benchmark</td><td><code>-b -m 1000</code></td><td class="status-ok">63283.5 MH/s</td></tr>
+          <tr><td>Self-test</td><td>MD5 字典实际攻击</td><td class="status-ok">通过</td></tr>
+          <tr><td>破解结果</td><td><code>example0.hash + example.dict</code></td><td class="status-ok">恢复 13LEXON</td></tr>
+          <tr><td>资源释放与退出</td><td>benchmark 后检查进程退出码</td><td class="status-ok">退出码 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre><code>./hashcat-hip-dtk -m 0 -a 0 example0.hash example.dict \
+  --backend-ignore-cuda --backend-ignore-opencl \
+  --potfile-disable --restore-disable
+
+Recovered:
+e11c594e6a2f4eb499cceadfca988595:13LEXON</code></pre>
+    <p class="small">该字典测试的最终状态码为 1：输入包含 6494 个哈希，小字典耗尽时恢复其中 1 个。self-test 与目标恢复均成功，因此该状态码反映任务完成条件，而非 HIP 后端异常。</p>
+  </section>
+
+  <section id="performance">
+    <h2>8. HIP 与 OpenCL 性能对比</h2>
+    <h3>8.1 测试方法</h3>
+    <p>为了避免短 benchmark 隐藏热稳定和持续调度差异，采用 SHA2-256 的 8 位全字符集暴力攻击，密钥空间为 <code>95^8 = 6,634,204,312,890,625</code>。使用不易命中的目标哈希保证 DCU 持续满载，每个后端运行约 45 秒，并通过 <code>hy-smi</code> 每 2 秒采样功耗、温度和利用率。</p>
+    <pre><code># HIP
+./hashcat-hip-dtk -m 1400 -a 3 \
+  ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
+  '?a?a?a?a?a?a?a?a' -O -w 3 --runtime 45 \
+  --status --status-timer 5 --potfile-disable --restore-disable \
+  --backend-ignore-cuda --backend-ignore-opencl
+
+# OpenCL：攻击参数相同，只切换后端和二进制
+./hashcat-opencl-original -m 1400 -a 3 \
+  ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
+  '?a?a?a?a?a?a?a?a' -O -w 3 --runtime 45 \
+  --status --status-timer 5 --potfile-disable --restore-disable \
+  --backend-ignore-cuda --backend-ignore-hip</code></pre>
+
+    <h3>8.2 核心结果</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>指标</th><th>HIP</th><th>OpenCL</th><th>解读</th></tr></thead>
+        <tbody>
+          <tr><td>平均速度（10 个状态样本）</td><td class="num">5913.79 MH/s</td><td class="num">5913.48 MH/s</td><td>HIP 约 +0.005%，无实际差异</td></tr>
+          <tr><td>最终稳定速度</td><td class="num">5914.3 MH/s</td><td class="num">5913.8 MH/s</td><td>差异小于 0.01%</td></tr>
+          <tr><td>速度范围</td><td class="num">5911.5–5914.3</td><td class="num">5910.4–5914.0</td><td>波动均很小</td></tr>
+          <tr><td>满载平均功耗</td><td class="num">368.8 W</td><td class="num">369.7 W</td><td>差 0.9 W，在采样波动内</td></tr>
+          <tr><td>满载功耗范围</td><td class="num">365–369 W</td><td class="num">367–370 W</td><td>基本一致</td></tr>
+          <tr><td>平均温度</td><td class="num">61.0°C</td><td class="num">61.1°C</td><td>基本一致</td></tr>
+          <tr><td>最高温度</td><td class="num">61°C</td><td class="num">62°C</td><td>无显著差异</td></tr>
+          <tr><td>平均利用率</td><td class="num">100%</td><td class="num">100%</td><td>均达到满载</td></tr>
+          <tr><td>Host memory</td><td class="num">8173 MB</td><td class="num">6132 MB</td><td>HIP 多使用约 2041 MB</td></tr>
+          <tr><td>运行结束状态</td><td>Runtime 到期</td><td>Runtime 到期</td><td>均按预期停止</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>速度可视化</h3>
+    <div class="card">
+      <div class="bar-row"><strong>HIP</strong><div class="bar-track"><div class="bar hip"></div></div><span class="bar-label">5913.79 MH/s</span></div>
+      <div class="bar-row"><strong>OpenCL</strong><div class="bar-track"><div class="bar opencl"></div></div><span class="bar-label">5913.48 MH/s</span></div>
+      <p class="small">横条按 5914.1 MH/s 归一化。两者肉眼不可区分，符合数值差异低于 0.01% 的结论。</p>
+    </div>
+
+    <h3>8.3 自动调优与资源差异</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>调度参数</th><th>HIP</th><th>OpenCL</th></tr></thead>
+        <tbody>
+          <tr><td>Accel</td><td class="num">6</td><td class="num">27</td></tr>
+          <tr><td>Loops</td><td class="num">1024</td><td class="num">1024</td></tr>
+          <tr><td>Threads</td><td class="num">1024</td><td class="num">256</td></tr>
+          <tr><td>Vector width</td><td class="num">1</td><td class="num">1</td></tr>
+          <tr><td>单次调度时间</td><td class="num">84.95 ms</td><td class="num">95.55 ms</td></tr>
+          <tr><td>Preferred thread multiple</td><td class="num">64</td><td class="num">32</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>两个后端选择了不同的工作组和加速组合，但最终吞吐一致，说明两条路径均能充分利用该 DCU。HIP 的主机内存占用明显更高，是本次测试中最明确的资源差异。</p>
+
+    <h3>8.4 累计进度为何不直接比较</h3>
+    <p>最终记录的 HIP 进度为 <code>266,757,734,400</code>，OpenCL 为 <code>270,092,206,080</code>。OpenCL 看似高约 1.25%，但其最终状态落在约 46 秒，而 HIP 为约 45 秒；初始化、状态刷新和 runtime 停止边界也不完全相同。因此报告以 hashcat 的 10 个持续速度样本作为主比较依据，而不以累计进度得出性能结论。</p>
+  </section>
+
+  <section id="conclusion">
+    <h2>9. 结论、建议与已知限制</h2>
+    <div class="three-col">
+      <div class="card"><h3>可用性</h3><p>HIP 设备枚举、HIPRTC、内核加载、实际破解和正常退出均已通过，最小适配目标完成。</p></div>
+      <div class="card"><h3>性能</h3><p>在本次 SHA2-256 测试中，HIP 与 OpenCL 均约为 5.914 GH/s，差异不足 0.01%；当前数据未体现显著性能差异。</p></div>
+      <div class="card"><h3>应用建议</h3><p>在扩大算法覆盖和稳定性验证前，OpenCL 可作为现有基线；HIP 版本适用于功能验证及后续 gfx936 定向优化。</p></div>
+    </div>
+
+    <h3>已知限制</h3>
+    <ul>
+      <li>适配以 <strong>DTK 25.04.2 / HIP 6.3.25422</strong> 为验证基线。升级 DTK 后应重新核对枚举值、结构体大小和字段偏移。</li>
+      <li>当前验证覆盖代表性的 MD5、NTLM 与 SHA2-256 路径，结论不扩展至未经测试的 hash-mode。</li>
+      <li><code>regsPerMultiprocessor</code> 使用保守兼容值；当前算法运行正常，但可能影响某些内核的调优上限。</li>
+      <li>DTK 构建故意不提前 <code>dlclose</code> HIP/HIPRTC DSO。这不会造成进程生命周期之外的泄漏，但与标准 hashcat 的卸载行为不同。</li>
+      <li>45 秒测试适合比较稳定吞吐，不等同于数小时或数天的长期可靠性测试。</li>
+    </ul>
+
+    <h3>后续建议</h3>
+    <ol>
+      <li>按常用工作负载扩展测试：<code>-m 1000</code>、<code>-m 10900</code>、<code>-m 22000</code>、<code>-m 3200</code>。</li>
+      <li>对 HIP 和 OpenCL 分别执行 1–4 小时稳定性测试，监控温度、功耗、驱动日志和错误计数。</li>
+      <li>为 DTK ABI 增加自动化探测或编译期断言，避免 DTK 升级后静默使用错误布局。</li>
+      <li>如果目标是获得性能提升，应进一步分析 HIPRTC 编译参数、寄存器占用、wavefront 行为和专用 tuning，而不是仅切换后端。</li>
+    </ol>
+  </section>
+
+  <section id="appendix">
+    <h2>10. 附录：复现与审计命令</h2>
+    <h3>查看代码变更</h3>
+    <pre><code>cd /path/to/hashcat
+git status
+git log --oneline --decorate -5
+git show --stat 7ef6f77
+git show 7ef6f77</code></pre>
+
+    <h3>重新构建</h3>
+    <pre><code>make clean
+make DTK_HIP=1 ENABLE_LTO=0
+mv hashcat hashcat-hip-dtk</code></pre>
+
+    <h3>基本验证</h3>
+    <pre><code>ssh &lt;compute-node&gt;
+cd /path/to/hashcat
+
+./hashcat-hip-dtk -II --backend-ignore-cuda --backend-ignore-opencl
+./hashcat-hip-dtk -b -m 0 --backend-ignore-cuda --backend-ignore-opencl --runtime 10
+./hashcat-hip-dtk -b -m 1000 --backend-ignore-cuda --backend-ignore-opencl --runtime 10</code></pre>
+
+    <h3>关键文件索引</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>文件</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code>src/Makefile</code></td><td><code>DTK_HIP=1</code> 构建入口</td></tr>
+          <tr><td><code>include/ext_hip.h</code></td><td>DTK 枚举与结构体 ABI</td></tr>
+          <tr><td><code>src/backend.c</code></td><td>设备属性初始化兼容</td></tr>
+          <tr><td><code>src/ext_hip.c</code></td><td>HIP 动态加载、日志和 DSO 生命周期</td></tr>
+          <tr><td><code>src/ext_hiprtc.c</code></td><td>HIPRTC DSO 生命周期</td></tr>
+          <tr><td><code>docs/dtk-hip-adaptation.md</code></td><td>仓库内简要适配记录</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>作者：<strong>opensource_community</strong></p>
+    <p>说明：测试结果仅适用于文中列明的软件版本、硬件环境、参数配置与工作负载，不构成对其他环境的性能承诺。</p>
+    <p>数据来源：本地版本控制记录、已脱敏计算节点的 hashcat 输出、rocminfo、hy-smi 与 GDB 回溯。生成日期：2026-08-01。</p>
+  </footer>
+</main>
+</body>
+</html>
