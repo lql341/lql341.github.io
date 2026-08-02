@@ -2,6 +2,7 @@
   "name": "opensource-community-site",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
