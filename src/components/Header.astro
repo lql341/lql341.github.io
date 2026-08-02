@@ -1,0 +1,16 @@
+---
+interface Props { lang?: 'en' | 'zh' }
+const { lang = 'en' } = Astro.props;
+const isZh = lang === 'zh';
+---
+<header class="site-header">
+  <a class="brand" href={isZh ? '/zh/' : '/'}>opensource_community</a>
+  <nav aria-label="Primary navigation">
+    <a href="/projects/">Projects</a>
+    <a href="/reports/">Reports</a>
+    <a href="/notes/">Notes</a>
+    <a href="/about/">About</a>
+    <a href="/resume/">Résumé</a>
+    <a class="language" href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
+  </nav>
+</header>
