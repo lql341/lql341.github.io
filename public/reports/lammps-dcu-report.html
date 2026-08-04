@@ -24,8 +24,11 @@
     background: radial-gradient(circle at 12% 0, #11385f 0, transparent 34%), var(--bg);
     color: var(--text);
     line-height: 1.8;
-    padding: 40px 20px;
+    padding: 18px 20px 40px;
   }
+  .top-nav { max-width: 1000px; margin: 0 auto 18px; }
+  .top-nav a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .top-nav a:hover { text-decoration: underline; }
   .container {
     max-width: 1000px;
     margin: 0 auto;
@@ -225,6 +228,7 @@
 </style>
 </head>
 <body>
+<div class="top-nav"><a href="./">← 返回测试报告</a></div>
 <div class="container">
 
 <div class="header">
@@ -771,7 +775,7 @@ tar xzf openmpi-5.0.7.tar.gz && cd openmpi-5.0.7
 module purge
 module load compiler/gcc/9.3.0
 module load compiler/dtk/25.04.2
-module load mpi/ucx/1.18.0/dtk-25.04/shca
+module load &lt;UCX_MODULE&gt;
 
 <span class="comment"># 配置：启用 UCX 通信层 + ROCm GPU 加速器</span>
 ./configure --prefix=$HOME/softwares/mpi/install \
@@ -804,7 +808,7 @@ cmake -S lammps-22Jul2025/cmake -B build-mpi \
 
   <h3>10.6 运行时配置</h3>
   <pre><span class="comment"># Slurm 作业脚本关键配置</span>
-module load mpi/ucx/1.18.0/dtk-25.04/shca
+module load &lt;UCX_MODULE&gt;
 export PATH=$HOME/softwares/mpi/install/bin:$PATH
 export LD_LIBRARY_PATH=$HOME/softwares/mpi/install/lib:$LD_LIBRARY_PATH
 
@@ -824,7 +828,7 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
   <p><strong>GPU-aware MPI 使 2 GPU 性能提升 69%（105→177 step/s），Comm 时间从 20.2s 降到 11.4s（-43%）。</strong>这是通过 UCX+ROCm 避免 CPU↔GPU 数据拷贝实现的。</p>
 
   <h3>10.8 UCX 选择说明</h3>
-  <p>DTK 25.04.2 不自带 UCX 库。系统提供 <code>mpi/ucx/1.18.0/dtk-25.04/shca</code> 模块，包含 <code>libuct_rocm.so</code>（ROCm 传输层）。OpenMPI 5.0.7 通过 <code>--with-ucx</code> 和 <code>--with-rocm</code> 链接这两个组件，实现 GPU-aware 通信。</p>
+  <p>DTK 25.04.2 不自带 UCX 库。测试环境通过 <code>&lt;UCX_MODULE&gt;</code> 提供带 ROCm 传输层的 UCX 组件。OpenMPI 5.0.7 通过 <code>--with-ucx</code> 和 <code>--with-rocm</code> 链接相关组件，实现 GPU-aware 通信。</p>
   <p>UCX 模块路径：<code>&lt;UCX_ROOT&gt;</code></p>
   <p>ROCm 路径：<code>&lt;DTK_ROOT&gt;</code></p>
 </div>
@@ -852,9 +856,9 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
     ├── <span class="dir">install-neighbor-bpt-*-gfx936/</span> <span class="comment"># Neighbor 实验二进制（保留）</span><br>
     └── <span class="dir">dcu-test/</span>             <span class="comment"># 原始 profiling 数据</span><br>
         ├── <span class="dir">hipprof-&lt;run-id&gt;/</span>  <span class="comment"># HIP trace 数据</span><br>
-        ├── <span class="dir">pmc-724771/</span>        <span class="comment"># PMC 原始 CSV</span><br>
-        ├── <span class="dir">pair-workgroup-724835/</span> <span class="comment"># Pair 扫描日志</span><br>
-        └── <span class="dir">neighbor-bpt-726099/</span> <span class="comment"># Neighbor 扫描日志</span><br>
+        ├── <span class="dir">pmc-&lt;run-id&gt;/</span>      <span class="comment"># PMC 原始 CSV</span><br>
+        ├── <span class="dir">pair-workgroup-&lt;run-id&gt;/</span> <span class="comment"># Pair 扫描日志</span><br>
+        └── <span class="dir">neighbor-bpt-&lt;run-id&gt;/</span> <span class="comment"># Neighbor 扫描日志</span><br>
   </div>
 </div>
 
@@ -863,45 +867,107 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
 
   <div class="highlight-box">
     <div class="title">推荐方案</div>
-    <p style="font-size: 16px; margin-top: 10px;"><strong>Kokkos + HIP 后端</strong> 是海光 DCU 上运行 LAMMPS 的最佳选择，相比 GPU 包有 <strong>4.6-6.3 倍</strong> 的性能优势。</p>
+    <p style="font-size: 16px; margin-top: 10px;">在本报告所述硬件、软件版本与工作负载范围内，<strong>KOKKOS + HIP + neigh/transpose on</strong> 获得了最优综合表现。</p>
   </div>
 
-  <h3>架构与编译</h3>
+  <h3>12.1 架构与编译</h3>
   <div class="conclusion-item">✅ <strong>gfx936 原生编译</strong>：hipcc → dcc（海光 DCU C 编译器），生成海光 ISA 代码</div>
   <div class="conclusion-item">✅ <strong>Kokkos 架构支持</strong>：gfx926/928/936/938 已注册到 cmake 和 HIP 核心文件</div>
-  <div class="conclusion-item">✅ <strong>GPU-aware MPI 就绪</strong>：OpenMPI 5.0.7 + UCX 1.18.0 + ROCm，2 GPU Comm 降 43%</div>
+  <div class="conclusion-item">✅ <strong>GPU-aware MPI 就绪</strong>：OpenMPI 5.0.7 + UCX 1.18.0 DTK + ROCm</div>
 
-  <h3>有效优化</h3>
-  <div class="conclusion-item">✅ <strong>neigh/transpose on</strong>：LJ +13.6%，EAM +3.2%，运行时选项零成本</div>
-  <div class="conclusion-item">✅ <strong>Neighbor BPT=1</strong>：LJ +4.3%，EAM +0.6%，一行源码修改</div>
-  <div class="conclusion-item">✅ <strong>Kokkos 性能优于 GPU 包</strong>：32K 原子快 6.3 倍，256K 原子快 4.6 倍</div>
+  <h3>12.2 有效优化</h3>
+  <div class="conclusion-item">✅ <strong>neigh/transpose on</strong>：LJ +13.6%，EAM +3.2%；为运行时选项，无需修改源码</div>
+  <div class="conclusion-item">✅ <strong>KOKKOS 性能优于 GPU 包</strong>：同规模 EAM 1M 原子，72.9 vs 39.6 step/s（1.84×）</div>
 
-  <h3>无效优化（已回退）</h3>
+  <h3>12.3 无效优化（已回退）</h3>
   <div class="conclusion-item">❌ Pair workgroup 64-512：慢 3.3-8.6%，Kokkos 自动选 1024 正确</div>
   <div class="conclusion-item">❌ DTK 升级：25.04.4/26.04 无性能差异</div>
-  <div class="conclusion-item">❌ fix nve/kk 源码优化：mask 快路径 -0.12%，单类型质量 -0.49%</div>
-  <div class="conclusion-item">❌ 2 GPU 多卡：1M-8M 原子始终慢于单 GPU（0.71-0.87×），需更大规模</div>
+  <div class="conclusion-item">❌ fix nve/kk 源码：mask 快路径 -0.12%，单类型质量 -0.49%</div>
+  <div class="conclusion-item">❌ BPT=1：LJ +4.3%，但 EAM 仅 +0.6%；已回退，当前证据不足以支持将其作为稳定且可泛化的优化</div>
 
-  <h3>关键经验</h3>
-  <div class="conclusion-item">⚠️ <strong>LJ 不适合 GPU 基准</strong>：GPU 仅活跃 20%，优化效果被放大（transpose +13.6% 在 EAM 仅 +3.2%）</div>
-  <div class="conclusion-item">⚠️ <strong>GPU 利用率受 Modify 限制</strong>：Modify 占 57-76%，为 CPU 侧框架开销</div>
-  <div class="conclusion-item">⚠️ <strong>多 GPU 三条件</strong>：GPU-aware MPI + 计算密集势函数 + 大原子数，缺一不可</div>
-  <div class="conclusion-item">⚠️ <strong>CPU vs DCU 公平对比</strong>：同规模 32K 原子约 60×，跨规模对比会夸大（原 160× 有缺陷）</div>
-
-  <h3>后续方向</h3>
+  <h3>12.4 多 GPU 缩放</h3>
   <table>
-    <thead><tr><th>方向</th><th>说明</th><th>状态</th></tr></thead>
+    <thead><tr><th>Pair Style</th><th>模式</th><th>1 GPU</th><th>2 GPU</th><th>4 GPU</th><th>2/1</th><th>4/1</th></tr></thead>
     <tbody>
-      <tr><td>Neighbor L2 局部性</td><td>PMC 显示 L2 hit rate 83.77%，TCP stall 467M cycles</td><td>未开始</td></tr>
-      <tr><td>更大规模 EAM 多 GPU</td><td>2/1 比 0.78→0.87，趋势向好，16M+ 可能突破 1.0</td><td>待测试</td></tr>
-      <tr><td>其他 pair style</td><td>tersoff、SNAP 等更计算密集的势函数</td><td>未开始</td></tr>
-      <tr><td>上游提交</td><td>Kokkos 架构支持 + BPT=1 可提交到 Kokkos/LAMMPS 上游</td><td>待整理</td></tr>
+      <tr><td>EAM 1M</td><td>KOKKOS</td><td>76.5</td><td>57.1</td><td>45.2</td><td>0.75</td><td>0.59</td></tr>
+      <tr><td>EAM 4M</td><td>KOKKOS</td><td>21.2</td><td>16.5</td><td>—</td><td>0.78</td><td>—</td></tr>
+      <tr><td>EAM 8M</td><td>KOKKOS</td><td>10.2</td><td>8.9</td><td>—</td><td>0.87</td><td>—</td></tr>
+      <tr><td>EAM 16M</td><td>KOKKOS</td><td>5.2</td><td>4.7</td><td>—</td><td><strong>0.90</strong></td><td>—</td></tr>
+      <tr><td>LJ 1M</td><td>KOKKOS</td><td>277.7</td><td>198.3</td><td>—</td><td>0.71</td><td>—</td></tr>
+      <tr><td>Tersoff 1.1M</td><td>KOKKOS</td><td>195.0</td><td>123.2</td><td>—</td><td>0.63</td><td>—</td></tr>
+      <tr><td>EAM 1M</td><td>GPU 包</td><td>39.6</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p><strong>EAM 2/1 比 0.78→0.87→0.90，趋势改善但未突破 1.0。</strong>GPU 包扩展性好（2/1=1.32）但单卡慢（～1.8× KOKKOS）。</p>
+
+  <h3>12.5 CPU vs DCU 公平对比</h3>
+  <table>
+    <thead><tr><th>对比</th><th>原始报告</th><th>修正后</th><th>问题</th></tr></thead>
+    <tbody>
+      <tr><td>加速比</td><td>160×</td><td><strong>60×</strong></td><td>原始跨规模对比（32K CPU vs 256K DCU）不公平</td></tr>
+      <tr><td>加速趋势</td><td>—</td><td>随原子数增大</td><td>32K: 60× → 1M: ~172×（估算）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.6 单 GPU 线性缩放</h3>
+  <table>
+    <thead><tr><th>原子数</th><th>step/s</th><th>Matom-step/s</th><th>Pair%</th><th>内存</th></tr></thead>
+    <tbody>
+      <tr><td>1M</td><td>72.5</td><td>76.0</td><td>36.7%</td><td>0.16GB</td></tr>
+      <tr><td>4M</td><td>21.2</td><td>85.0</td><td>32.8%</td><td>0.64GB</td></tr>
+      <tr><td>8M</td><td>10.2</td><td>81.9</td><td>33.8%</td><td>1.2GB</td></tr>
+      <tr><td>16M</td><td>5.2</td><td>82.6</td><td>32.2%</td><td>2.4GB</td></tr>
+      <tr><td>25M</td><td>3.2</td><td>80.2</td><td>32.0%</td><td>3.8GB</td></tr>
+      <tr><td>32M</td><td>—</td><td>—</td><td>—</td><td>OOM</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Matom-step/s 稳定 80-85，线性缩放。32M OOM 因邻居列表初始分配 2000/atom 超 64GB。</strong>显存先于算力达到瓶颈。</p>
+
+  <h3>12.7 关键经验</h3>
+  <div class="conclusion-item">⚠️ <strong>LJ 不适合 GPU 基准</strong>：GPU 仅活跃 20%，优化效果被放大</div>
+  <div class="conclusion-item">⚠️ <strong>EAM 是合理的 GPU 基准</strong>：GPU 活跃 41%，Pair 占 36.8%</div>
+  <div class="conclusion-item">⚠️ <strong>活跃计算阶段的设备利用率可接近 100%</strong>（HIP trace 采样），但端到端性能仍受 CPU 侧框架开销限制（Modify 占 57-76%）</div>
+  <div class="conclusion-item">⚠️ <strong>显存先于算力瓶颈</strong>：32M 邻居列表初始分配 256GB > 64GB</div>
+  <div class="conclusion-item">⚠️ <strong>多 GPU 三条件</strong>：GPU-aware MPI + 计算密集势函数 + 大原子数（每 GPU > 500K），缺一不可</div>
+  <div class="conclusion-item">⚠️ <strong>GPU 包 vs KOKKOS</strong>：GPU 包扩展性好但单卡慢，KOKKOS 单卡快但多 GPU 差</div>
+</div>
+
+<div class="section">
+  <h2>🔗 13. 上游贡献建议</h2>
+
+  <h3>13.1 Kokkos 上游</h3>
+  <table>
+    <thead><tr><th>贡献</th><th>内容</th><th>文件</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>gfx926/928/936/938 架构支持</strong></td><td>添加海光 DCU 架构到 Kokkos cmake 和 HIP 核心</td><td><code>kokkos_arch.cmake</code>, <code>KokkosCore_config.h.in</code>, <code>Kokkos_HIP_Instance.hpp</code>, <code>Kokkos_HIP_IsXnack.hpp</code></td><td>原型已验证，待上游评审</td></tr>
+      <tr><td>wavefront 64 支持</td><td>gfx936 使用 64-wide wavefront，与 gfx906 相同</td><td><code>Kokkos_HIP_Instance.hpp</code></td><td>本地实现已验证</td></tr>
+      <tr><td>系统分配访问属性</td><td>海光 DCU 不支持系统内存直接访问</td><td><code>Kokkos_HIP_IsXnack.hpp</code></td><td>本地实现已验证</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 LAMMPS 上游</h3>
+  <table>
+    <thead><tr><th>贡献</th><th>内容</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>构建 preset</strong></td><td><code>cmake/presets/hygon-dcu-gfx936.cmake</code>：可复现的海光 DCU 构建配置</td><td>待提交</td></tr>
+      <tr><td><strong>性能基准</strong></td><td>KOKKOS vs GPU 包对比数据，多 GPU 缩放分析</td><td>可供文档引用</td></tr>
+      <tr><td><strong>推荐配置</strong></td><td><code>neigh/transpose on</code> 对 gfx936 有 +3~14% 提升</td><td>运行时选项，无需代码</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.3 ROCm/HIP 兼容生态</h3>
+  <table>
+    <thead><tr><th>贡献</th><th>内容</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>gfx936 性能数据</strong></td><td>LJ、EAM、Tersoff、ReaxFF 在 80 CU 上的单卡/多卡性能</td><td>可供文档引用</td></tr>
+      <tr><td><strong>GPU-aware MPI 方案</strong></td><td>OpenMPI 5.0.7 + UCX 1.18.0 DTK + ROCm 编译方法</td><td>已文档化</td></tr>
+      <tr><td><strong>验证方法</strong></td><td>PMC 分析工具、HIP trace 工作流、动态基准</td><td><code>tools/hygon/</code></td></tr>
     </tbody>
   </table>
 </div>
 
 <div class="footer">
-  作者：opensource_community &nbsp;·&nbsp; 报告生成日期：2026 年 8 月 4 日 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936) &nbsp;·&nbsp; Sugon 超算平台 &nbsp;·&nbsp; Git 16 commits
+  作者：opensource_community &nbsp;·&nbsp; 报告生成日期：2026 年 8 月 4 日 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936) &nbsp;·&nbsp; Sugon 超算平台 &nbsp;·&nbsp; Git 18 commits
 </div>
 
 </div>
