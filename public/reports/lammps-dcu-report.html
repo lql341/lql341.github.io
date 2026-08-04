@@ -3,13 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="opensource_community">
 <title>LAMMPS 海光 DCU 版编译与性能测试报告</title>
 <style>
+  :root {
+    --bg: #07101d;
+    --surface: #0d1a2b;
+    --surface-strong: #12233a;
+    --line: #243954;
+    --text: #eef5fc;
+    --muted: #9eb0c7;
+    --accent: #5eead4;
+    --accent-2: #60a5fa;
+    --success: #a6e3a1;
+    --warning: #f9e2af;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: #F5F5F5;
-    color: #333;
+    background: radial-gradient(circle at 12% 0, #11385f 0, transparent 34%), var(--bg);
+    color: var(--text);
     line-height: 1.8;
     padding: 40px 20px;
   }
@@ -18,12 +31,13 @@
     margin: 0 auto;
   }
   .header {
-    background: linear-gradient(135deg, #C41E3A 0%, #A01830 100%);
-    color: #fff;
+    background: linear-gradient(145deg, rgba(18,35,58,.98), rgba(10,23,40,.98));
+    color: var(--text);
     padding: 50px 40px;
-    border-radius: 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
     margin-bottom: 30px;
-    box-shadow: 0 4px 20px rgba(196, 30, 58, 0.3);
+    box-shadow: 0 18px 50px rgba(0,0,0,.24);
   }
   .header h1 {
     font-size: 28px;
@@ -33,26 +47,27 @@
   .header .subtitle {
     margin-top: 10px;
     font-size: 14px;
-    opacity: 0.85;
+    color: var(--muted);
   }
   .section {
-    background: #fff;
-    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(18,35,58,.97), rgba(10,23,40,.97));
+    border-radius: 18px;
     padding: 30px 35px;
     margin-bottom: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    border-left: 4px solid #C41E3A;
+    box-shadow: 0 14px 36px rgba(0,0,0,.18);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
   }
   .section h2 {
     font-size: 20px;
-    color: #C41E3A;
+    color: var(--accent);
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #F0F0F0;
+    border-bottom: 1px solid var(--line);
   }
   .section h3 {
     font-size: 16px;
-    color: #A01830;
+    color: var(--accent-2);
     margin: 20px 0 10px;
   }
   .section p {
@@ -65,24 +80,26 @@
     margin: 10px 0;
   }
   .info-grid .label {
-    color: #C41E3A;
+    color: var(--accent);
     font-weight: 600;
     white-space: nowrap;
   }
   .info-grid .value {
-    color: #444;
+    color: var(--muted);
   }
   code {
-    background: #F0F0F0;
-    color: #C41E3A;
+    background: rgba(94,234,212,.08);
+    color: var(--accent);
+    border: 1px solid rgba(94,234,212,.15);
     padding: 2px 6px;
     border-radius: 4px;
     font-family: "Fira Code", "Cascadia Code", "Source Code Pro", Consolas, monospace;
     font-size: 13px;
   }
   pre {
-    background: #1E1E2E;
-    color: #CDD6F4;
+    background: #081321;
+    color: var(--text);
+    border: 1px solid var(--line);
     padding: 18px 20px;
     border-radius: 8px;
     overflow-x: auto;
@@ -91,10 +108,10 @@
     line-height: 1.6;
     margin: 14px 0;
   }
-  pre .comment { color: #6C7086; }
-  pre .keyword { color: #89B4FA; }
-  pre .string { color: #A6E3A1; }
-  pre .var { color: #F9E2AF; }
+  pre .comment { color: #71869f; }
+  pre .keyword { color: var(--accent-2); }
+  pre .string { color: var(--success); }
+  pre .var { color: var(--warning); }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -102,8 +119,8 @@
     font-size: 14px;
   }
   th {
-    background: #C41E3A;
-    color: #fff;
+    background: #173351;
+    color: var(--text);
     padding: 10px 14px;
     text-align: left;
     font-weight: 600;
@@ -112,24 +129,25 @@
   th:last-child { border-radius: 0 6px 0 0; }
   td {
     padding: 10px 14px;
-    border-bottom: 1px solid #EEE;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
   }
   tr:nth-child(even) td {
-    background: #FDF2F4;
+    background: rgba(96,165,250,.045);
   }
   tr:hover td {
-    background: #F8E0E4;
+    background: rgba(94,234,212,.07);
   }
   .highlight-box {
-    background: #FFF5F6;
-    border: 1px solid #F0C0C8;
+    background: rgba(94,234,212,.055);
+    border: 1px solid rgba(94,234,212,.22);
     border-radius: 8px;
     padding: 16px 20px;
     margin: 14px 0;
   }
   .highlight-box .title {
     font-weight: 700;
-    color: #C41E3A;
+    color: var(--accent);
     margin-bottom: 6px;
   }
   .highlight-box ul {
@@ -144,43 +162,44 @@
     content: "▸";
     position: absolute;
     left: 0;
-    color: #C41E3A;
+    color: var(--accent);
     font-weight: 700;
   }
   .mod-file {
-    background: #FFFBF0;
-    border: 1px solid #F0DCA0;
+    background: rgba(96,165,250,.055);
+    border: 1px solid rgba(96,165,250,.22);
     border-radius: 8px;
     padding: 14px 18px;
     margin: 10px 0;
   }
   .mod-file .fn {
     font-weight: 700;
-    color: #C41E3A;
+    color: var(--accent-2);
     font-family: monospace;
     font-size: 14px;
   }
   .mod-file .desc {
     margin-top: 4px;
-    color: #555;
+    color: var(--muted);
   }
   .conclusion-item {
-    background: #F0F7FF;
-    border-left: 3px solid #C41E3A;
+    background: rgba(96,165,250,.055);
+    border: 1px solid rgba(96,165,250,.14);
+    border-left: 3px solid var(--accent-2);
     padding: 12px 16px;
     margin: 8px 0;
     border-radius: 0 6px 6px 0;
   }
   .footer {
     text-align: center;
-    color: #999;
+    color: #71869f;
     font-size: 13px;
     padding: 20px 0;
   }
   .speedup-badge {
     display: inline-block;
-    background: #C41E3A;
-    color: #fff;
+    background: var(--accent);
+    color: #06211f;
     padding: 2px 10px;
     border-radius: 12px;
     font-weight: 700;
@@ -188,16 +207,16 @@
   }
   .mono { font-family: monospace; }
   .file-tree {
-    background: #FAFAFA;
-    border: 1px solid #E0E0E0;
+    background: #081321;
+    border: 1px solid var(--line);
     border-radius: 8px;
     padding: 16px 20px;
     font-family: monospace;
     font-size: 13px;
     line-height: 1.7;
   }
-  .file-tree .dir { color: #C41E3A; font-weight: 700; }
-  .file-tree .file { color: #444; }
+  .file-tree .dir { color: var(--accent); font-weight: 700; }
+  .file-tree .file { color: var(--muted); }
   @media (max-width: 640px) {
     .header h1 { font-size: 22px; }
     .section { padding: 20px; }
@@ -211,13 +230,14 @@
 <div class="header">
   <h1>🖥️ LAMMPS 海光 DCU 版编译与性能测试报告</h1>
   <div class="subtitle">Hygon C-3000 BW (gfx936) · Sugon 超算 · Kokkos + HIP 后端 · GPU 包对比分析</div>
+  <div class="subtitle">作者：opensource_community</div>
 </div>
 
 <div class="section">
   <h2>📋 1. 环境信息</h2>
   <div class="info-grid">
     <span class="label">系统</span><span class="value">Sugon 8.9 (Linux)</span>
-    <span class="label">节点</span><span class="value">登录节点 (编译), 计算节点 e02r2n06 (测试)</span>
+    <span class="label">节点</span><span class="value">登录节点（编译），已分配计算节点（测试；名称已脱敏）</span>
     <span class="label">CPU</span><span class="value">Hygon C86 Processor (128核, 64核/socket)</span>
     <span class="label">DCU</span><span class="value">C-3000 BW 系列, 架构 gfx936, 80 CU, 1500MHz, 64GB 显存</span>
     <span class="label">编译器</span><span class="value">GCC 9.3.0, hipcc (Clang 17.0.0 from DTK 25.04.2)</span>
@@ -282,13 +302,13 @@ cmake ../lammps-22Jul2025/cmake \
   -D CMAKE_CXX_COMPILER=hipcc \
   -D CMAKE_C_COMPILER=gcc \
   -D CMAKE_HIP_COMPILER=hipcc \
-  -D HIP_PATH=/public/software/compiler/dtk-25.04.2/hip</pre>
+  -D HIP_PATH=&lt;DTK_ROOT&gt;/hip</pre>
 </div>
 
 <div class="section">
   <h2>📜 4. 测试作业脚本</h2>
   <pre><span class="comment">#!/bin/bash</span>
-<span class="comment">#SBATCH</span> -p hx1hdnormal
+<span class="comment">#SBATCH</span> -p &lt;partition&gt;
 <span class="comment">#SBATCH</span> -N 1
 <span class="comment">#SBATCH</span> --gres=dcu:1
 <span class="comment">#SBATCH</span> --ntasks-per-node=1
@@ -485,7 +505,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   <h3>6.6 海光原生编译器确认</h3>
   <p>通过分析 DTK 工具链，确认当前方案已经使用<strong>海光原生编译器</strong>：</p>
   <pre><span class="comment"># hipcc 最终调用海光原生 dcc 编译器</span>
-hipcc → /public/software/compiler/dtk-25.04.2/dcc/bin/dcc
+hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
            ↓
   海光 ISA bitcode: oclc_isa_version_936.bc</pre>
   <p>Kokkos 的 <code>AMD_GFX936</code> 只是命名约定，底层编译使用海光自己的 <code>dcc</code> 编译器 + 海光 ISA bitcode，<strong>已经是原生编译</strong>。</p>
@@ -756,8 +776,8 @@ module load mpi/ucx/1.18.0/dtk-25.04/shca
 <span class="comment"># 配置：启用 UCX 通信层 + ROCm GPU 加速器</span>
 ./configure --prefix=$HOME/softwares/mpi/install \
   --enable-mpi-fortran=no \
-  --with-ucx=/public/software/mpi/ucx/1.18.0/dtk-25.04/shca \
-  --with-rocm=/public/software/compiler/dtk-25.04.2
+  --with-ucx=&lt;UCX_ROOT&gt; \
+  --with-rocm=&lt;DTK_ROOT&gt;
 
 make -j32 && make install</pre>
 
@@ -796,7 +816,7 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
   <table>
     <thead><tr><th>MPI 版本</th><th>2 GPU step/s</th><th>Comm</th><th>shutdown</th><th>GPU-aware</th></tr></thead>
     <tbody>
-      <tr><td>系统 MPI (GCC 8.5, 无 UCX)</td><td>104.65</td><td>42%</td><td><span style="color:#C41E3A">crash</span></td><td>否</td></tr>
+      <tr><td>系统 MPI (GCC 8.5, 无 UCX)</td><td>104.65</td><td>42%</td><td><span style="color:var(--warning)">crash</span></td><td>否</td></tr>
       <tr><td>自编译 MPI (GCC 9.3, 无 UCX)</td><td>104.65</td><td>42%</td><td>✅</td><td>否</td></tr>
       <tr><td><strong>GPU-aware MPI (GCC 9.3 + UCX+ROCm)</strong></td><td><strong>176.95</strong></td><td><strong>40%</strong></td><td>✅</td><td><strong>是</strong></td></tr>
     </tbody>
@@ -805,8 +825,8 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
 
   <h3>10.8 UCX 选择说明</h3>
   <p>DTK 25.04.2 不自带 UCX 库。系统提供 <code>mpi/ucx/1.18.0/dtk-25.04/shca</code> 模块，包含 <code>libuct_rocm.so</code>（ROCm 传输层）。OpenMPI 5.0.7 通过 <code>--with-ucx</code> 和 <code>--with-rocm</code> 链接这两个组件，实现 GPU-aware 通信。</p>
-  <p>UCX 模块路径：<code>/public/software/mpi/ucx/1.18.0/dtk-25.04/shca</code></p>
-  <p>ROCm 路径：<code>/public/software/compiler/dtk-25.04.2</code></p>
+  <p>UCX 模块路径：<code>&lt;UCX_ROOT&gt;</code></p>
+  <p>ROCm 路径：<code>&lt;DTK_ROOT&gt;</code></p>
 </div>
 
 <div class="section">
@@ -831,7 +851,7 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
     ├── <span class="dir">install-pair-wg-*-gfx936/</span>  <span class="comment"># Pair 实验二进制（保留）</span><br>
     ├── <span class="dir">install-neighbor-bpt-*-gfx936/</span> <span class="comment"># Neighbor 实验二进制（保留）</span><br>
     └── <span class="dir">dcu-test/</span>             <span class="comment"># 原始 profiling 数据</span><br>
-        ├── <span class="dir">hipprof-724768/</span>     <span class="comment"># HIP trace 数据</span><br>
+        ├── <span class="dir">hipprof-&lt;run-id&gt;/</span>  <span class="comment"># HIP trace 数据</span><br>
         ├── <span class="dir">pmc-724771/</span>        <span class="comment"># PMC 原始 CSV</span><br>
         ├── <span class="dir">pair-workgroup-724835/</span> <span class="comment"># Pair 扫描日志</span><br>
         └── <span class="dir">neighbor-bpt-726099/</span> <span class="comment"># Neighbor 扫描日志</span><br>
@@ -881,7 +901,7 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
 </div>
 
 <div class="footer">
-  报告生成日期：2026 年 8 月 4 日 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936) &nbsp;·&nbsp; Sugon 超算平台 &nbsp;·&nbsp; Git 16 commits
+  作者：opensource_community &nbsp;·&nbsp; 报告生成日期：2026 年 8 月 4 日 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936) &nbsp;·&nbsp; Sugon 超算平台 &nbsp;·&nbsp; Git 16 commits
 </div>
 
 </div>
