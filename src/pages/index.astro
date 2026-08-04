@@ -1,18 +1,132 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ReportCard from '../components/ReportCard.astro';
-const reports = (await getCollection('reports')).filter((item) => item.data.featured).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
-<BaseLayout title="opensource_community · HPC & GPU Engineering" description="Open-source engineering, GPU software adaptation, and reproducible performance studies.">
-  <section class="hero">
-    <div class="eyebrow">HPC · GPU Software · Open Source</div>
-    <h1>Engineering open-source workloads for heterogeneous computing.</h1>
-    <p class="lead">A growing portfolio of GPU software adaptation, performance analysis, and reproducible engineering practice. Personal profile and career details will be added in the next content pass.</p>
-    <div class="actions"><a class="button primary" href="/projects/">View projects</a><a class="button" href="/reports/">Read reports</a></div>
+<BaseLayout
+  title="opensource_community · Open Systems, Accelerated"
+  description="Open-source accelerated systems engineering and reproducible performance research."
+  headerVariant="home"
+  bodyClass="home-page"
+>
+  <section class="minimal-hero">
+    <div>
+      <div class="overline">Accelerated systems engineering</div>
+      <h1>Open systems,<br /><span>accelerated.</span></h1>
+      <p class="intro">GPU software adaptation and performance research, published with reproducible evidence.</p>
+      <a class="scroll-link" href="#work">Selected work <b aria-hidden="true">↓</b></a>
+    </div>
+    <aside class="profile">
+      <strong>Research focus</strong><br />
+      HPC · GPU runtimes<br />
+      ABI · profiling<br />
+      Open-source systems
+    </aside>
+    <div class="signal-line" aria-hidden="true"></div>
   </section>
-  <section class="section">
-    <div class="section-head"><div><div class="eyebrow">Selected work</div><h2>Engineering reports</h2></div><p>Technical evidence with explicit environments, methods, results, and limitations.</p></div>
-    <div class="grid">{reports.map(({ data }) => <ReportCard {...data} />)}</div>
+
+  <section id="work" class="work" aria-labelledby="work-title">
+    <div class="work-head">
+      <div><div class="overline">Selected work</div><h2 id="work-title">Research index</h2></div>
+      <span>PUBLIC NOTES / 2026</span>
+    </div>
+
+    <div class="index">
+      <a class="work-row" href="/reports/lammps-dcu-report.html">
+        <span class="number">01</span>
+        <div class="work-title">
+          <h3>LAMMPS on Hygon DCU</h3>
+          <p>Kokkos/HIP · profiling · GPU-aware MPI</p>
+        </div>
+        <div class="result"><strong>4.6–6.3×</strong><span>Kokkos over tested GPU path</span></div>
+        <span class="arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <a class="work-row" href="/reports/hashcat-dtk-hip-report.html">
+        <span class="number">02</span>
+        <div class="work-title">
+          <h3>Hashcat DTK/HIP Adaptation</h3>
+          <p>ABI compatibility · HIPRTC · OpenCL baseline</p>
+        </div>
+        <div class="result"><strong>5.914 GH/s</strong><span>Validated SHA2-256 throughput</span></div>
+        <span class="arrow" aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="principle">
+    <h2>Build.<br />Measure.<br /><span>Explain.</span></h2>
+    <p>Every result is tied to a stated environment, workload, method, and boundary.</p>
+  </section>
+
+  <section class="contact" aria-labelledby="contact-title">
+    <div><small>Research &amp; collaboration</small><h2 id="contact-title">Compare notes.</h2></div>
+    <a class="email" href="mailto:luqilinheu@gmail.com">luqilinheu@gmail.com ↗</a>
   </section>
 </BaseLayout>
+
+<style>
+  .minimal-hero { min-height: calc(100vh - 72px); display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 80px; align-items: end; padding: 100px 0 72px; }
+  .overline { color: var(--accent); font: 700 10px/1.4 monospace; letter-spacing: .18em; text-transform: uppercase; }
+  .minimal-hero h1 { max-width: 1000px; margin: 25px 0 30px; font-size: clamp(66px, 10vw, 146px); font-weight: 610; line-height: .85; letter-spacing: -.075em; }
+  .minimal-hero h1 span { color: var(--muted); }
+  .intro { max-width: 620px; margin: 0; color: var(--muted); font-size: 18px; line-height: 1.65; }
+  .scroll-link { display: inline-flex; gap: 10px; margin-top: 34px; color: var(--text); font-size: 13px; font-weight: 700; text-decoration: none; }
+  .scroll-link b { color: var(--accent); font-size: 17px; }
+  .profile { align-self: end; padding-bottom: 4px; color: var(--muted); font: 11px/1.8 monospace; text-transform: uppercase; letter-spacing: .08em; }
+  .profile::before { content: ""; display: block; width: 100%; height: 1px; margin-bottom: 22px; background: var(--line); }
+  .profile strong { color: var(--text); font-weight: 600; }
+  .signal-line { grid-column: 1 / -1; height: 1px; margin-top: 52px; background: linear-gradient(90deg, var(--accent), rgba(155,234,52,.1) 54%, transparent); box-shadow: -40px 0 38px rgba(155,234,52,.22); }
+
+  .work { padding: 130px 0 150px; }
+  .work-head { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 48px; }
+  .work-head h2 { margin: 14px 0 0; font-size: clamp(42px, 5vw, 68px); font-weight: 600; letter-spacing: -.055em; }
+  .work-head > span { color: #5b645d; font: 10px/1.4 monospace; letter-spacing: .12em; }
+  .index { border-top: 1px solid var(--line); }
+  .work-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 230px 36px; gap: 26px; align-items: center; min-height: 210px; padding: 28px 0; border-bottom: 1px solid var(--line); text-decoration: none; transition: padding .25s ease, color .25s ease; }
+  .work-row:hover { padding-left: 14px; color: var(--accent); }
+  .number { align-self: start; padding-top: 10px; color: #5b645d; font: 11px/1 monospace; }
+  .work-title h3 { margin: 0; max-width: 760px; font-size: clamp(28px, 3.5vw, 46px); font-weight: 560; line-height: 1.08; letter-spacing: -.045em; }
+  .work-title p { margin: 14px 0 0; color: var(--muted); font-size: 14px; }
+  .result { color: var(--muted); }
+  .result strong { display: block; margin-bottom: 9px; color: var(--text); font-size: 27px; font-weight: 600; letter-spacing: -.045em; }
+  .result span { font: 10px/1.5 monospace; letter-spacing: .06em; text-transform: uppercase; }
+  .arrow { color: var(--accent); font-size: 24px; }
+
+  .principle { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 70px; align-items: end; padding: 145px 0; border-top: 1px solid var(--line); }
+  .principle h2 { max-width: 970px; margin: 0; font-size: clamp(50px, 8vw, 112px); font-weight: 590; line-height: .93; letter-spacing: -.07em; }
+  .principle h2 span { color: var(--accent); }
+  .principle p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+  .contact { position: relative; left: 50%; width: 100vw; margin-left: -50vw; display: flex; align-items: center; justify-content: space-between; gap: 50px; padding: 88px max(28px, calc((100vw - var(--max)) / 2)); color: #0a0d08; background: var(--accent); }
+  .contact small { display: block; margin-bottom: 10px; font: 800 10px/1.4 monospace; letter-spacing: .16em; text-transform: uppercase; }
+  .contact h2 { margin: 0; font-size: clamp(38px, 6vw, 76px); font-weight: 650; line-height: 1; letter-spacing: -.06em; }
+  .email { padding-bottom: 5px; border-bottom: 1px solid rgba(10,13,8,.45); font-size: clamp(16px, 2vw, 22px); font-weight: 680; text-decoration: none; white-space: nowrap; }
+
+  @media (max-width: 820px) {
+    .minimal-hero { grid-template-columns: 1fr; gap: 55px; align-items: end; }
+    .profile { max-width: 360px; }
+    .signal-line { grid-column: 1; }
+    .work-row { grid-template-columns: 38px minmax(0, 1fr) 30px; }
+    .result { grid-column: 2; }
+    .arrow { grid-column: 3; grid-row: 1 / 3; }
+    .principle { grid-template-columns: 1fr; }
+    .principle p { max-width: 500px; }
+    .contact { align-items: flex-start; flex-direction: column; }
+  }
+
+  @media (max-width: 580px) {
+    .minimal-hero { min-height: 760px; padding: 70px 0 42px; }
+    .minimal-hero h1 { font-size: clamp(62px, 21vw, 98px); }
+    .intro { font-size: 16px; }
+    .work { padding: 95px 0 110px; }
+    .work-head { align-items: flex-start; flex-direction: column; }
+    .work-row { min-height: 250px; gap: 18px; }
+    .work-title h3 { font-size: 29px; }
+    .principle { padding: 105px 0; }
+    .contact { padding-top: 70px; padding-bottom: 70px; }
+    .email { white-space: normal; word-break: break-word; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .work-row { transition: none; }
+  }
+</style>
