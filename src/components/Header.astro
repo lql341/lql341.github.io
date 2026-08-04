@@ -1,16 +1,28 @@
 ---
-interface Props { lang?: 'en' | 'zh' }
-const { lang = 'en' } = Astro.props;
+interface Props {
+  lang?: 'en' | 'zh';
+  variant?: 'default' | 'home';
+}
+const { lang = 'en', variant = 'default' } = Astro.props;
 const isZh = lang === 'zh';
 ---
-<header class="site-header">
-  <a class="brand" href={isZh ? '/zh/' : '/'}>opensource_community</a>
-  <nav aria-label="Primary navigation">
-    <a href="/projects/">Projects</a>
-    <a href="/reports/">Reports</a>
-    <a href="/notes/">Notes</a>
-    <a href="/about/">About</a>
-    <a href="/resume/">Résumé</a>
-    <a class="language" href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
-  </nav>
+<header class:list={['site-header', variant === 'home' && 'home-header']}>
+  <a class="brand" href={isZh ? '/zh/' : '/'}><span class="brand-mark" aria-hidden="true"></span>opensource_community</a>
+  {variant === 'home' ? (
+    <nav aria-label="Primary navigation">
+      <a href="#work">Work</a>
+      <a href="/reports/">Archive</a>
+      <a class="contact-nav" href="mailto:luqilinheu@gmail.com">Contact ↗</a>
+      <a class="language" href="/zh/">中文</a>
+    </nav>
+  ) : (
+    <nav aria-label="Primary navigation">
+      <a href="/projects/">Projects</a>
+      <a href="/reports/">Reports</a>
+      <a href="/notes/">Notes</a>
+      <a href="/about/">About</a>
+      <a href="/resume/">Résumé</a>
+      <a class="language" href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
+    </nav>
+  )}
 </header>
