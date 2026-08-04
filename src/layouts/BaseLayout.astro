@@ -7,8 +7,10 @@ interface Props {
   title: string;
   description: string;
   lang?: 'en' | 'zh';
+  headerVariant?: 'default' | 'home';
+  bodyClass?: string;
 }
-const { title, description, lang = 'en' } = Astro.props;
+const { title, description, lang = 'en', headerVariant = 'default', bodyClass } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 <!doctype html>
@@ -26,9 +28,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="twitter:card" content="summary_large_image" />
     <title>{title}</title>
   </head>
-  <body>
+  <body class={bodyClass}>
     <div class="shell">
-      <Header lang={lang} />
+      <Header lang={lang} variant={headerVariant} />
       <main><slot /></main>
       <Footer />
     </div>
