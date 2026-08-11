@@ -106,20 +106,60 @@
   .top-nav a:hover{text-decoration:underline;}
   @media print{ .header{background:var(--red);} .top-nav{display:none;} }
   @media(max-width:720px){ .wrap{padding:16px 12px 50px;} .header{padding:22px 18px;} }
+
+  /* Align with the established LAMMPS report template. */
+  :root{
+    --bg:#07101d; --surface:#0d1a2b; --surface-strong:#12233a; --line:#243954;
+    --ink:#eef5fc; --muted:#9eb0c7; --red:#5eead4; --red-dark:#5eead4; --red-deep:#60a5fa;
+    --red-soft:rgba(94,234,212,.055); --red-lighter:rgba(96,165,250,.045); --red-line:#243954;
+    --gold:#f9e2af; --gold-soft:rgba(249,226,175,.08); --green:#a6e3a1; --green-soft:rgba(166,227,161,.10);
+    --blue:#60a5fa; --blue-soft:rgba(96,165,250,.055);
+  }
+  body{background:radial-gradient(circle at 12% 0,#11385f 0,transparent 34%),var(--bg);color:var(--ink);padding:18px 20px 40px;line-height:1.8;}
+  .header{max-width:1000px;margin:0 auto 30px;padding:50px 40px;background:linear-gradient(145deg,rgba(18,35,58,.98),rgba(10,23,40,.98));border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.24);}
+  .header .kicker{color:var(--red);}
+  .header h1{font-size:28px;letter-spacing:1px;}
+  .header p{color:var(--muted);}
+  .header .meta{font-family:monospace;color:var(--muted);}
+  .chip{background:rgba(94,234,212,.08);border-color:rgba(94,234,212,.22);color:var(--red);}
+  .chip.solid{background:var(--red);color:#06211f;border-color:var(--red);}
+  .wrap{max-width:1000px;padding:0;margin:0 auto;}
+  .wrap > section{background:linear-gradient(145deg,rgba(18,35,58,.97),rgba(10,23,40,.97));border-radius:18px;padding:30px 35px;margin-bottom:24px;box-shadow:0 14px 36px rgba(0,0,0,.18);border:1px solid var(--line);border-left:4px solid var(--red);}
+  .sec-title{margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  .sec-title .no{background:transparent;color:var(--red);width:auto;height:auto;line-height:1;font-size:20px;}
+  .sec-title h2{font-size:20px;color:var(--red);}
+  .sec-title .sub{color:var(--muted);}
+  .card{background:rgba(96,165,250,.035);border:1px solid rgba(96,165,250,.14);border-radius:8px;padding:16px 20px;margin:14px 0;}
+  .card h3{font-size:16px;color:var(--red-deep);margin:20px 0 10px;}
+  .card h3::before{display:none;}
+  .card h4{color:var(--ink);}
+  table{background:transparent;margin:14px 0;font-size:14px;}
+  th{background:#173351;color:var(--ink);padding:10px 14px;}
+  td{color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--line);}
+  tbody tr:nth-child(even){background:rgba(96,165,250,.045);}
+  tbody tr:hover{background:rgba(94,234,212,.07);}
+  .kpi{background:rgba(96,165,250,.055);border:1px solid rgba(96,165,250,.14);border-top:3px solid var(--red);box-shadow:none;}
+  .kpi .val,.timeline-item .t{color:var(--red);}
+  .callout{background:rgba(94,234,212,.055);border-color:rgba(94,234,212,.22);}
+  .callout b{color:var(--red);}
+  .code-block{background:#081321;color:var(--ink);border:1px solid var(--line);}
+  .verdict.fail{background:rgba(249,226,175,.08);border-color:rgba(249,226,175,.24);}
+  .foot{color:#71869f;}
 </style>
 </head>
 <body>
 
-<div class="top-nav"><a href="/zh/">← 返回主页</a><span aria-hidden="true"> · </span><a href="/reports/">报告归档</a></div>
+<div class="top-nav"><a href="/reports/">← 返回报告归档</a></div>
 
 <div class="header">
-  <div class="kicker">SCNet · Sanitized Cluster — Software Compatibility Testing</div>
-  <h1>MinerU 编译测试报告 · 某国产超算集群 (测试集群)</h1>
-  <p>目标：在 CentOS 7 / glibc 2.17 的某国产超算集群上，完成 MinerU 文档解析工具的编译安装与功能验证。
+  <div class="kicker">SCNet · Software Compatibility Testing</div>
+  <h1>🧩 MinerU 文档解析工具编译与兼容性测试报告</h1>
+  <p>本报告记录 MinerU 在 CentOS 7 / glibc 2.17 超算环境中的编译安装、依赖适配与功能验证。
     核心难点：<b>onnxruntime ≥ 1.17.0 仅发布 manylinux_2_28 (glibc 2.28+) wheel</b>，与集群 glibc 2.17 不兼容。
     经过 5 条路径的试错，最终通过 <b>Python 3.10 + onnxruntime 1.16.3 + magika 0.5.0 + 源码修改</b> 成功安装并验证。</p>
+  <p>作者：opensource_community</p>
   <div class="meta">
-    <span class="chip solid">测试报告</span>
+    <span class="chip solid">兼容性测试报告</span>
     <span class="chip">2026-08-11</span>
     <span class="chip ok">最终状态：成功</span>
     <span class="chip">集群：测试集群 (某国产超算)</span>
@@ -136,7 +176,7 @@
 
 <!-- ===== 1. 测试概要 ===== -->
 <section>
-  <div class="sec-title"><div class="no">1</div><div><h2>测试概要</h2><div class="sub">环境参数、依赖链、核心矛盾</div></div></div>
+  <div class="sec-title"><div class="no">1</div><div><h2>📋 环境信息</h2><div class="sub">运行环境、依赖链与兼容性边界</div></div></div>
 
   <div class="kpis">
     <div class="kpi"><div class="label">测试集群</div><div class="val">测试集群</div><div class="sub">某国产超算 · 海光 Z100 DCU</div></div>
@@ -163,7 +203,7 @@
 
 <!-- ===== 2. 集群环境 ===== -->
 <section>
-  <div class="sec-title"><div class="no">2</div><div><h2>集群环境参数</h2><div class="sub">测试集群 某国产超算集群关键配置</div></div></div>
+  <div class="sec-title"><div class="no">2</div><div><h2>⚙️ 编译过程与主要难题</h2><div class="sub">系统版本、工具链与网络条件</div></div></div>
 
   <div class="grid2">
     <div class="card">
@@ -193,7 +233,7 @@
 
 <!-- ===== 3. 尝试路径总览 ===== -->
 <section>
-  <div class="sec-title"><div class="no">3</div><div><h2>尝试路径总览</h2><div class="sub">5 条路径的对比与结论</div></div></div>
+  <div class="sec-title"><div class="no">3</div><div><h2>🔧 尝试路径与最终方案</h2><div class="sub">5 条安装路径的对比与选择依据</div></div></div>
 
   <table>
     <thead><tr><th style="width:10%;">路径</th><th style="width:22%;">方案</th><th style="width:10%;">结果</th><th style="width:28%;">失败原因 / 代价</th><th style="width:30%;">备注</th></tr></thead>
@@ -239,7 +279,7 @@
 
 <!-- ===== 4. 路径详细记录 ===== -->
 <section>
-  <div class="sec-title"><div class="no">4</div><div><h2>路径详细记录</h2><div class="sub">每条路径的完整过程和关键数据</div></div></div>
+  <div class="sec-title"><div class="no">4</div><div><h2>📜 详细编译与安装过程</h2><div class="sub">成功路径、失败原因与适配修改</div></div></div>
 
   <!-- 4.1 路径 A：成功 -->
   <div class="card">
@@ -360,7 +400,7 @@
 
 <!-- ===== 5. 最终方案详情 ===== -->
 <section>
-  <div class="sec-title"><div class="no">5</div><div><h2>最终方案详情</h2><div class="sub">路径 A 的完整技术栈和修改点</div></div></div>
+  <div class="sec-title"><div class="no">5</div><div><h2>🚀 最终方案与验证结果</h2><div class="sub">技术栈、源码修改与功能验证</div></div></div>
 
   <div class="card">
     <h3>技术栈版本</h3>
@@ -429,7 +469,7 @@ suffix = magika.identify_path(file_path)<span class="kw">.output.ct_label</span>
 
 <!-- ===== 6. 测试数据 ===== -->
 <section>
-  <div class="sec-title"><div class="no">6</div><div><h2>测试数据与验证结果</h2><div class="sub">功能验证和性能数据</div></div></div>
+  <div class="sec-title"><div class="no">6</div><div><h2>📊 测试数据与资源占用</h2><div class="sub">功能验证、安装耗时与磁盘占用</div></div></div>
 
   <div class="card">
     <h3>核心功能验证</h3>
