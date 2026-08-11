@@ -1,7 +1,7 @@
 ---
-title: MinerU 编译测试报告（脱敏版）
+title: MinerU 文档解析工具编译与兼容性测试
 titleEn: MinerU Build and Compatibility Report
-summary: 在 glibc 2.17 超算环境中完成 MinerU 安装验证，记录 onnxruntime 兼容性边界与可复现方案。
+summary: glibc 2.17 超算环境下的编译安装、依赖适配与功能验证，记录 onnxruntime 兼容性边界和可复现方案。
 date: 2026-08-11
 tags: [MinerU, Python, Compatibility, HPC]
 href: /reports/mineru-cluster-build-report.html
