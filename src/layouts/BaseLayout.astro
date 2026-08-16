@@ -12,6 +12,7 @@ interface Props {
 }
 const { title, description, lang = 'en', headerVariant = 'default', bodyClass } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const isHome = bodyClass === 'home-page';
 ---
 <!doctype html>
 <html lang={lang === 'zh' ? 'zh-CN' : 'en'}>
@@ -34,5 +35,32 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       <main><slot /></main>
       <Footer />
     </div>
+    <script is:inline define:vars={{ isHome }}>
+      const languagePreferenceKey = 'site-language-preference';
+      const languageSwitch = document.querySelector('[data-language-switch]');
+
+      languageSwitch?.addEventListener('click', () => {
+        try {
+          localStorage.setItem(languagePreferenceKey, languageSwitch.dataset.languageSwitch);
+        } catch (_) {}
+      });
+
+      if (isHome) {
+        try {
+          const saved = localStorage.getItem(languagePreferenceKey);
+          const browserLanguage = (navigator.language || '').toLowerCase();
+          const isChineseBrowser = browserLanguage.startsWith('zh');
+          const path = window.location.pathname;
+
+          if (saved === 'zh' && path === '/') {
+            window.location.replace('/zh/');
+          } else if (saved === 'en' && path.startsWith('/zh')) {
+            window.location.replace('/');
+          } else if (!saved && isChineseBrowser && path === '/') {
+            window.location.replace('/zh/');
+          }
+        } catch (_) {}
+      }
+    </script>
   </body>
 </html>

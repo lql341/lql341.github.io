@@ -13,7 +13,7 @@ const isZh = lang === 'zh';
       <a href="#work">{isZh ? '成果' : 'Work'}</a>
       <a href="/reports/">{isZh ? '归档' : 'Archive'}</a>
       <a class="contact-nav" href="mailto:luqilinheu@gmail.com">{isZh ? '联系' : 'Contact'} ↗</a>
-      <a class="language" href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
+      <a class="language" data-language-switch={isZh ? 'en' : 'zh'} href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
     </nav>
   ) : (
     <nav aria-label="Primary navigation">
@@ -22,7 +22,7 @@ const isZh = lang === 'zh';
       <a href="/notes/">Notes</a>
       <a href="/about/">About</a>
       <a href="/resume/">Résumé</a>
-      <a class="language" href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
+      <a class="language" data-language-switch={isZh ? 'en' : 'zh'} href={isZh ? '/' : '/zh/'}>{isZh ? 'EN' : '中文'}</a>
     </nav>
   )}
 </header>
