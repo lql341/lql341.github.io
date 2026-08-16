@@ -6,6 +6,9 @@ date: 2026-08-01
 tags: [Hashcat, HIP, ABI, Performance]
 href: /reports/hashcat-dtk-hip-report.html
 featured: true
+homeOrder: 2
+metric: 5.914 GH/s
+metricLabel: SHA2-256 验证吞吐
 ---
 
 本报告记录 Hashcat HIP 后端面向 DTK 环境的兼容适配与验证结果。

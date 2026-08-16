@@ -12,6 +12,9 @@ const reports = defineCollection({
     tags: z.array(z.string()),
     href: z.string(),
     featured: z.boolean().default(false),
+    homeOrder: z.number().default(99),
+    metric: z.string().optional(),
+    metricLabel: z.string().optional(),
   }),
 });
 
