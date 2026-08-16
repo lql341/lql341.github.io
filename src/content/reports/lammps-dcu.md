@@ -4,6 +4,7 @@ titleEn: LAMMPS Build and Performance Study on Hygon DCU
 summary: Kokkos/HIP 与 GPU/HIP 两条加速路径的构建验证、兼容适配和性能对比。
 date: 2026-08-02
 tags: [LAMMPS, HPC, HIP, Kokkos]
+tagsZh: [LAMMPS, 高性能计算, HIP, Kokkos]
 href: /reports/lammps-dcu-report.html
 featured: true
 homeOrder: 1

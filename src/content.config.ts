@@ -10,6 +10,7 @@ const reports = defineCollection({
     summary: z.string(),
     date: z.coerce.date(),
     tags: z.array(z.string()),
+    tagsZh: z.array(z.string()).optional(),
     href: z.string(),
     featured: z.boolean().default(false),
     homeOrder: z.number().default(99),

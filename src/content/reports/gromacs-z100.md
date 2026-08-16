@@ -4,6 +4,7 @@ titleEn: GROMACS 2026.3 Port and Benchmark on Hygon Z100 DCU
 summary: 原生 HIP 与 CUDA 翻译版的干净节点性能对比、gfx906 编译排障和正确性验证。
 date: 2026-08-16
 tags: [GROMACS, Z100, HIP, Benchmark]
+tagsZh: [GROMACS, Z100, HIP, 基准测试]
 href: /reports/gromacs-z100-report.html
 featured: true
 homeOrder: 5

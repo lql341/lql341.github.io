@@ -4,6 +4,7 @@ titleEn: DeepSeek-V4-Flash-0731 Inference Adaptation on Hygon DCU
 summary: 纯 PyTorch 软件反量化路线的兼容性排查、推理验证与性能边界分析。
 date: 2026-08-12
 tags: [DeepSeek, DCU, PyTorch, Inference]
+tagsZh: [DeepSeek, DCU, PyTorch, 推理适配]
 href: /reports/dsv4-dcu-report.html
 featured: true
 homeOrder: 4
