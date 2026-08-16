@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GROMACS 海光 Z100 DCU 编译与性能测试报告</title>
+<title>GROMACS 2026.3 移植对比报告 — 某国产超算集群 (测试集群)</title>
 <style>
   :root {
     --scnet-red: #C41230;
@@ -28,8 +28,6 @@
     line-height: 1.7;
     font-size: 15px;
   }
-
-  /* ── Header ── */
   .header {
     background: linear-gradient(135deg, var(--scnet-red) 0%, #A00D26 100%);
     color: #fff;
@@ -39,11 +37,7 @@
   .header h1 { font-size: 28px; font-weight: 700; letter-spacing: .5px; }
   .header .subtitle { font-size: 14px; opacity: .85; margin-top: 8px; }
   .header .meta { font-size: 13px; opacity: .7; margin-top: 6px; }
-
-  /* ── Container ── */
   .container { max-width: 1040px; margin: 0 auto; padding: 32px 24px 60px; }
-
-  /* ── Summary Cards ── */
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -63,8 +57,6 @@
   .summary-card .value.green { color: var(--scnet-green); }
   .summary-card .value.orange { color: var(--scnet-orange); }
   .summary-card .detail { font-size: 12px; color: var(--scnet-text-secondary); margin-top: 2px; }
-
-  /* ── Sections ── */
   section { margin-bottom: 40px; }
   h2 {
     font-size: 20px;
@@ -74,18 +66,11 @@
     padding-bottom: 8px;
     border-bottom: 2px solid var(--scnet-red-light);
   }
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 20px 0 10px;
-    color: var(--scnet-text);
-  }
+  h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px; color: var(--scnet-text); }
   h4 { font-size: 14px; font-weight: 600; margin: 14px 0 8px; color: var(--scnet-text-secondary); }
   p { margin-bottom: 10px; }
   ul, ol { margin: 8px 0 12px 20px; }
   li { margin-bottom: 4px; }
-
-  /* ── Tables ── */
   .table-wrap {
     overflow-x: auto;
     margin: 16px 0;
@@ -108,19 +93,13 @@
     border-bottom: 2px solid var(--scnet-red-light);
     white-space: nowrap;
   }
-  td {
-    padding: 9px 14px;
-    border-bottom: 1px solid var(--scnet-border);
-    vertical-align: top;
-  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--scnet-border); vertical-align: top; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #FFF8F8; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "SF Mono", "Menlo", "Consolas", monospace; }
   td.bad { color: var(--scnet-red); font-weight: 600; }
   td.good { color: var(--scnet-green); font-weight: 600; }
   td.warn { color: var(--scnet-orange); }
-
-  /* ── Code / Pre ── */
   pre {
     background: var(--scnet-code-bg);
     border: 1px solid var(--scnet-border);
@@ -140,8 +119,6 @@
     border-radius: 3px;
   }
   pre code { background: none; padding: 0; }
-
-  /* ── Badges ── */
   .badge {
     display: inline-block;
     padding: 2px 10px;
@@ -154,56 +131,15 @@
   .badge-fail { background: #FFEBEE; color: var(--scnet-red); }
   .badge-warn { background: #FFF3E0; color: var(--scnet-orange); }
   .badge-info { background: #E3F2FD; color: var(--scnet-blue); }
-
-  /* ── Issue list ── */
-  .issue-list { list-style: none; margin: 0; padding: 0; }
-  .issue-item {
-    border: 1px solid var(--scnet-border);
-    border-radius: 6px;
-    padding: 14px 18px;
-    margin-bottom: 10px;
-    background: var(--scnet-white);
-    box-shadow: var(--scnet-shadow);
+  .callout {
+    border-left: 4px solid var(--scnet-orange);
+    background: #FFF8F0;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
   }
-  .issue-item .issue-num {
-    display: inline-block;
-    width: 24px; height: 24px;
-    line-height: 24px;
-    text-align: center;
-    background: var(--scnet-red);
-    color: #fff;
-    border-radius: 50%;
-    font-size: 12px;
-    font-weight: 700;
-    margin-right: 10px;
-  }
-  .issue-item .issue-title { font-weight: 600; }
-  .issue-item .issue-fix { color: var(--scnet-green); font-size: 13px; margin-top: 4px; }
-  .issue-item .issue-fix::before { content: "✅ 解决: "; }
-
-  /* ── Timeline ── */
-  .timeline { position: relative; padding-left: 28px; }
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 8px; top: 0; bottom: 0;
-    width: 2px;
-    background: var(--scnet-border);
-  }
-  .tl-item { position: relative; margin-bottom: 20px; }
-  .tl-item::before {
-    content: '';
-    position: absolute;
-    left: -24px; top: 6px;
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--scnet-red);
-  }
-  .tl-item .tl-job { font-size: 12px; color: var(--scnet-text-secondary); }
-  .tl-item .tl-title { font-weight: 600; }
-  .tl-item .tl-result { font-size: 13px; margin-top: 2px; }
-
-  /* ── Footer ── */
+  .callout.green { border-left-color: var(--scnet-green); background: #F0F8F0; }
+  .callout .title { font-weight: 600; }
   .footer {
     margin-top: 48px;
     padding-top: 24px;
@@ -213,8 +149,6 @@
     font-size: 12px;
   }
   .footer .logo { color: var(--scnet-red); font-weight: 700; }
-
-  /* ── Print ── */
   @media print {
     body { background: #fff; }
     .header { background: var(--scnet-red) !important; -webkit-print-color-adjust: exact; }
@@ -222,545 +156,264 @@
     section { page-break-inside: avoid; }
   }
 
-  /* Align with the established LAMMPS report template. */
-  :root{--scnet-bg:#07101d;--scnet-white:#0d1a2b;--scnet-border:#243954;--scnet-text:#eef5fc;--scnet-text-secondary:#9eb0c7;--scnet-accent:#12233a;--scnet-code-bg:#081321;--scnet-red:#5eead4;--scnet-red-light:#5eead4;--scnet-green:#a6e3a1;--scnet-orange:#f9e2af;--scnet-blue:#60a5fa;}
-  body{background:radial-gradient(circle at 12% 0,#11385f 0,transparent 34%),var(--scnet-bg);color:var(--scnet-text);}
-  .header{background:linear-gradient(145deg,rgba(18,35,58,.98),rgba(10,23,40,.98));padding:50px 0 40px;text-align:left;border-bottom:1px solid var(--scnet-border);}
-  .header .subtitle,.header .meta{color:var(--scnet-text-secondary);opacity:1;}
-  .container{max-width:1000px;padding:32px 24px 60px;}
-  .summary-card,.issue-item{background:linear-gradient(145deg,rgba(18,35,58,.97),rgba(10,23,40,.97));border-color:var(--scnet-border);box-shadow:0 14px 36px rgba(0,0,0,.18);}
-  .summary-card .label,.summary-card .detail{color:var(--scnet-text-secondary);}
-  section{background:linear-gradient(145deg,rgba(18,35,58,.97),rgba(10,23,40,.97));border:1px solid var(--scnet-border);border-left:4px solid var(--scnet-red);border-radius:18px;padding:30px 35px;margin-bottom:24px;box-shadow:0 14px 36px rgba(0,0,0,.18);}
-  h2{color:var(--scnet-red);border-bottom-color:var(--scnet-border);}
-  h3{color:var(--scnet-blue);}
-  .table-wrap{border-color:var(--scnet-border);box-shadow:none;}
-  table{background:transparent;}
-  th{background:#173351;color:var(--scnet-text);border-bottom-color:var(--scnet-border);}
-  td{border-color:var(--scnet-border);color:var(--scnet-text-secondary);}
-  tr:hover td{background:rgba(94,234,212,.07);}
-  pre{background:var(--scnet-code-bg);border-color:var(--scnet-border);color:var(--scnet-text);}
-  code{background:rgba(94,234,212,.08);color:var(--scnet-red);}
-  .issue-item .issue-num{background:var(--scnet-red);color:#06211f;}
-  .footer{background:transparent;border-top-color:var(--scnet-red);color:#71869f;}
-  .top-nav{max-width:1000px;margin:0 auto;padding:18px 24px 0;}
-  .top-nav a{color:var(--scnet-red);font-weight:700;text-decoration:none;}
+  /* 与站点 LAMMPS 报告统一：深色技术档案、青绿色主色、蓝色辅助色。 */
+  :root {
+    --scnet-red:#5eead4; --scnet-red-light:#315171; --scnet-bg:#07101d;
+    --scnet-white:#0d1a2b; --scnet-border:#243954; --scnet-text:#eef5fc;
+    --scnet-text-secondary:#9eb0c7; --scnet-accent:#173351; --scnet-code-bg:#081321;
+    --scnet-green:#a6e3a1; --scnet-orange:#f9e2af; --scnet-blue:#60a5fa;
+    --scnet-shadow:0 14px 36px rgba(0,0,0,.18);
+  }
+  body { background:radial-gradient(circle at 12% 0,#11385f 0,transparent 34%),var(--scnet-bg); color:var(--scnet-text); }
+  .header { background:linear-gradient(145deg,rgba(18,35,58,.98),rgba(10,23,40,.98)); border:1px solid var(--scnet-border); box-shadow:0 18px 50px rgba(0,0,0,.24); }
+  .container { max-width:1000px; }
+  .summary-card, .table-wrap { background:linear-gradient(145deg,rgba(18,35,58,.97),rgba(10,23,40,.97)); border-color:var(--scnet-border); box-shadow:var(--scnet-shadow); }
+  h2 { color:var(--scnet-red); border-bottom-color:var(--scnet-border); }
+  h3, p, li, td { color:var(--scnet-text); }
+  .summary-card .label, .summary-card .detail, .header .meta, .footer { color:var(--scnet-text-secondary); }
+  .summary-card .value.red, .footer .logo { color:var(--scnet-red); }
+  .summary-card .value.green, td.good { color:var(--scnet-green); }
+  .summary-card .value.orange, td.warn { color:var(--scnet-orange); }
+  th { background:var(--scnet-accent); color:var(--scnet-text); border-bottom-color:var(--scnet-border); }
+  td { border-bottom-color:var(--scnet-border); }
+  tr:hover td { background:rgba(94,234,212,.07); }
+  pre { background:var(--scnet-code-bg); color:var(--scnet-text); border-color:var(--scnet-border); }
+  .callout { background:rgba(249,226,175,.08); border-left-color:var(--scnet-orange); }
+  .callout.green { background:rgba(166,227,161,.10); border-left-color:var(--scnet-green); }
+  .badge-ok { background:rgba(166,227,161,.10); color:var(--scnet-green); }
+  .badge-fail { background:rgba(249,226,175,.09); color:var(--scnet-orange); }
+  .badge-warn { background:rgba(249,226,175,.09); color:var(--scnet-orange); }
+  .badge-info { background:rgba(96,165,250,.10); color:var(--scnet-blue); }
 </style>
 </head>
 <body>
 
-<div class="top-nav"><a href="/reports/">← 返回报告归档</a></div>
-
-<!-- ═══════════ HEADER ═══════════ -->
 <div class="header">
-  <h1>🧪 GROMACS 海光 Z100 DCU 编译与性能测试报告</h1>
-  <div class="subtitle">某国产超算集群 · 海光 Z100 DCU (gfx906) · HIP 后端对比分析</div>
-  <div class="meta">测试日期: 2026-08-11 &nbsp;|&nbsp; 报告生成: 2026-08-12 &nbsp;|&nbsp; 操作者: opensource_community</div>
+  <h1>GROMACS 2026.3 移植对比报告</h1>
+  <div class="subtitle">某国产超算集群 (测试集群) · 海光 Z100 DCU (gfx906) · 超算互联网 · 收官版</div>
+  <div class="meta">测试日期: 2026-08-16 &nbsp;|&nbsp; 操作者: &lt;USER&gt; &nbsp;|&nbsp; 对比基线: GROMACS 2023.2 (CUDA 翻译版)</div>
 </div>
 
 <div class="container">
 
 <!-- ═══════════ 摘要 ═══════════ -->
 <section>
-  <h2>📋 一、摘要与结论</h2>
+  <h2>摘要</h2>
   <div class="summary-grid">
     <div class="summary-card">
-      <div class="label">集群预编译版</div>
-      <div class="value green">45.815</div>
-      <div class="detail">ns/day · GROMACS 2023.2 · CUDA 后端 · DTK 23.10</div>
+      <div class="label">典型场景全胜</div>
+      <div class="value green">7 / 7</div>
+      <div class="detail">HIP 2026.3 全部快于 CUDA 翻译版 2023.2</div>
     </div>
     <div class="summary-card">
-      <div class="label">自编译 HIP 最优</div>
-      <div class="value orange">17.743</div>
-      <div class="detail">ns/day · GROMACS 2026.3 · HIP 后端 · DTK 26.04</div>
+      <div class="label">最大加速</div>
+      <div class="value green">3.20×</div>
+      <div class="detail">villin（小蛋白 NVT）</div>
     </div>
     <div class="summary-card">
-      <div class="label">性能差距</div>
-      <div class="value red">2.58×</div>
-      <div class="detail">HIP 原生后端仅为 CUDA 兼容层的 38.7%</div>
+      <div class="label">最小加速</div>
+      <div class="value orange">1.26×</div>
+      <div class="detail">stmv（百万原子病毒 NVT）</div>
     </div>
     <div class="summary-card">
-      <div class="label">编译踩坑</div>
-      <div class="value red">8</div>
-      <div class="detail">个问题全部定位并解决</div>
+      <div class="label">waterbox8 (原问题场景)</div>
+      <div class="value green">1.62× 快</div>
+      <div class="detail">67.64 vs 41.66 ns/day，从「慢 2.7×」反转</div>
     </div>
   </div>
-
-  <p>
-    本报告记录了在某国产超算集群（测试集群）海光 Z100 DCU（gfx906）上从源码编译
-    GROMACS 2026.3 的完整过程，包括环境配置、编译问题排查、性能测试以及与
-    集群预编译版（2023.2 CUDA 后端）的详细对比分析。
-  </p>
+  <div class="callout green">
+    <span class="title">✅ 验收判定：</span>「不比老版本差」达标，且全面反超。上一版「waterbox8 NPT 慢 2.7×」
+    是节点 CPU 争用污染造成的假象（见第三节）。
+  </div>
 </section>
 
-<!-- ═══════════ 环境信息 ═══════════ -->
+<!-- ═══════════ 性能 ═══════════ -->
 <section>
-  <h2>⚙️ 二、环境信息</h2>
-
+  <h2>一、性能对比（干净节点，每项 3 次重复）</h2>
   <div class="table-wrap">
     <table>
-      <tr><th style="width:160px">项目</th><th>详情</th></tr>
-      <tr><td>集群</td><td>测试集群（某国产超算）· 内部登录信息已隐藏</td></tr>
-      <tr><td>加速器</td><td>海光 Z100 DCU, Device 66a1, gfx906 (Vega20), 单卡 16 GB, 64 CU</td></tr>
-      <tr><td>CPU</td><td>Hygon C86 7185 32-core, 单节点 32 核</td></tr>
-      <tr><td>内存</td><td>单节点 123 GB, 每核上限 3569 MB</td></tr>
-      <tr><td>分区</td><td>kshdnormal (DCU 队列), kshcnormal (CPU 队列)</td></tr>
-      <tr><td>DTK 版本</td><td>23.10 (CUDA 兼容层), 26.04 (原生 HIP)</td></tr>
-      <tr><td>GCC</td><td>11.2.0 (用户自装), 9.3.0 (系统)</td></tr>
-      <tr><td>MPI</td><td>OpenMPI 4.1.5 (GCC 9.3.0)</td></tr>
-      <tr><td>CMake</td><td>3.25.0 (系统最高), 3.22.0 (默认)</td></tr>
-      <tr><td>作业限制</td><td>kshdnormal 分区最大 8 核/任务, 内存上限 27 GB</td></tr>
+      <thead>
+        <tr><th>场景</th><th>体系</th><th>原子数</th><th>系综</th><th>HIP 2026.3<br>(ns/day)</th><th>CUDA 2023.2<br>(ns/day)</th><th>HIP / 老版本</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>villin</td><td>小蛋白</td><td class="num">~40K</td><td>NVT</td><td class="num good">323.49</td><td class="num">101.18</td><td class="num good">3.20×</td></tr>
+        <tr><td>rnase_cubic</td><td>可溶蛋白</td><td class="num">24,040</td><td>NVT</td><td class="num good">147.94</td><td class="num">66.93</td><td class="num good">2.21×</td></tr>
+        <tr><td>waterbox8</td><td>纯水</td><td class="num">50,859</td><td>NPT</td><td class="num good">67.64</td><td class="num">41.66</td><td class="num good">1.62×</td></tr>
+        <tr><td>adh_dodec</td><td>膜蛋白</td><td class="num">95,561</td><td>NVT</td><td class="num good">26.09</td><td class="num">18.89</td><td class="num good">1.38×</td></tr>
+        <tr><td>aqp_ensemble</td><td>水通道蛋白</td><td class="num">~80K</td><td>NVT</td><td class="num good">13.58</td><td class="num">10.62</td><td class="num good">1.28×</td></tr>
+        <tr><td>ion_channel</td><td>离子通道</td><td class="num">~50K</td><td>NVT</td><td class="num good">20.17</td><td class="num">15.87</td><td class="num good">1.27×</td></tr>
+        <tr><td>stmv</td><td>大病毒衣壳</td><td class="num">~百万</td><td>NVT</td><td class="num good">2.30</td><td class="num">1.83</td><td class="num good">1.26×</td></tr>
+      </tbody>
     </table>
+  </div>
+  <p>测量方法：<code>gmx_bench.slurm</code>（每个 backend×system 各 3 次重复，
+  <code>-notunepme -resetstep N/2</code> 保证计时口径一致，报告 mean±sd；所有重复 sd &lt; 2%）。
+  规律：<strong>体系越小、加速比越大</strong>——小体系 GPU 吃不饱，原生 HIP 内核更低的启动/调度开销优势更明显。</p>
+</section>
+
+<!-- ═══════════ waterbox8 反转 ═══════════ -->
+<section>
+  <h2>二、waterbox8 反转：从「慢 2.7×」到「快 1.62×」</h2>
+  <p>上一版报告里 waterbox8 NPT 是 <strong>15.31 vs 41.22（慢 2.7×）</strong>，这是唯一一个
+  「HIP 变慢」的证据，也是整个 NPT 优化课题的起点。干净节点重测后：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>污染节点</th><th>干净节点</th></tr></thead>
+      <tbody>
+        <tr><td>HIP 2026.3</td><td class="bad">15.31（假象）</td><td class="good">67.64</td></tr>
+        <tr><td>CUDA 2023.2</td><td>41.22</td><td>41.66</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>根因：HIP 后端对节点 CPU 争抢极敏感。</strong>同一争抢节点上，HIP 从 148 掉到 9.4
+  （15× 恶化），而 CUDA 翻译版几乎不动（稳定在 66.8）。上一版的 waterbox8 HIP 数字恰好落在
+  争抢节点上。由此，「waterbox8 NPT 慢」这一整条优化课题（virial 回退、DPP 归约、寄存器/占用率）
+  都是在追这个测量假象，详见第四节死胡同记录。</p>
+</section>
+
+<!-- ═══════════ 正确性 ═══════════ -->
+<section>
+  <h2>三、正确性验证</h2>
+  <p>对每个场景对比 run.log 的 Energies 段，主能量项（LJ SR / Coulomb SR / Potential / 总能量）
+  <strong>全部一致到 ~0.01–0.05%</strong>，温度均落在目标值（~300 K），压强在系综波动范围内，
+  无 NaN/Inf。这个量级差异是「不同舍入顺序 → 数千步轨迹微发散」的正常水平，不是物理错误。</p>
+  <p><strong>waterbox8 NPT 100 ps（50000 步）长跑</strong>：总能量 -5.718×10⁵ kJ/mol、
+  温度 299.88 K、压强 -1.8 bar，全程无漂移、无异常终止，与短跑一致的 67.5 ns/day。</p>
+</section>
+
+<!-- ═══════════ 踩坑 ═══════════ -->
+<section>
+  <h2>四、踩过的坑</h2>
+
+  <h3>4.1 编译期真坑（必踩，静默失败）</h3>
+  <p><strong>gfx90a→gfx906 探针坑</strong>：GROMACS 的 <code>gmxManageHipccConfig.cmake</code> 用
+  <code>--offload-arch=gfx90a</code> 去探测 hipcc 是否支持各优化 flag，但 DTK 26.04 没有 gfx90a
+  设备库——每个探测都失败，于是<strong>所有优化 flag 被静默丢弃</strong>，性能掉到 ~17 ns/day 且
+  不报任何错误。修复：把探针架构 <code>gfx90a</code> 改成 <code>gfx906</code>（并补
+  <code>-mcpu=gfx906</code>、去掉 gfx906 不认的 <code>-fno-gpu-rdc</code> / <code>-fno-slp-vectorize</code>）。
+  <strong>这是影响最大的一处编译改动。</strong></p>
+
+  <h3>4.2 性能死胡同（都证伪了，避免后人重踩）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>假线索</th><th>实验</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td><code>deviceStream.synchronize()</code> 是同步开销大头</td><td>移除同步点重建对照</td><td class="bad">零变化，不是根因</td></tr>
+        <tr><td>virial 步 CPU 力归约回退（<code>useGpuFBufferOps</code> 在 <code>computeVirial</code> 步退回 CPU）</td><td>源码坐实该回退存在</td><td class="warn">机制真实，但干净节点下不是净瓶颈（被 GPU 整体更快盖过）</td></tr>
+        <tr><td>DPP 归约的动态 lane 转置 → <code>ds_bpermute</code> → 12.8× LDS</td><td>改成原子归约对照</td><td class="bad">零变化，归约不是瓶颈</td></tr>
+        <tr><td><code>minBlocksPerMp=8→14</code> 压 vgpr 提占用率</td><td>实测 vgpr 不降反升（32→36）</td><td class="bad"><code>__launch_bounds__</code> 在这版 hipcc 上不按预期生效，收益 ~1%，已回退</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <span class="title">⚠ 这四条的共同教训：</span>先拿到干净、可信的基线，再谈优化。在污染数据上做
+    「kernel 级优化」，所有方向都是错的。
   </div>
 </section>
 
-<!-- ═══════════ 编译过程 ═══════════ -->
+<!-- ═══════════ 预检提示 ═══════════ -->
 <section>
-  <h2>🔧 三、源码编译过程与主要难题</h2>
+  <h2>五、预检提示（跑 benchmark 前必读）</h2>
+  <div class="callout">
+    <span class="title">⚠ 确认节点干净 / 独占。</span>HIP 后端对 CPU 争抢极敏感（可达 4× 掉速），
+    CUDA 翻译版相对稳。建议：① <code>squeue</code> 确认节点无其他作业或 <code>--exclusive</code> 独占；
+    ② 每点 3 次重复，<strong>sd &gt; 2% 就判污染、重跑</strong>（<code>gmx_bench.slurm</code> 已内置）；
+    ③ 跨节点对比时务必在同一批干净节点上对跑两个后端。
+  </div>
+</section>
 
-  <h3>3.1 版本选择</h3>
-  <p>
-    最新稳定版 <strong>GROMACS 2026.3</strong>（2026 年 8 月发布）。
-    使用 <strong>DTK 26.04</strong>（集群最新 DTK）的 HIP 原生后端，目标架构 gfx906。
-  </p>
+<!-- ═══════════ 编译方法 ═══════════ -->
+<section>
+  <h2>六、编译方法（完整复现）</h2>
+  <p><strong>工具链</strong>：DTK 26.04（HIP 6.3.26113 / clang 17）+ GCC 12.2.0 + CMake 3.28.6 + OpenMPI 4.1.5。</p>
+  <pre><code># 0. 恢复 cmake_minimum_required 到 3.28（撤销任何 3.25 降级补丁）
+cd $SRC
+sed -i 's/cmake_minimum_required(VERSION 3\.25)/cmake_minimum_required(VERSION 3.28)/g' CMakeLists.txt
+find . -name CMakeLists.txt -exec sed -i 's/cmake_minimum_required *(VERSION 3\.25)/cmake_minimum_required(VERSION 3.28)/g' {} \;
 
-  <h3>3.2 编译配置</h3>
-  <pre><code>cmake ../gromacs-2026.3 \
-  -DGMX_BUILD_OWN_FFTW=ON \
-  -DGMX_GPU=HIP \
-  -DGMX_MPI=ON \
-  -DCMAKE_C_COMPILER=gcc-11.2 \
-  -DCMAKE_CXX_COMPILER=g++-11.2 \
-  -DCMAKE_HIP_COMPILER=&lt;DTK_ROOT&gt;/llvm/bin/clang++ \
+# 1. gfx906 架构探针补丁（关键，见 4.1）
+cd $SRC/cmake
+sed -i 's/--offload-arch=gfx90a/--offload-arch=gfx906/g' gmxManageHipccConfig.cmake
+sed -i 's/gmx_hip_check_single_flag("-fno-gpu-rdc")/# REMOVED for gfx906: gmx_hip_check_single_flag("-fno-gpu-rdc")/' gmxManageHipccConfig.cmake
+sed -i 's/gmx_hip_check_single_flag("-fno-slp-vectorize")/# REMOVED for gfx906: gmx_hip_check_single_flag("-fno-slp-vectorize")/' gmxManageHipccConfig.cmake
+sed -i '/gmx_hip_check_single_flag("-ffast-math")/a\    gmx_hip_check_single_flag("-mcpu=gfx906")' gmxManageHipccConfig.cmake
+
+# 2. 环境
+module purge
+module load mpi/openmpi/gcc-9.3.0/4.1.5
+source &lt;DTK_ROOT&gt;/env.sh
+export PATH=&lt;GCC_ROOT&gt;/bin:$PATH
+export LD_LIBRARY_PATH=&lt;GCC_ROOT&gt;/lib64:$LD_LIBRARY_PATH
+export amd_comgr_DIR=&lt;DTK_ROOT&gt;/lib64/cmake/amd_comgr
+
+# 3. HIP clang wrapper（补 AMD GPU 优化标志）
+cat &gt; $BUILD/hip_wrapper.sh &lt;&lt; 'EOF'
+#!/bin/bash
+exec &lt;DTK_ROOT&gt;/llvm/bin/clang++ \
+  --gcc-toolchain=&lt;GCC_ROOT&gt; \
+  -mllvm -amdgpu-early-inline-all=true \
+  -mllvm -amdgpu-function-calls=false \
+  "$@"
+EOF
+chmod +x $BUILD/hip_wrapper.sh
+
+# 4. CMake 配置 + 编译
+$CMAKE $SRC \
+  -DGMX_BUILD_OWN_FFTW=ON -DGMX_GPU=HIP -DGMX_MPI=ON \
+  -DCMAKE_C_COMPILER=$GCC_HOME/bin/gcc -DCMAKE_CXX_COMPILER=$GCC_HOME/bin/g++ \
+  -DCMAKE_HIP_COMPILER=$BUILD/hip_wrapper.sh \
   -DCMAKE_PREFIX_PATH=&lt;DTK_ROOT&gt; \
-  -Damd_comgr_DIR=.../lib64/cmake/amd_comgr \
-  -DGMX_SIMD=AVX2_256 \
-  -DGMX_GPU_FFT_LIBRARY=rocFFT \
+  -Damd_comgr_DIR=&lt;DTK_ROOT&gt;/lib64/cmake/amd_comgr \
+  -DGMX_SIMD=AVX2_256 -DGMX_GPU_FFT_LIBRARY=rocFFT \
   -DGMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT=ON \
-  -DGMX_HIP_TARGET_ARCH=gfx906 \
-  -DCMAKE_BUILD_TYPE=Release</code></pre>
-
-  <h3>3.3 编译问题排查（8 个坑）</h3>
-  <ol class="issue-list">
-    <li class="issue-item">
-      <span class="issue-num">1</span>
-      <span class="issue-title">CMake 版本不满足</span>
-      <div>GROMACS 2026.3 要求 CMake ≥ 3.28，集群最高仅 3.25.0。CMake 3.30 预编译包下载超时失败。</div>
-      <div class="issue-fix">Patch 所有 CMakeLists.txt 中的 <code>cmake_minimum_required(VERSION 3.28)</code> → <code>3.25</code>（含子目录 muparser, googletest, tng_io 等共 8 处）。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">2</span>
-      <span class="issue-title">amd_comgr 找不到</span>
-      <div>DTK 26.04 将 amd_comgr cmake 文件放在 <code>lib64/cmake/</code>，而 hip-lang-config.cmake 从 <code>lib/cmake/</code> 查找。<code>CMAKE_PREFIX_PATH</code> 无法传递到 try_compile 子进程。</div>
-      <div class="issue-fix">设置环境变量 <code>export amd_comgr_DIR=.../lib64/cmake/amd_comgr</code>。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">3</span>
-      <span class="issue-title">GPU 架构硬编码 gfx90a</span>
-      <div>GROMACS cmake 中 <code>gmxManageHipccConfig.cmake</code> 硬编码 <code>--offload-arch=gfx90a</code> 作为测试基准。DTK 26.04 没有 gfx90a 的 device library。</div>
-      <div class="issue-fix">Patch <code>gmxManageHipccConfig.cmake</code> 将 <code>gfx90a</code> → <code>gfx906</code>。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">4</span>
-      <span class="issue-title">计算节点无外网，FFTW 下载失败</span>
-      <div>GROMACS 自带的 FFTW 构建会在 make 阶段从 <code>fftw.org</code> 下载源码，计算节点无法解析域名。</div>
-      <div class="issue-fix">本地下载 FFTW 3.3.10 (MD5: 8ccbf6a5...)，scp 上传到集群，在 cmake 之后、make 之前预置到 build 目录。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">5</span>
-      <span class="issue-title">HIP 编译缺 &lt;filesystem&gt; 头文件</span>
-      <div>DTK 26.04 的 Clang 17.0.0 无法自动找到 GCC 11.2.0 的 C++ 标准库（<code>GLIBCXX_3.4.29</code>）。</div>
-      <div class="issue-fix">添加 <code>--gcc-toolchain=&lt;GCC_ROOT&gt;</code> 到 HIP 编译标志。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">6</span>
-      <span class="issue-title">运行时 libstdc++ 版本不匹配</span>
-      <div>二进制链接了 GCC 11.2.0 的 libstdc++，但运行时系统加载 GCC 9.3.0 的库（缺 GLIBCXX_3.4.29 / CXXABI_1.3.13）。</div>
-      <div class="issue-fix">在作业脚本中设置 <code>LD_LIBRARY_PATH</code> 指向 GCC 11.2.0 的 lib64。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">7</span>
-      <span class="issue-title">SIMD 自动检测失败</span>
-      <div>CMake 在计算节点上的 SIMD 检测程序运行失败，导致 SIMD 被禁用（显著影响 CPU 端性能）。</div>
-      <div class="issue-fix">手动指定 <code>-DGMX_SIMD=AVX2_256</code>（Hygon C86 7185 支持的最高级别）。</div>
-    </li>
-    <li class="issue-item">
-      <span class="issue-num">8</span>
-      <span class="issue-title">--gcc-toolchain 泄漏到 CXX 编译器</span>
-      <div>通过 <code>-DCMAKE_HIP_FLAGS</code> 传递的 <code>--gcc-toolchain</code> 被 CMake 3.25 同时应用到 CXX 编译，GCC 不识别该 flag 导致 <code>macro names must be identifiers</code> 错误。</div>
-      <div class="issue-fix">移除 <code>CMAKE_HIP_FLAGS</code>，改用环境变量 <code>HIPCC_COMPILE_FLAGS_APPEND</code> 传递。</div>
-    </li>
-  </ol>
-
-  <div class="table-wrap">
-    <table>
-      <tr><th>#</th><th>Job ID</th><th>问题</th><th>结果</th></tr>
-      <tr><td>1</td><td>已脱敏作业</td><td><code>amd_comgr</code> 找不到</td><td class="bad">❌ CMake 失败</td></tr>
-      <tr><td>2</td><td>已脱敏作业</td><td>同上 + <code>CMAKE_PREFIX_PATH</code> 不生效</td><td class="bad">❌ CMake 失败</td></tr>
-      <tr><td>3</td><td>已脱敏作业</td><td><code>hipcc</code> 不被 CMake 3.25 支持</td><td class="bad">❌ CMake 失败</td></tr>
-      <tr><td>4</td><td>已脱敏作业</td><td>改用 clang++，仍缺 <code>amd_comgr</code></td><td class="bad">❌ CMake 失败</td></tr>
-      <tr><td>5</td><td>已脱敏作业</td><td>加 <code>amd_comgr_DIR</code> 变量</td><td class="bad">❌ try_compile 不继承</td></tr>
-      <tr><td>6</td><td>已脱敏作业</td><td>环境变量 <code>amd_comgr_DIR</code> + gfx90a→gfx906 patch</td><td class="bad">❌ <code>--offload-arch</code> 全部失败</td></tr>
-      <tr><td>7</td><td>已脱敏作业</td><td>Patch <code>gfx90a</code> 硬编码 + 限制 <code>GMX_HIP_TARGET_ARCH=gfx906</code></td><td class="bad">❌ FFTW 下载失败</td></tr>
-      <tr><td>8</td><td>已脱敏作业</td><td>预置 FFTW（但在 cmake 前）</td><td class="bad">❌ 目录尚不存在</td></tr>
-      <tr><td>9</td><td>已脱敏作业</td><td>预置 FFTW（cmake 后）</td><td class="warn">⚠️ 编译 98% 失败 (testutils)，但生成二进制</td></tr>
-      <tr><td>10</td><td>已脱敏作业</td><td>加 <code>-DGMX_SIMD=AVX2_256</code></td><td class="warn">⚠️ 同上，SIMD 已启用</td></tr>
-      <tr><td>11</td><td>已脱敏作业</td><td>加 <code>rocFFT</code> + super-cluster 1×1×1</td><td class="warn">⚠️ 同上</td></tr>
-      <tr><td>12</td><td>已脱敏作业</td><td>移除 <code>CMAKE_HIP_FLAGS</code> 泄漏</td><td class="warn">⚠️ 同上，无改善</td></tr>
-    </table>
-  </div>
-
-  <p>
-    <strong>注：</strong>所有编译均在 98% 处因 <code>testutils/posixmemstream.cpp</code> 编译失败而报错（<code>--gcc-toolchain</code> 泄漏的残余影响），
-    但主二进制 <code>gmx_mpi</code> 及其依赖的共享库均在更早阶段成功链接，不影响功能测试。
-  </p>
+  -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1 -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y=1 -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z=1 \
+  -DGMX_HIP_TARGET_ARCH=gfx906 -DAMDGPU_TARGETS=gfx906 -DGPU_TARGETS=gfx906 \
+  -DCMAKE_BUILD_TYPE=Release
+make -j8</code></pre>
+  <p>完整脚本：<code>&lt;USER_HOME&gt;/scripts/gromacs_cmake28_build.slurm</code>（可直接 <code>sbatch</code> 复现）。</p>
 </section>
 
-<!-- ═══════════ 性能测试 ═══════════ -->
+<!-- ═══════════ 文件包 ═══════════ -->
 <section>
-  <h2>🚀 四、性能测试结果</h2>
-
-  <h3>4.1 测试体系</h3>
-  <p>
-    统一使用 SPC 水盒子（3.5 nm³, 1378 水分子, 4134 原子），500 步 MD，
-    <code>dt=0.002 ps</code>, NPT 系综。所有测试均使用 1×Z100 DCU + 8 CPU 核。
-  </p>
-
-  <h3>4.2 总体性能对比</h3>
+  <h2>七、可执行文件包</h2>
+  <p>当前最优产物在 <code>&lt;USER_HOME&gt;/softwares/gromacs/build_cmake28/</code>：</p>
   <div class="table-wrap">
     <table>
-      <tr>
-        <th>版本</th>
-        <th>Job ID</th>
-        <th>GPU 后端</th>
-        <th>DTK</th>
-        <th>SIMD</th>
-        <th>GPU FFT</th>
-        <th>Super-Cluster</th>
-        <th class="num">Wall (s)</th>
-        <th class="num">ns/day</th>
-        <th>相对性能</th>
-      </tr>
-      <tr>
-        <td><strong>2023.2 预编译</strong></td>
-        <td>已脱敏作业</td>
-        <td>CUDA (兼容层)</td>
-        <td>23.10</td>
-        <td>AVX2_256</td>
-        <td>cuFFT</td>
-        <td>N/A (cluster 8)</td>
-        <td class="num">1.890</td>
-        <td class="num good">45.815</td>
-        <td class="good">100% (基准)</td>
-      </tr>
-      <tr>
-        <td>2026.3 自编译 #1</td>
-        <td>已脱敏作业</td>
-        <td>HIP</td>
-        <td>26.04</td>
-        <td class="bad">None</td>
-        <td>VkFFT</td>
-        <td>2×2×2</td>
-        <td class="num">5.161</td>
-        <td class="num bad">16.776</td>
-        <td class="bad">36.6%</td>
-      </tr>
-      <tr>
-        <td>2026.3 自编译 #2</td>
-        <td>已脱敏作业</td>
-        <td>HIP</td>
-        <td>26.04</td>
-        <td>AVX2_256</td>
-        <td>VkFFT</td>
-        <td>2×2×2</td>
-        <td class="num">4.916</td>
-        <td class="num">17.611</td>
-        <td>38.4%</td>
-      </tr>
-      <tr>
-        <td><strong>2026.3 自编译 #3</strong></td>
-        <td>已脱敏作业</td>
-        <td>HIP</td>
-        <td>26.04</td>
-        <td>AVX2_256</td>
-        <td>rocFFT</td>
-        <td>1×1×1</td>
-        <td class="num">4.879</td>
-        <td class="num warn">17.743</td>
-        <td class="warn">38.7%</td>
-      </tr>
+      <thead><tr><th>文件</th><th>大小</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>bin/gmx_mpi</code></td><td>113 KB</td><td>主可执行文件（薄封装，动态链接库）</td></tr>
+        <tr><td><code>lib/libgromacs_mpi.so.11.0.0</code></td><td>45 MB</td><td>真正的计算库（含所有 HIP kernel）</td></tr>
+      </tbody>
     </table>
   </div>
+  <p><strong>运行方式</strong>（需与编译时一致的 DTK 运行时）：</p>
+  <pre><code>module purge
+module load mpi/openmpi/gcc-9.3.0/4.1.5
+source &lt;DTK_ROOT&gt;/env.sh
+export LD_LIBRARY_PATH=&lt;GCC_ROOT&gt;/lib64:$LD_LIBRARY_PATH
 
-  <h3>4.3 详细计时分解（md.log Activity 表）</h3>
-  <div class="table-wrap">
-    <table>
-      <tr>
-        <th>活动</th>
-        <th class="num">CUDA 2023.2<br>Wall (s)</th>
-        <th class="num">HIP 2026.3 #2<br>Wall (s)</th>
-        <th class="num">HIP 2026.3 #3<br>Wall (s)</th>
-        <th class="num">HIP/CUDA<br>倍数</th>
-      </tr>
-      <tr>
-        <td>Neighbor search</td>
-        <td class="num">0.090</td>
-        <td class="num">0.255</td>
-        <td class="num">0.263</td>
-        <td class="num warn">2.9×</td>
-      </tr>
-      <tr>
-        <td>Launch PP GPU ops</td>
-        <td class="num">0.232</td>
-        <td class="num">0.305</td>
-        <td class="num">0.272</td>
-        <td class="num">1.2×</td>
-      </tr>
-      <tr style="background:#FFF5F5;">
-        <td><strong>Force</strong></td>
-        <td class="num">0.125</td>
-        <td class="num bad">1.076</td>
-        <td class="num bad">0.971</td>
-        <td class="num bad"><strong>7.8×</strong></td>
-      </tr>
-      <tr>
-        <td>PME GPU mesh</td>
-        <td class="num">0.328</td>
-        <td class="num">0.679</td>
-        <td class="num">0.765</td>
-        <td class="num warn">2.3×</td>
-      </tr>
-      <tr>
-        <td>Wait GPU NB local</td>
-        <td class="num">0.000</td>
-        <td class="num">0.002</td>
-        <td class="num">0.002</td>
-        <td class="num">—</td>
-      </tr>
-      <tr>
-        <td>Wait GPU state copy</td>
-        <td class="num">0.076</td>
-        <td class="num">0.051</td>
-        <td class="num">0.014</td>
-        <td class="num good">0.2×</td>
-      </tr>
-      <tr style="background:#FFF5F5;">
-        <td><strong>NB X/F buffer ops</strong></td>
-        <td class="num">0.005</td>
-        <td class="num bad">0.542</td>
-        <td class="num bad">0.500</td>
-        <td class="num bad"><strong>100×</strong></td>
-      </tr>
-      <tr>
-        <td>Write traj</td>
-        <td class="num">0.108</td>
-        <td class="num">0.038</td>
-        <td class="num">0.055</td>
-        <td class="num good">0.5×</td>
-      </tr>
-      <tr>
-        <td>Constraints</td>
-        <td class="num">0.005</td>
-        <td class="num">0.012</td>
-        <td class="num">0.011</td>
-        <td class="num warn">2.2×</td>
-      </tr>
-      <tr style="background:#FFF5F5;">
-        <td><strong>Kinetic energy</strong></td>
-        <td class="num">—</td>
-        <td class="num bad">1.034</td>
-        <td class="num bad">0.792</td>
-        <td class="num bad">新增</td>
-      </tr>
-      <tr>
-        <td>Rest</td>
-        <td class="num">0.920</td>
-        <td class="num">1.167</td>
-        <td class="num">1.234</td>
-        <td class="num">1.3×</td>
-      </tr>
-      <tr style="font-weight:700; border-top: 2px solid var(--scnet-red);">
-        <td><strong>Total</strong></td>
-        <td class="num">1.890</td>
-        <td class="num bad">5.161</td>
-        <td class="num warn">4.879</td>
-        <td class="num bad"><strong>2.58×</strong></td>
-      </tr>
-    </table>
-  </div>
-
-  <h3>4.4 PME 网格活动分解</h3>
-  <div class="table-wrap">
-    <table>
-      <tr>
-        <th>活动</th>
-        <th class="num">CUDA 2023.2<br>Wall (s)</th>
-        <th class="num">HIP #2<br>Wall (s)</th>
-        <th class="num">HIP #3<br>Wall (s)</th>
-        <th class="num">倍数</th>
-      </tr>
-      <tr style="background:#FFF5F5;">
-        <td><strong>Reduce GPU PME F</strong></td>
-        <td class="num">0.010</td>
-        <td class="num bad">0.585</td>
-        <td class="num bad">0.534</td>
-        <td class="num bad"><strong>53×</strong></td>
-      </tr>
-      <tr>
-        <td>Launch PME GPU ops</td>
-        <td class="num">0.315</td>
-        <td class="num">0.088</td>
-        <td class="num">0.156</td>
-        <td class="num good">0.3×</td>
-      </tr>
-      <tr>
-        <td>Wait PME GPU gather</td>
-        <td class="num">0.001</td>
-        <td class="num">0.003</td>
-        <td class="num">0.003</td>
-        <td class="num">—</td>
-      </tr>
-    </table>
-  </div>
-
-  <h3>4.5 资源消耗</h3>
-  <div class="table-wrap">
-    <table>
-      <tr><th>Job ID</th><th>版本</th><th class="num">Elapsed</th><th class="num">MaxRSS</th><th>节点</th><th>状态</th></tr>
-      <tr><td>已脱敏作业</td><td>2023.2 CUDA</td><td class="num">00:00:15</td><td class="num">291 MB</td><td>已脱敏节点</td><td><span class="badge badge-ok">COMPLETED</span></td></tr>
-      <tr><td>已脱敏作业</td><td>2026.3 HIP #1</td><td class="num">00:00:20</td><td class="num">49 MB</td><td>已脱敏节点</td><td><span class="badge badge-ok">COMPLETED</span></td></tr>
-      <tr><td>已脱敏作业</td><td>2026.3 HIP #2</td><td class="num">00:00:14</td><td class="num">552 MB</td><td>已脱敏节点</td><td><span class="badge badge-ok">COMPLETED</span></td></tr>
-      <tr><td>已脱敏作业</td><td>2026.3 HIP #3</td><td class="num">00:00:17</td><td class="num">47 MB</td><td>已脱敏节点</td><td><span class="badge badge-ok">COMPLETED</span></td></tr>
-    </table>
-  </div>
+/path/to/build_cmake28/bin/gmx_mpi mdrun -s case.tpr -nb gpu -pme gpu ...</code></pre>
+  <p>注意：GROMACS 2026.3 写的 tpr 是 version 138，集群预编译的 2023.2 读不了；反过来 2026.3
+  能读旧 tpr。跨版本对跑时各自用各自版本生成的 tpr。</p>
 </section>
 
-<!-- ═══════════ 版本详情 ═══════════ -->
+<!-- ═══════════ 功能增益 ═══════════ -->
 <section>
-  <h2>📊 五、版本详情对比</h2>
-
-  <div class="table-wrap">
-    <table>
-      <tr><th style="width:180px">属性</th><th>预编译 2023.2</th><th>自编译 2026.3</th></tr>
-      <tr><td>GROMACS 版本</td><td>2023.2-20231019</td><td>2026.3</td></tr>
-      <tr><td>GPU 后端</td><td><span class="badge badge-info">CUDA</span> (DTK 23.10 兼容层)</td><td><span class="badge badge-info">HIP</span> (DTK 26.04 原生)</td></tr>
-      <tr><td>SIMD</td><td>AVX2_256</td><td>AVX2_256</td></tr>
-      <tr><td>GPU FFT</td><td>cuFFT</td><td>rocFFT 1.0.28</td></tr>
-      <tr><td>CPU FFT</td><td>fftpack (built-in)</td><td>FFTW 3.3.10</td></tr>
-      <tr><td>NB 设置</td><td>cluster size 8</td><td>super-cluster 1×1×1 / cluster 8</td></tr>
-      <tr><td>精度</td><td>mixed</td><td>mixed</td></tr>
-      <tr><td>MPI</td><td>MPI</td><td>MPI (OpenMPI 4.1.5)</td></tr>
-      <tr><td>OpenMP</td><td>enabled (max 128)</td><td>enabled</td></tr>
-      <tr><td>C 编译器</td><td>nvcc (Clang 15.0.0, DTK 23.10)</td><td>GCC 11.2.0</td></tr>
-      <tr><td>C++ 编译器</td><td>nvcc (Clang 15.0.0, DTK 23.10)</td><td>GCC 11.2.0</td></tr>
-      <tr><td>GPU 编译器</td><td>nvcc (CUDA 11.8 compat, HIP 5.4)</td><td>hipcc (Clang 17.0.0, HIP 6.3)</td></tr>
-      <tr><td>C 编译标志</td><td><code>-mavx2 -mfma -O3</code></td><td><code>-mavx2 -mfma -O3 -funroll-all-loops</code></td></tr>
-      <tr><td>GPU 编译标志</td><td><code>-use_fast_math</code> + 多架构</td><td><code>-ffast-math -munsafe-fp-atomics</code> + gfx906 only</td></tr>
-    </table>
-  </div>
-</section>
-
-<!-- ═══════════ 性能瓶颈分析 ═══════════ -->
-<section>
-  <h2>🔬 六、性能瓶颈分析</h2>
-
-  <h3>6.1 三大核心瓶颈</h3>
-  <ol>
-    <li>
-      <strong>Force 计算（7.8× 差距）</strong>——非键相互作用力在 GPU 上的计算。
-      CUDA 兼容层（nvcc→PTX→gfx906 ISA）生成的机器码对 Vega20 架构有更好的指令调度和寄存器分配；
-      HIP 原生后端的 Clang 17 生成的 gfx906 代码可能未充分利用硬件特性。
-    </li>
-    <li>
-      <strong>NB X/F buffer ops（100× 差距）</strong>——非键力/坐标 buffer 在 CPU 与 GPU 之间的传输。
-      CUDA 版每 10 步传输 1 次（51 次/500 步），HIP 版每 5 步传输 1 次（101 次/500 步），且单次传输耗时 5.3ms vs 0.1ms。
-      怀疑 HIP 版将 PME force reduction 部分回退到了 CPU 执行，导致更大的数据搬运量。
-    </li>
-    <li>
-      <strong>Reduce GPU PME F（53× 差距）</strong>——PME 力在 GPU 上的归约。
-      CUDA 版 0.010s 完成，HIP 版 0.534s。这个差距强烈暗示 HIP 版在 CPU 上做 PME reduction，
-      而非 GPU 端原位归约。CUDA 版通过 cuFFT 在 GPU 端完成整个 PME 流程。
-    </li>
-  </ol>
-
-  <h3>6.2 根因推断</h3>
-  <p>
-    <strong>DTK 23.10 的 CUDA 兼容层生成的 GPU 代码质量优于 DTK 26.04 原生 HIP 后端。</strong>
-    具体而言：
-  </p>
+  <h2>八、功能增益：GROMACS 2023.2 → 2026.3</h2>
   <ul>
-    <li>DTK 23.10 的 nvcc 将 CUDA kernel 编译为 PTX 中间码，再由 HIP runtime 翻译为 gfx906 ISA。这条路径经过海光充分优化，针对 Z100 的 64-wide SIMD 单元和寄存器文件做了专门调度。</li>
-    <li>DTK 26.04 的 Clang 17 直接编译 HIP kernel 到 gfx906 ISA。生成的代码可能使用了通用路径，未针对 Vega20 的特定微架构（如 64-wide wavefront、特定的 LDS 带宽）做优化。</li>
-    <li>GROMACS 2026.3 的 HIP 后端可能在某些 GPU 操作（如 PME force reduction）上回退到了 CPU 路径，而 CUDA 后端在 GPU 端完成全程。</li>
+    <li><strong>原生 HIP 后端</strong>：2026.3 首次把 AMD/HIP 变成一等公民后端，所有 GPU kernel 可走官方原生 HIP 代码路径（不再靠翻译层或 SYCL）。</li>
+    <li><strong>AMBER 力场 + OPC/OPC3 水模型</strong>（2026）；per-氨基酸 CMAP 类型（2025）。</li>
+    <li><strong>神经网络势能（NNP/ML）</strong>：PyTorch 接口、link atom、pairlist 输入、EMLE 静电嵌入。</li>
+    <li><strong>增强采样</strong>：原生 Colvars（2024）、PLUMED 接口（MDModules）。</li>
+    <li><strong>性能算法</strong>：HMR（氢质量重分配）、AWH 改进、H5MD 轨迹输出、NVSHMEM halo 交换等。</li>
   </ul>
 </section>
 
-<!-- ═══════════ 经验总结 ═══════════ -->
-<section>
-  <h2>🧭 七、经验总结与通用建议</h2>
-
-  <h3>7.1 有效经验</h3>
-  <ol>
-    <li><strong>CMake 版本不够可以 patch</strong>——GROMACS 2026.3 实际在 CMake 3.25 上可正常工作，官方 3.28 要求是预防性的。</li>
-    <li><strong>SIMD 必须手动指定</strong>——在计算节点上编译时，CMake 的 SIMD 检测程序可能因缺少运行时环境而失败，建议始终显式设置 <code>-DGMX_SIMD=AVX2_256</code>。</li>
-    <li><strong>FFTW 等外部依赖需预下载</strong>——计算节点无外网是国产超算的普遍情况，任何需要下载的构建步骤都必须在登录节点完成并预置。</li>
-    <li><strong>GCC 版本管理要小心</strong>——自装 GCC 的 libstdc++ 与系统默认版本不兼容时，需要同时设置 <code>PATH</code> 和 <code>LD_LIBRARY_PATH</code>。</li>
-    <li><strong>DTK 的 lib64 vs lib 路径问题</strong>——DTK 将部分 cmake 模块放在 lib64 而非 lib，需要手动设置 <code>*_DIR</code> 环境变量。</li>
-  </ol>
-
-  <h3>7.2 不成功的尝试</h3>
-  <ol>
-    <li><strong>CUDA 后端 + DTK 26.04</strong>——DTK 26.04 已移除 CUDA 兼容层（无 nvcc），无法走此路径。</li>
-    <li><strong>CUDA 后端 + DTK 23.10</strong>——GROMACS 2026.3 要求 CUDA ≥ 12.1，而 DTK 23.10 仅提供 CUDA 11.8，版本不匹配。</li>
-    <li><strong>从 GitHub 下载 CMake 预编译包</strong>——GitHub 在集群上不可达，cmake.org 下载超时。最终通过 patch 使用了系统 CMake 3.25。</li>
-    <li><strong><code>-update gpu</code> 运行时选项</strong>——导致矩阵求逆错误（determinant too close to zero），对小体系水盒子不适用。</li>
-    <li><strong>rocFFT 替代 VkFFT</strong>——对 PME 性能无明显改善（0.679s → 0.765s），瓶颈不在 FFT 库本身。</li>
-    <li><strong>关闭 super-cluster（2×2×2 → 1×1×1）</strong>——对总体性能影响极小（17.61 → 17.74 ns/day），瓶颈不在聚类策略。</li>
-  </ol>
-
-  <h3>7.3 关键结论</h3>
-  <ol>
-    <li>
-      <strong>在 Z100 (gfx906) 上，DTK 23.10 的 CUDA 兼容层是当前最优的 GROMACS GPU 后端</strong>，
-      性能约为 DTK 26.04 原生 HIP 后端的 2.6 倍。
-    </li>
-    <li>
-      如需使用最新 GROMACS 版本（2024+），建议尝试：
-      <ul>
-        <li>Patch GROMACS 的 CUDA 最低版本要求，用 DTK 23.10 的 CUDA 兼容层编译</li>
-        <li>或用 DTK 26.04 编译 GROMACS 2024.x（可能没有 2026.3 的严格 CUDA 12.1 要求）</li>
-        <li>或用 SYCL/AdaptiveCpp 后端（未经测试）</li>
-      </ul>
-    </li>
-    <li>
-      HIP 原生后端的性能问题集中在 <strong>Force 计算</strong>和<strong>PME reduction</strong>，
-      如果 DTK 后续版本改进 Clang 对 gfx906 的代码生成，差距有望缩小。
-    </li>
-    <li>
-      <strong>对于生产使用，建议继续使用集群预编译的 GROMACS 2023.2 CUDA 版本</strong>，
-      其性能稳定且经过充分验证。
-    </li>
-  </ol>
-</section>
-
-<!-- ═══════════ 建议 ═══════════ -->
-<section>
-  <h2>📌 八、后续工作建议</h2>
-  <ol>
-    <li><strong>Patch CUDA 版本要求</strong>——修改 GROMACS 2026.3 的 <code>GMX_CUDA_MINIMUM_REQUIRED_VERSION</code>，用 DTK 23.10 的 CUDA 兼容层编译，预期可达到接近预编译版的性能。</li>
-    <li><strong>HIP 内核 profiling</strong>——使用 <code>rocprof</code> 对 HIP 版的 Force kernel 和 PME reduction 做详细分析，确认是否回退到 CPU 路径。</li>
-    <li><strong>多卡扩展测试</strong>——测试 2/4 卡 Z100 的 scaling 效率，HIP 和 CUDA 后端在多卡场景下可能有不同表现。</li>
-    <li><strong>尝试 GROMACS 2025.x</strong>——可能对 HIP 和 CUDA 版本要求更宽松。</li>
-    <li><strong>关注 DTK 更新</strong>——DTK 26.04 之后版本可能改进 gfx906 的代码生成质量。</li>
-  </ol>
-</section>
-
-<!-- ═══════════ FOOTER ═══════════ -->
 <div class="footer">
   <div class="logo">SCNet 超算互联网</div>
-  <div>某国产超算集群 (测试集群) · 海光 Z100 DCU (gfx906) · GROMACS 编译测试</div>
-  <div>报告生成: 2026-08-12 · 操作者: opensource_community</div>
+  <div>某国产超算集群 (测试集群) · 2026-08-16 · 数据来源：7 场景干净节点实测（gmx_bench.slurm，3 次重复）+ 编译脚本 gromacs_cmake28_build.slurm</div>
 </div>
 
-</div><!-- .container -->
+</div>
 </body>
 </html>
