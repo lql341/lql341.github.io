@@ -1,5 +1,5 @@
 ---
-title: 海光 DCU 编译与性能测试
+title: LAMMPS 海光 DCU 编译与性能测试
 titleEn: LAMMPS Build and Performance Study on Hygon DCU
 summary: Kokkos/HIP 与 GPU/HIP 两条加速路径的构建验证、兼容适配和性能对比。
 date: 2026-08-02
