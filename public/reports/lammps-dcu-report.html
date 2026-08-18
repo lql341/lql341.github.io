@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="opensource_community">
-<title>LAMMPS 海光 DCU 版编译与性能测试报告</title>
+<title>LAMMPS 海光 DCU 双平台编译与性能验证报告</title>
 <style>
   :root {
     --bg: #07101d;
@@ -82,6 +82,10 @@
     gap: 6px 20px;
     margin: 10px 0;
   }
+  .platform-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 14px 0; }
+  .platform-card { background: rgba(96,165,250,.055); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .platform-card h3 { margin-top: 0; }
+  .note { color: var(--muted); font-size: 13px; }
   .info-grid .label {
     color: var(--accent);
     font-weight: 600;
@@ -224,6 +228,7 @@
     .header h1 { font-size: 22px; }
     .section { padding: 20px; }
     .info-grid { grid-template-columns: 1fr; }
+    .platform-grid { grid-template-columns: 1fr; }
   }
 </style>
 <link rel="stylesheet" href="/reports/report-theme.css">
@@ -234,23 +239,39 @@
 <div class="container">
 
 <div class="header">
-  <h1>🖥️ LAMMPS 海光 DCU 版编译与性能测试报告</h1>
-  <div class="subtitle">Hygon C-3000 BW (gfx936) · Sugon 超算 · Kokkos + HIP 后端 · GPU 包对比分析</div>
-  <div class="subtitle">作者：opensource_community</div>
+  <h1>🖥️ LAMMPS 海光 DCU 双平台编译与性能验证报告</h1>
+  <div class="subtitle">gfx936/BW + gfx906/Z100 · DTK 25.04.2–26.04 · Kokkos/HIP · GPU 包 · GPU-aware MPI</div>
+  <div class="subtitle">作者：opensource_community · 融合更新：2026-08-18</div>
 </div>
 
 <div class="section">
-  <h2>📋 1. 环境信息</h2>
-  <div class="info-grid">
-    <span class="label">系统</span><span class="value">Sugon 8.9 (Linux)</span>
-    <span class="label">节点</span><span class="value">登录节点（编译），已分配计算节点（测试；名称已脱敏）</span>
-    <span class="label">CPU</span><span class="value">Hygon C86 Processor (128核, 64核/socket)</span>
-    <span class="label">DCU</span><span class="value">C-3000 BW 系列, 架构 gfx936, 80 CU, 1500MHz, 64GB 显存</span>
-    <span class="label">编译器</span><span class="value">GCC 9.3.0, hipcc (Clang 17.0.0 from DTK 25.04.2)</span>
-    <span class="label">MPI</span><span class="value">MPICH 4.1.2</span>
-    <span class="label">CMake</span><span class="value">3.24.1</span>
-    <span class="label">LAMMPS</span><span class="value">22 Jul 2025 - Update 4</span>
-    <span class="label">Kokkos</span><span class="value">4.6.2</span>
+  <h2>📋 1. 环境信息与验证范围</h2>
+  <p>本报告将两次独立验证按同一工程链路重组。平台 A 负责 gfx936 的架构适配、GPU 包对照和源码优化；平台 B 负责 gfx906/Z100 的原生架构构建、正确性与多卡扩展。地域、集群别名、SSH 地址、分区名、节点名和绝对用户目录均已脱敏。</p>
+  <div class="platform-grid">
+    <div class="platform-card">
+      <h3>平台 A · gfx936/BW</h3>
+      <div class="info-grid">
+        <span class="label">系统</span><span class="value">Sugon 8.9 (Linux)</span>
+        <span class="label">CPU</span><span class="value">Hygon C86（128 核，64 核/socket）</span>
+        <span class="label">DCU</span><span class="value">C-3000 BW，gfx936，80 CU，1500 MHz，64 GB</span>
+        <span class="label">工具链</span><span class="value">GCC 9.3.0，DTK 25.04.2 / hipcc Clang 17</span>
+        <span class="label">MPI</span><span class="value">MPICH 4.1.2；扩展验证使用 OpenMPI 5.0.7</span>
+        <span class="label">软件</span><span class="value">CMake 3.24.1，LAMMPS 22 Jul 2025 Update 4，Kokkos 4.6.2</span>
+      </div>
+    </div>
+    <div class="platform-card">
+      <h3>平台 B · gfx906/Z100</h3>
+      <div class="info-grid">
+        <span class="label">系统</span><span class="value">CentOS 7.6 / glibc 2.17</span>
+        <span class="label">CPU</span><span class="value">Hygon C86 7185（32 核）</span>
+        <span class="label">DCU</span><span class="value">Z100 / Device 66a1 / Vega 20，gfx906，64 CU，16 GB/卡，单机 4 卡</span>
+        <span class="label">节点内存</span><span class="value">123 GB</span>
+        <span class="label">工具链</span><span class="value">GCC 9.3.0，DTK 26.04，hipcc → dcc 25.10.0-0 / Clang 17</span>
+        <span class="label">软件</span><span class="value">CMake 3.25.0，LAMMPS 22 Jul 2025 Update 5，Kokkos 4.6.2</span>
+        <span class="label">MPI</span><span class="value">OpenMPI 5.0.7（源码编译，<code>--with-rocm</code>）</span>
+        <span class="label">调度器</span><span class="value">Slurm 3.2.10；CPU 编译队列与 1–4 卡测试队列名称已脱敏</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -290,6 +311,34 @@
     <div class="fn">📄 修改 4：lib/kokkos/core/src/HIP/Kokkos_HIP_IsXnack.hpp</div>
     <div class="desc">在 <code>gpu_arch_can_access_system_allocations</code> 函数中添加 <code>defined(KOKKOS_ARCH_AMD_GFX936)</code> 到 <code>return false</code> 分支。海光 DCU 不支持系统内存访问。</div>
   </div>
+
+  <h3>2.4 gfx906/Z100：原生架构路径</h3>
+  <p>与 gfx936 不同，gfx906（Vega 20）已经被 Kokkos 4.6.2 原生支持，因此无需修改 Kokkos 的四个架构文件，直接启用 <code>Kokkos_ARCH_AMD_GFX906=ON</code> 与 <code>AMDGPU_TARGETS=gfx906</code>。这降低了架构移植成本，但 DTK 26.04 和集群工具链暴露了另一组构建问题。</p>
+
+  <h3>2.5 DTK 26.04 cuda_wrappers host 模式冲突</h3>
+  <p>编译到约 98% 时，<code>main.cpp</code> 因 <code>cuda_wrappers/algorithm</code> 报 <code>unknown type name '__host__'</code>。LAMMPS Update 5 在 <code>cmake/CMakeLists.txt:854</code> 为解决 nlohmann/json 的 HIP SFINAE 问题，把 <code>lmp</code> 目标强制设为 <code>-x c++</code>；DTK 26.04 的 hipcc 在 host 模式仍注入 cuda_wrappers，使标准 <code>&lt;algorithm&gt;</code> 被错误解析。</p>
+  <div class="mod-file"><div class="fn">📄 DTK 26.04 兼容修复</div><div class="desc">将该目标的 <code>-x c++</code> 改为 <code>-xhip --offload-arch=gfx906</code>：<pre>target_compile_options(lmp PRIVATE
+  "$&lt;$&lt;COMPILE_LANGUAGE:CXX&gt;:SHELL:-xhip --offload-arch=gfx906&gt;")</pre>同一问题未在 DTK 25.04.2 的平台 A 上复现，因此按 DTK 26.04 回归记录，而非通用 LAMMPS 缺陷。</div></div>
+
+  <h3>2.6 CPU 节点 HSA 符号链不可用</h3>
+  <p>DTK 26.04 的 <code>libhsa-runtime64.so</code> 符号链依赖 DCU 驱动目录 <code>/opt/hyhal/</code>，CPU 编译节点没有该目录，CMake 因而无法发现 HSA runtime。解决方案是绕过失效符号链，显式把 <code>HSA_RUNTIME_LIBRARY</code> 指向共享软件区的真实库文件；公开命令统一写为 <code>&lt;DTK_ROOT&gt;/hyhal/lib/libhsa-runtime64.so</code>。</p>
+
+  <h3>2.7 make 损坏与登录节点 OOM</h3>
+  <p>平台 B 的系统 <code>/usr/bin/make</code> ELF interpreter 指向不存在的 <code>/opt/glibc-2.25/lib/ld-linux.so.2</code>，改用站点提供的 <code>module load compiler/make/4.4</code>。登录节点约 251 GB 内存由约 249 个用户共享，实测可用约 46 GB；hipcc 编译约 1000 个 C++ 文件时 dcc 被 OOM killer 终止。最终把编译提交到 CPU 计算队列，申请 32 核与约 111 GB 独占内存。</p>
+
+  <h3>2.8 默认三架构造成三倍编译压力</h3>
+  <p>DTK 26.04 默认目标为 <code>gfx906;gfx926;gfx928</code>，使每个源文件被编译三次，放大时间和内存开销。构建前显式执行 <code>export AMDGPU_TARGETS=gfx906</code>，只生成目标架构代码。</p>
+
+  <h3>2.9 gfx906 GPU-aware MPI 路径</h3>
+  <p>平台 B 的四张 Z100 在同节点内全部 12 对 P2P 组合均返回 <code>hipDeviceCanAccessPeer=1</code>。但 DTK 26.04 缺少 <code>libhsakmt.a</code>，无法构建 UCX ROCm 传输层。替代方案是源码构建 OpenMPI 5.0.7，仅使用 <code>--with-rocm</code> 提供 <code>accelerator: rocm</code> 与 <code>mpiext: rocm</code>，运行时采用共享内存并禁用 UCX 网络路径：<code>--mca pml ob1 --mca btl vader,self</code> 与 <code>UCX_TLS=sm,self</code>。</p>
+
+  <h3>2.10 两个平台的构建差异</h3>
+  <table><thead><tr><th>环节</th><th>gfx936/BW</th><th>gfx906/Z100</th></tr></thead><tbody>
+    <tr><td>Kokkos 架构</td><td>需补充 gfx936 支持</td><td>原生支持 gfx906</td></tr>
+    <tr><td>DTK 特有问题</td><td>25.04.2 无 host-mode 回归</td><td>26.04 需修复 cuda_wrappers 冲突</td></tr>
+    <tr><td>GPU-aware MPI</td><td>OpenMPI + UCX + ROCm</td><td>OpenMPI <code>--with-rocm</code> + shared memory，无 UCX ROCm</td></tr>
+    <tr><td>构建位置</td><td>登录节点可完成编译</td><td>登录节点内存竞争，转 CPU 计算节点</td></tr>
+  </tbody></table>
 </div>
 
 <div class="section">
@@ -309,6 +358,31 @@ cmake ../lammps-22Jul2025/cmake \
   -D CMAKE_C_COMPILER=gcc \
   -D CMAKE_HIP_COMPILER=hipcc \
   -D HIP_PATH=&lt;DTK_ROOT&gt;/hip</pre>
+
+  <h3>3.1 gfx906/Z100 单卡构建</h3>
+  <pre><span class="comment"># 仅生成 gfx906；共享软件与安装目录均使用公开占位符</span>
+export AMDGPU_TARGETS=gfx906
+
+cmake -S lammps-22Jul2025/cmake -B build-gfx906 \
+  -D PKG_KOKKOS=ON \
+  -D Kokkos_ENABLE_HIP=ON \
+  -D Kokkos_ARCH_AMD_GFX906=ON \
+  -D AMDGPU_TARGETS=gfx906 \
+  -D HSA_RUNTIME_LIBRARY=&lt;DTK_ROOT&gt;/hyhal/lib/libhsa-runtime64.so \
+  -D AMD_HIP_LIBRARY=&lt;DTK_ROOT&gt;/lib/libamdhip64.so \
+  -D PKG_OPENMP=ON -D PKG_KSPACE=ON -D PKG_MANYBODY=ON \
+  -D PKG_MOLECULE=ON -D PKG_RIGID=ON \
+  -D BUILD_MPI=OFF \
+  -D CMAKE_INSTALL_PREFIX=&lt;USER_HOME&gt;/softwares/lammps/dcu-install \
+  -D CMAKE_CXX_COMPILER=hipcc -D CMAKE_C_COMPILER=gcc \
+  -D CMAKE_HIP_COMPILER=hipcc -D HIP_PATH=&lt;DTK_ROOT&gt;/hip</pre>
+  <table><thead><tr><th>步骤</th><th>平台 B 最终方案</th></tr></thead><tbody>
+    <tr><td>源码</td><td><code>wget https://download.lammps.org/tars/lammps-stable.tar.gz</code>，LAMMPS 22 Jul 2025 Update 5</td></tr>
+    <tr><td>CMake 修补</td><td>第 854 行：<code>-x c++</code> → <code>-xhip --offload-arch=gfx906</code></td></tr>
+    <tr><td>单卡构建</td><td><code>BUILD_MPI=OFF</code>，在 CPU 计算队列执行</td></tr>
+    <tr><td>MPI 构建</td><td>OpenMPI 5.0.7 + <code>--with-rocm</code>，LAMMPS 改为 <code>BUILD_MPI=ON</code></td></tr>
+    <tr><td>产物</td><td><code>dcu-install/bin/lmp</code> 与 <code>dcu-mpi-install/bin/lmp</code>，均约 554 MB</td></tr>
+  </tbody></table>
 </div>
 
 <div class="section">
@@ -422,6 +496,57 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   <div class="conclusion-item">📌 Pair 计算加速比高达 219 倍，GPU 最擅长的计算密集型任务效果显著</div>
   <div class="conclusion-item">📌 Modify 阶段 (Verlet 积分) 在 GPU 上占比 70%，这是因为 KOKKOS 的 full 风格邻居列表导致通信开销较大</div>
   <div class="conclusion-item">📌 DCU 满负荷运行时温度仅 55 °C，功耗 86-122 W，能效比极高</div>
+
+  <h3>5.1 gfx906/Z100 正确性与能量守恒</h3>
+  <p>平台 B 使用相同输入分别运行 Kokkos/HIP 与 CPU/OpenMP 16 线程，避免只凭性能判断移植成功。</p>
+  <table><thead><tr><th>算例</th><th>指标</th><th>GPU (Kokkos)</th><th>CPU (OpenMP)</th><th>偏差</th></tr></thead><tbody>
+    <tr><td>LJ 10000 步</td><td>TotEng</td><td>-4.62126</td><td>-4.62119</td><td>0.0015%</td></tr>
+    <tr><td>LJ 10000 步</td><td>Temp</td><td>0.69723</td><td>0.69591</td><td>0.19%</td></tr>
+    <tr><td>EAM 1000 步</td><td>TotEng</td><td>-106640.19</td><td>-106640.19</td><td>打印精度内一致</td></tr>
+    <tr><td>EAM 1000 步</td><td>Temp</td><td>796.34045</td><td>796.34045</td><td>打印精度内一致</td></tr>
+    <tr><td>EAM 1000 步</td><td>E_pair</td><td>-109934.01</td><td>-109934.01</td><td>打印精度内一致</td></tr>
+  </tbody></table>
+  <p>LJ 的微小差异来自并行浮点求和顺序。NVE 收敛测试中，LJ 总能从平衡后的 -4.6203 变化到 -4.6213，漂移低于 0.02%；EAM 从 -106640.66 变化到 -106640.19，漂移低于 0.0004%。</p>
+
+  <h3>5.2 gfx906/Z100 算例覆盖</h3>
+  <table><thead><tr><th>算例</th><th>包/风格</th><th>GPU</th><th>CPU</th></tr></thead><tbody>
+    <tr><td><code>in.lj</code></td><td><code>pair lj/cut</code></td><td>通过</td><td>通过</td></tr>
+    <tr><td><code>in.eam</code></td><td><code>pair eam</code> / MANYBODY</td><td>通过</td><td>通过</td></tr>
+    <tr><td><code>in.chain</code></td><td><code>bond fene</code> / MOLECULE</td><td>通过</td><td>未测</td></tr>
+    <tr><td><code>in.rhodo</code></td><td><code>pppm/kk</code> + CHARMM + SHAKE / KSPACE</td><td>需 <code>neigh half</code></td><td>通过</td></tr>
+  </tbody></table>
+
+  <h3>5.3 gfx906/Z100 单卡弱扩展</h3>
+  <table><thead><tr><th>算例</th><th>原子数</th><th>step/s</th><th>Matom-step/s</th><th>观察</th></tr></thead><tbody>
+    <tr><td>LJ</td><td>32K</td><td>2234</td><td>71.5</td><td>—</td></tr>
+    <tr><td>LJ</td><td>256K</td><td>472</td><td>120.9</td><td>—</td></tr>
+    <tr><td>LJ</td><td>2M</td><td>66.9</td><td>137.1</td><td>进入饱和区</td></tr>
+    <tr><td>LJ</td><td>16.4M</td><td>8.18</td><td>134.0</td><td>稳定饱和</td></tr>
+    <tr><td>EAM</td><td>32K</td><td>625</td><td>20.0</td><td>—</td></tr>
+    <tr><td>EAM</td><td>256K</td><td>180.6</td><td>46.2</td><td>—</td></tr>
+    <tr><td>EAM</td><td>2M</td><td>25.2</td><td>51.5</td><td>逼近饱和</td></tr>
+  </tbody></table>
+
+  <h3>5.4 gfx906/Z100 多卡强扩展（2M 原子）</h3>
+  <table><thead><tr><th>算例</th><th>GPU 数</th><th>非 GPU-aware</th><th>GPU-aware</th><th>aware 提升</th><th>相对 1 卡</th></tr></thead><tbody>
+    <tr><td>LJ</td><td>1</td><td>67.3</td><td>67.7</td><td>—</td><td>1.00×</td></tr>
+    <tr><td>LJ</td><td>2</td><td>44.1（0.65×）</td><td>91.4</td><td>2.07×</td><td>1.35×</td></tr>
+    <tr><td>LJ</td><td>4</td><td>78.1</td><td>125.8</td><td>1.61×</td><td>1.86×</td></tr>
+    <tr><td>EAM</td><td>1</td><td>25.5</td><td>25.5</td><td>—</td><td>1.00×</td></tr>
+    <tr><td>EAM</td><td>2</td><td>22.5（0.88×）</td><td>39.9</td><td>1.77×</td><td>1.56×</td></tr>
+    <tr><td>EAM</td><td>4</td><td>40.5</td><td>59.5</td><td>1.47×</td><td>2.33×</td></tr>
+  </tbody></table>
+  <p>GPU-aware MPI 把 2 卡从减速转为 1.35–1.56× 加速，并把 4 卡提升到 1.86–2.33×。该结果与平台 A 多卡未突破单卡形成鲜明对照，说明通信栈、P2P 拓扑、问题规模和站点配置都属于结论的一部分。</p>
+
+  <h3>5.5 跨平台性能观察</h3>
+  <table><thead><tr><th>指标</th><th>gfx906/Z100</th><th>gfx936/BW</th><th>观察</th></tr></thead><tbody>
+    <tr><td>架构 / CU / 显存</td><td>Vega 20 / 64 / 16 GB</td><td>gfx936 / 80 / 64 GB</td><td>硬件与容量不同</td></tr>
+    <tr><td>LJ 256K</td><td>472 step/s</td><td>约 912 step/s</td><td>约 52%</td></tr>
+    <tr><td>LJ 饱和吞吐</td><td>约 134 Matom-step/s</td><td>约 80 Matom-step/s</td><td>平台 B 约 1.68×</td></tr>
+    <tr><td>EAM 2M</td><td>25.2 step/s</td><td>约 21 step/s</td><td>平台 B 约 1.2×</td></tr>
+    <tr><td>2 卡 LJ 缩放</td><td>1.35×</td><td>0.71–0.79×</td><td>平台 B 更好</td></tr>
+  </tbody></table>
+  <p class="note">两套环境并非同一输入、版本与通信栈，上表只保留原始报告的趋势观察，不能作为严格的硬件排名。平台 B 的同节点 PCIe P2P 效率是多卡表现较好的重要因素。</p>
 </div>
 
 <div class="section">
@@ -833,6 +958,19 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
   <p>DTK 25.04.2 不自带 UCX 库。测试环境通过 <code>&lt;UCX_MODULE&gt;</code> 提供带 ROCm 传输层的 UCX 组件。OpenMPI 5.0.7 通过 <code>--with-ucx</code> 和 <code>--with-rocm</code> 链接相关组件，实现 GPU-aware 通信。</p>
   <p>UCX 模块路径：<code>&lt;UCX_ROOT&gt;</code></p>
   <p>ROCm 路径：<code>&lt;DTK_ROOT&gt;</code></p>
+
+  <h3>10.9 gfx906/Z100：无 UCX ROCm 的同节点方案</h3>
+  <p>平台 B 因 DTK 26.04 缺少静态 <code>libhsakmt.a</code>，不构建 UCX ROCm 传输层。OpenMPI 仍可通过 ROCm accelerator 扩展识别设备指针，并在同一节点内使用共享内存：</p>
+  <pre>./configure --prefix=&lt;USER_HOME&gt;/softwares/mpi/ompi-install \
+  --enable-mpi-fortran=no \
+  --with-rocm=&lt;DTK_ROOT&gt; \
+  --with-slurm
+
+export UCX_TLS=sm,self
+mpirun --mca pml ob1 --mca btl vader,self \
+  -np &lt;GPU_COUNT&gt; lmp -in input \
+  -k on g 1 -sf kk -pk kokkos gpu/aware on</pre>
+  <p>该构建已确认提供 <code>accelerator: rocm</code> 与 <code>mpiext: rocm</code>。它用于节点内 1–4 卡 P2P 测试，不代表跨节点 RDMA 已验证。</p>
 </div>
 
 <div class="section">
@@ -932,6 +1070,29 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
   <div class="conclusion-item">⚠️ <strong>显存先于算力瓶颈</strong>：32M 邻居列表初始分配 256GB > 64GB</div>
   <div class="conclusion-item">⚠️ <strong>多 GPU 三条件</strong>：GPU-aware MPI + 计算密集势函数 + 大原子数（每 GPU > 500K），缺一不可</div>
   <div class="conclusion-item">⚠️ <strong>GPU 包 vs KOKKOS</strong>：GPU 包扩展性好但单卡慢，KOKKOS 单卡快但多 GPU 差</div>
+
+  <h3>12.8 gfx906/Z100 已知限制与绕过</h3>
+  <div class="highlight-box">
+    <div class="title">CHARMM/Kokkos 邻居列表</div>
+    <p><code>dihedral charmm/kk</code> 仅实现 HALF 邻居列表，而 GPU 模式默认 <code>neighflag=FULL</code>；<code>atom_style full</code> 与 <code>lj/charmm/coul/long</code> 又强制 full，产生冲突。使用 <code>-pk kokkos neigh half</code> 后 rhodo 可在 GPU 上运行并与 CPU 结果一致，但缺失的 FULL 实现仍属于上游边界。</p>
+  </div>
+  <table><thead><tr><th>类别</th><th>限制</th><th>处理/影响</th></tr></thead><tbody>
+    <tr><td>DTK 26.04</td><td>host 模式注入 cuda_wrappers</td><td>将 lmp 目标改为 <code>-xhip --offload-arch=gfx906</code></td></tr>
+    <tr><td>DTK 26.04</td><td>缺少 <code>libhsakmt.a</code></td><td>无法构建 UCX ROCm；使用 OpenMPI <code>--with-rocm</code></td></tr>
+    <tr><td>HSA runtime</td><td>符号链依赖 CPU 节点不存在的 <code>/opt/hyhal</code></td><td>显式指定共享软件区真实库</td></tr>
+    <tr><td>编译</td><td>默认生成 gfx906/926/928 三架构</td><td>固定 <code>AMDGPU_TARGETS=gfx906</code></td></tr>
+    <tr><td>硬件</td><td>gfx906 无 FP8/BF16 硬件支持及 MFMA Matrix Core</td><td>不影响本文传统分子动力学验证，不外推到矩阵型工作负载</td></tr>
+    <tr><td>显存</td><td>单卡 16 GB，LJ 上限约 16M 原子</td><td>更大模型需多卡切分或降低内存占用</td></tr>
+    <tr><td>调度</td><td>测试队列拒绝超过 8 个 CPU 核</td><td>多卡测试以 8 核总量完成；具体分区名已脱敏</td></tr>
+  </tbody></table>
+
+  <h3>12.9 双平台经验归纳</h3>
+  <div class="conclusion-item">✅ <strong>先区分架构支持状态</strong>：gfx906 已被 Kokkos 原生支持；gfx936 需要注册架构、wavefront 和系统分配属性，两者不能复用同一补丁假设。</div>
+  <div class="conclusion-item">⚠️ <strong>DTK 升级既可能无性能收益，也可能引入构建回归</strong>：平台 A 的 25.04.4/26.04 性能基本不变，平台 B 的 26.04 却引入 cuda_wrappers host-mode 问题。</div>
+  <div class="conclusion-item">✅ <strong>重型 HIP 编译放到计算节点</strong>：共享登录节点内存会随并发用户剧烈波动；资源申请须遵守站点 CPU×内存上限并显式传递退出码。</div>
+  <div class="conclusion-item">✅ <strong>GPU-aware 不必强依赖 UCX ROCm</strong>：平台 B 通过 OpenMPI <code>--with-rocm</code> 和共享内存实现同节点 GPU-aware；平台 A 则验证了 UCX+ROCm 路径。</div>
+  <div class="conclusion-item">⚠️ <strong>自编译 OpenMPI 要控制传输层</strong>：平台 B 使用 <code>pml ob1</code>、<code>btl vader,self</code> 与 <code>UCX_TLS=sm,self</code>，避免未适配的 InfiniBand/UCX 路径触发 GID 断言。</div>
+  <div class="conclusion-item">⚠️ <strong>多卡扩展依赖三项条件</strong>：GPU-aware MPI、每卡超过约 500K 原子和足够计算密集的势函数缺一不可；显存容量可能先于算力成为上限。</div>
 </div>
 
 <div class="section">
@@ -969,7 +1130,7 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
 </div>
 
 <div class="footer">
-  作者：opensource_community &nbsp;·&nbsp; 报告生成日期：2026 年 8 月 4 日 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936) &nbsp;·&nbsp; Sugon 超算平台 &nbsp;·&nbsp; Git 18 commits
+  作者：opensource_community &nbsp;·&nbsp; 初版：2026 年 8 月 4 日 &nbsp;·&nbsp; 融合更新：2026 年 8 月 18 日 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936 / gfx906) &nbsp;·&nbsp; 两套计算环境均已脱敏
 </div>
 
 </div>
