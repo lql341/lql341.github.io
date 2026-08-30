@@ -34,8 +34,13 @@
     code { font-family: "SFMono-Regular", Consolas, monospace; }
     .callout { margin: 16px 0; padding: 15px 18px; border-left: 3px solid; }
     .callout strong { display: block; margin-bottom: 3px; }
+    .preview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+    .preview-page { margin: 0; }
+    .preview-page a { display: block; overflow: hidden; border: 1px solid var(--report-line); border-radius: 10px; background: #fff; }
+    .preview-page img { display: block; width: 100%; height: auto; }
+    .preview-page figcaption { margin-top: 8px; color: var(--report-muted); font: 11px/1.5 monospace; text-align: center; }
     .footer { margin-top: 54px; padding-top: 22px; border-top: 1px solid; font-size: 12px; text-align: center; }
-    @media (max-width: 760px) { .summary-grid { grid-template-columns: repeat(2,1fr); } .header { padding: 34px 24px; } }
+    @media (max-width: 760px) { .summary-grid { grid-template-columns: repeat(2,1fr); } .preview-grid { grid-template-columns: 1fr; } .header { padding: 34px 24px; } }
     @media (max-width: 480px) { .summary-grid { grid-template-columns: 1fr; } }
   </style>
   <link rel="stylesheet" href="/reports/report-theme.css">
@@ -60,6 +65,25 @@
         <div class="summary-card"><div class="label">文献后端</div><div class="value">Biber</div><div class="detail">authoryear 引用样式</div></div>
       </div>
       <div class="callout lesson"><strong>结论</strong>这套样稿适合作为 Linux 科研写作环境的安装验收基线：它不追求展示某一篇论文，而是在一次构建里尽早暴露字体、宏包、绘图、编号和文献工具链问题。</div>
+    </section>
+
+    <section aria-labelledby="preview">
+      <h2 id="preview">编译成果预览</h2>
+      <p>以下三页来自本次 XeLaTeX + Biber 成功构建的实际输出。点击任一页面可查看原尺寸，预览依次覆盖文档结构与中英混排、数学与表格、矢量图与参考文献。</p>
+      <div class="preview-grid">
+        <figure class="preview-page">
+          <a href="/reports/assets/latex-bilingual-example/page-1.png" target="_blank" rel="noreferrer"><img src="/reports/assets/latex-bilingual-example/page-1.png" alt="LaTeX 样稿第一页：双语标题、摘要、目录、文本层级和列表" loading="lazy"></a>
+          <figcaption>PAGE 01 · BILINGUAL TEXT &amp; STRUCTURE</figcaption>
+        </figure>
+        <figure class="preview-page">
+          <a href="/reports/assets/latex-bilingual-example/page-2.png" target="_blank" rel="noreferrer"><img src="/reports/assets/latex-bilingual-example/page-2.png" alt="LaTeX 样稿第二页：数学公式、定理、表格和单位" loading="lazy"></a>
+          <figcaption>PAGE 02 · MATH &amp; TABLES</figcaption>
+        </figure>
+        <figure class="preview-page">
+          <a href="/reports/assets/latex-bilingual-example/page-3.png" target="_blank" rel="noreferrer"><img src="/reports/assets/latex-bilingual-example/page-3.png" alt="LaTeX 样稿第三页：TikZ、PGFPlots、代码和参考文献" loading="lazy"></a>
+          <figcaption>PAGE 03 · FIGURES, CODE &amp; REFERENCES</figcaption>
+        </figure>
+      </div>
     </section>
 
     <section aria-labelledby="scope">
