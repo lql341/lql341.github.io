@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="XeLaTeX 中英文科研排版、图表、代码与 Biber 文献链路的可复现验证报告。">
+  <title>XeLaTeX 中英文科研排版工具链验证</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.75 Inter, system-ui, sans-serif; }
+    .header, .container { width: min(1040px, calc(100% - 40px)); margin-inline: auto; }
+    .header { padding: 48px; }
+    .header h1 { max-width: 760px; margin: 10px 0 8px; font-size: clamp(30px, 5vw, 54px); line-height: 1.08; }
+    .header .eyebrow { font: 700 11px/1.4 monospace; letter-spacing: .16em; text-transform: uppercase; }
+    .header .subtitle { max-width: 720px; margin-top: 16px; }
+    .header .meta { margin-top: 16px; font: 12px/1.6 monospace; }
+    .container { padding: 34px 0 70px; }
+    section { margin-bottom: 42px; }
+    h2 { margin: 0 0 18px; padding-bottom: 10px; border-bottom: 1px solid; font-size: 23px; }
+    h3 { margin: 24px 0 8px; font-size: 17px; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 10px 0 14px 22px; padding: 0; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+    .summary-card { padding: 20px; border: 1px solid; border-radius: 12px; }
+    .summary-card .label { font: 700 10px/1.4 monospace; letter-spacing: .1em; text-transform: uppercase; }
+    .summary-card .value { margin-top: 8px; font-size: 26px; font-weight: 700; }
+    .summary-card .detail { margin-top: 4px; font-size: 12px; }
+    .table-wrap { overflow-x: auto; border: 1px solid; border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 11px 14px; border-bottom: 1px solid; text-align: left; vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    .status { font-weight: 700; white-space: nowrap; }
+    pre { overflow-x: auto; padding: 16px 18px; }
+    code { font-family: "SFMono-Regular", Consolas, monospace; }
+    .callout { margin: 16px 0; padding: 15px 18px; border-left: 3px solid; }
+    .callout strong { display: block; margin-bottom: 3px; }
+    .footer { margin-top: 54px; padding-top: 22px; border-top: 1px solid; font-size: 12px; text-align: center; }
+    @media (max-width: 760px) { .summary-grid { grid-template-columns: repeat(2,1fr); } .header { padding: 34px 24px; } }
+    @media (max-width: 480px) { .summary-grid { grid-template-columns: 1fr; } }
+  </style>
+  <link rel="stylesheet" href="/reports/report-theme.css">
+</head>
+<body>
+  <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
+
+  <header class="header">
+    <div class="eyebrow">Reproducible toolchain validation</div>
+    <h1>XeLaTeX 中英文科研排版工具链验证</h1>
+    <p class="subtitle">Bilingual typesetting, mathematics, vector graphics, code listings and bibliography in one compact smoke test.</p>
+    <div class="meta">验证日期：2026-08-30 · 公开版：已脱敏 · 输出：3 页 A4 PDF</div>
+  </header>
+
+  <main class="container">
+    <section aria-labelledby="summary">
+      <h2 id="summary">摘要</h2>
+      <div class="summary-grid">
+        <div class="summary-card"><div class="label">核心能力</div><div class="value">9 / 9</div><div class="detail">均完成编译与视觉检查</div></div>
+        <div class="summary-card"><div class="label">输出规模</div><div class="value">3 pages</div><div class="detail">A4，紧凑但覆盖完整</div></div>
+        <div class="summary-card"><div class="label">构建引擎</div><div class="value">XeLaTeX</div><div class="detail">ctex + Fandol 中文字体</div></div>
+        <div class="summary-card"><div class="label">文献后端</div><div class="value">Biber</div><div class="detail">authoryear 引用样式</div></div>
+      </div>
+      <div class="callout lesson"><strong>结论</strong>这套样稿适合作为 Linux 科研写作环境的安装验收基线：它不追求展示某一篇论文，而是在一次构建里尽早暴露字体、宏包、绘图、编号和文献工具链问题。</div>
+    </section>
+
+    <section aria-labelledby="scope">
+      <h2 id="scope">一、测试目标与边界</h2>
+      <p>测试目录包含主文档、BibLaTeX 数据库、构建说明和字体故障记录。验证目标是确认从源文件到 PDF 的完整路径可用，并通过视觉检查确认关键版面没有缺字、方框、重叠或裁切。</p>
+      <p>这不是字体质量基准、印刷色彩验证或 PDF/UA 无障碍认证；测试数据也仅用于排版展示，表格中的准确率和耗时不代表真实实验结果。</p>
+    </section>
+
+    <section aria-labelledby="matrix">
+      <h2 id="matrix">二、覆盖矩阵</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>能力</th><th>覆盖内容</th><th>验证结果</th></tr></thead>
+        <tbody>
+          <tr><td>中英混排</td><td>中文、English、粗体、斜体、等宽、脚注与全角标点</td><td class="status">通过</td></tr>
+          <tr><td>文档结构</td><td>标题、摘要、目录、章节、嵌套列表与页码</td><td class="status">通过</td></tr>
+          <tr><td>数学排版</td><td>角标、重音、矩阵、分段函数、积分、极限、定理与编号</td><td class="status">通过</td></tr>
+          <tr><td>表格与单位</td><td>booktabs、multirow、siunitx、小数对齐与科学计数法</td><td class="status">通过</td></tr>
+          <tr><td>矢量绘图</td><td>TikZ 曲线、坐标轴、标注与子图</td><td class="status">通过</td></tr>
+          <tr><td>统计图</td><td>PGFPlots 折线、网格、轴标签与图例结构</td><td class="status">通过</td></tr>
+          <tr><td>代码清单</td><td>Python 语法、行号、自动换行、边框与等宽字体</td><td class="status">通过</td></tr>
+          <tr><td>交叉引用</td><td>定理、公式、表格和图片编号链接</td><td class="status">通过，有本地化改进项</td></tr>
+          <tr><td>参考文献</td><td>Biber、作者-年份引文、DOI 与文末条目</td><td class="status">通过</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section aria-labelledby="pipeline">
+      <h2 id="pipeline">三、最小可复现流程</h2>
+      <p>主文档使用 <code>ctexart</code>，通过 XeLaTeX 处理 Unicode 与中文；<code>biblatex</code> 选择 Biber 作为后端。<code>latexmk</code> 负责判断并串联多轮 XeLaTeX、Biber 和最终收敛构建。</p>
+      <pre><code># 构建
+latexmk -xelatex main.tex
+
+# 强制完整重建并在错误处停止
+latexmk -g -xelatex -interaction=nonstopmode -halt-on-error main.tex
+
+# 清理中间产物
+latexmk -C</code></pre>
+      <div class="callout note"><strong>验收建议</strong>构建成功只代表工具退出码正常。仍应渲染全部页面，逐页检查字体回退、公式边界、浮动体位置、代码溢出和文献链接。</div>
+    </section>
+
+    <section aria-labelledby="findings">
+      <h2 id="findings">四、视觉核查与改进项</h2>
+      <h3>已确认正常</h3>
+      <ul>
+        <li>三页 A4 均可正常渲染，中文与 Latin 字符清晰，无缺字和黑框。</li>
+        <li>矩阵、积分、分段函数与多行公式未越界；表格数值对齐稳定。</li>
+        <li>TikZ 与 PGFPlots 保持矢量清晰度，子图标题和总图题层级明确。</li>
+        <li>Biber 生成两条完整文献记录，作者-年份引文与 DOI 链接正常。</li>
+      </ul>
+      <h3>值得修正但不阻塞验收</h3>
+      <p><code>cleveref</code> 的引用名称仍显示为英文，例如 <code>theorem</code>、<code>equation</code>、<code>figure</code> 和 <code>table</code>。若目标是全中文论文，可显式定义对应名称，或检查语言选项与宏包加载顺序。测试中的摄氏温度范围也显示英文连接词 <code>to</code>，正式中文文档宜统一为中文表达。</p>
+    </section>
+
+    <section aria-labelledby="fonts">
+      <h2 id="fonts">五、桌面字体故障的定位经验</h2>
+      <p>安装中文 TeX Live 组件后，桌面终端或 Electron/Chromium 应用可能短暂出现中文字符间距异常。已验证的判断是：LaTeX 编译链本身并未损坏，问题来自系统 Fontconfig 回退候选发生变化，而长期运行的图形应用仍持有旧缓存或旧映射。</p>
+      <ol>
+        <li>安装前后记录 <code>fc-match</code> 结果和系统包变更，保留可比较基线。</li>
+        <li>XeLaTeX 的 <code>ctex</code> 默认可使用 TeX Live 自带的 Fandol 字体，通常无须为基本中文支持额外改变桌面字体。</li>
+        <li>字体变化后重建 Fontconfig 缓存，并完全退出使用字体渲染的应用；缓存状态仍不一致时再完整重启。</li>
+        <li>正式成果在源文件中显式指定字体，减少对桌面默认回退链的依赖。</li>
+      </ol>
+      <div class="callout warn"><strong>边界说明</strong>不能把这类现象武断归因于单个字体文件。可靠结论应建立在字体匹配结果、包变更记录和进程重启对照上。</div>
+    </section>
+
+    <section aria-labelledby="privacy">
+      <h2 id="privacy">六、公开版脱敏说明</h2>
+      <p>本报告仅公开通用的宏包组合、构建命令、验证方法与故障机理。未收录源目录绝对路径、本机用户名、主机标识、用户级配置文件内容、安装日志及其他可关联个人环境的信息；作者字段也改写为工具链验证描述。</p>
+    </section>
+
+    <section aria-labelledby="conclusion">
+      <h2 id="conclusion">七、结论</h2>
+      <p>本次测试证明 XeLaTeX、ctex、TikZ/PGFPlots、listings、cleveref、siunitx 与 Biber 可以组成一条紧凑、可重复的中英文科研排版基线。核心能力全部产出预期版面；后续工作应集中在引用名称和单位连接词的中文本地化，而不是继续扩张测试篇幅。</p>
+    </section>
+
+    <footer class="footer">opensource_community · Public engineering report · Sanitized for publication</footer>
+  </main>
+</body>
+</html>
