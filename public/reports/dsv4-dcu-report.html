@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="DeepSeek V4 Flash FP4 在海光 DCU gfx936 上的 vLLM V1 移植与性能分析。">
-<title>DeepSeek V4 Flash FP4 海光 DCU vLLM 移植报告</title>
+<meta name="description" content="vLLM 0.27.x 在海光 DCU gfx936 上移植成功：DeepSeek V4 Flash FP4 通过 V1 Engine 完成 TP=4/8 端到端推理。">
+<title>vLLM 0.27.x 移植成功：DeepSeek V4 Flash FP4 海光 DCU 报告</title>
 <style>
 :root{--bg:#07101d;--surface:#0d1a2b;--line:#243954;--text:#eef5fc;--muted:#9eb0c7;--accent:#5eead4;--blue:#60a5fa;--ok:#a6e3a1;--warn:#f9e2af;--bad:#f38ba8}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;padding:18px 20px 40px;font:14px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 0,#11385f 0,transparent 34%),var(--bg)}.container,.header,.top-nav,.footer{max-width:1000px;margin-left:auto;margin-right:auto}.top-nav{margin-bottom:18px}.top-nav a{color:var(--accent);font-weight:700;text-decoration:none}.header{padding:50px 40px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(18,35,58,.98),rgba(10,23,40,.98));box-shadow:0 18px 50px rgba(0,0,0,.24)}h1{margin:0;font-size:28px;line-height:1.3}.sub{margin-top:10px;color:var(--muted);font-size:15px}.meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:16px;color:var(--muted);font-size:13px}.content{margin-top:24px}.card{margin-bottom:24px;overflow:hidden;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:18px;background:linear-gradient(145deg,rgba(18,35,58,.97),rgba(10,23,40,.97));box-shadow:0 14px 36px rgba(0,0,0,.18)}.head{display:flex;align-items:center;gap:10px;padding:18px 24px;border-bottom:1px solid var(--line);color:var(--accent);font-size:20px;font-weight:700}.idx{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#06211f;font-size:12px}.body{padding:24px 30px}.body p{margin:0 0 10px}.lead{font-size:16px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}.metric{padding:16px;border:1px solid var(--line);border-radius:10px;background:rgba(96,165,250,.045)}.metric b{display:block;color:var(--accent);font-size:21px}.metric span{color:var(--muted);font-size:12px}table{width:100%;margin:14px 0;border-collapse:collapse;font-size:13px}th,td{padding:9px 12px;text-align:left;border:1px solid var(--line);vertical-align:top}th{background:#173351;white-space:nowrap}td,li{color:var(--muted)}tr:nth-child(even){background:rgba(96,165,250,.045)}code{padding:1px 5px;border:1px solid rgba(94,234,212,.15);border-radius:3px;background:rgba(94,234,212,.08);color:var(--accent);font-size:12px}pre{margin:12px 0;padding:15px 18px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#081321;color:var(--text);font-size:12px;line-height:1.55}.badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:12px;font-weight:700}.ok{background:rgba(166,227,161,.12);color:var(--ok)}.warn{background:rgba(249,226,175,.12);color:var(--warn)}.info{background:rgba(96,165,250,.12);color:var(--blue)}.bad{background:rgba(243,139,168,.12);color:var(--bad)}.note{padding:13px 16px;border-left:3px solid var(--blue);border-radius:4px;background:rgba(96,165,250,.07);color:var(--muted)}ul,ol{padding-left:22px}.footer{margin-top:40px;padding:24px;text-align:center;border-top:3px solid var(--accent);color:#71869f;font-size:12px}@media(max-width:760px){body{padding:12px}.header{padding:34px 22px}h1{font-size:23px}.body{padding:18px}.metrics{grid-template-columns:repeat(2,1fr)}table{display:block;overflow-x:auto}}
 </style>
@@ -14,19 +14,19 @@
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
 <div class="top-nav"><a href="/reports/">← 返回报告归档</a></div>
 <header class="header">
-  <h1>DeepSeek V4 Flash FP4 海光 DCU vLLM 移植报告</h1>
-  <div class="sub">从软件反量化原型到 vLLM V1 端到端推理，以及面向 gfx936 的 Sparse MLA / MoE 优化</div>
-  <div class="meta"><span>更新：2026-08-26</span><span>海光 BW1000 · gfx936 · DTK 26.04</span><span>vLLM V1 · TP=4 / TP=8</span><span>公开脱敏版</span></div>
+  <h1>vLLM 0.27.x 移植成功：DeepSeek V4 Flash FP4 海光 DCU 报告</h1>
+  <div class="sub">vLLM 0.27.x 开发版经 gfx936 / DTK 定向适配，V1 Engine 已完成真实 FP4 权重端到端推理</div>
+  <div class="meta"><span>更新：2026-08-26</span><span>海光 BW1000 · gfx936 · DTK 26.04</span><span>vLLM 0.27.x · V1 Engine · TP=4 / TP=8</span><span>公开脱敏版</span></div>
 </header>
 <main class="container content">
 <section class="card"><div class="head"><span class="idx">1</span>结论摘要</div><div class="body">
-  <p class="lead"><strong>DeepSeek V4 Flash FP4 已在 gfx936 上通过 vLLM V1 Engine 完成端到端推理，TP=4 与 TP=8 均可启动；TP=4 是当前单请求推荐配置。</strong></p>
+  <p class="lead"><strong>核心成果：vLLM 0.27.x 已成功移植到海光 DCU gfx936。DeepSeek V4 Flash FP4 使用真实权重通过 V1 Engine 完成端到端生成，TP=4 与 TP=8 均可运行；TP=4 是当前单请求推荐配置。</strong></p>
   <div class="metrics"><div class="metric"><b>0.99 tok/s</b><span>TP=4，固定生成 32 token</span></div><div class="metric"><b>0.68–0.81</b><span>TP=8 单请求 tok/s</span></div><div class="metric"><b>TP=4 / 8</b><span>已验证拓扑</span></div><div class="metric"><b>bit-exact</b><span>M=1 MoE routing Q1</span></div></div>
   <table><tr><th>能力</th><th>状态</th><th>结论</th></tr><tr><td>FP4 端到端生成</td><td><span class="badge ok">已通过</span></td><td>输出、token IDs、finite 状态与退出码纳入验收</td></tr><tr><td>vLLM V1 / TP=4</td><td><span class="badge ok">推荐基线</span></td><td>可完整装载模型，当前单请求性能最佳</td></tr><tr><td>vLLM V1 / TP=8</td><td><span class="badge info">可运行</span></td><td>单请求受 collective 开销限制，保留用于并发路线</td></tr><tr><td>batch=8</td><td><span class="badge warn">未验收</span></td><td>存在非确定性 NaN、BOS 与文本退化，吞吐不列为正式结果</td></tr></table>
-  <p class="note">本页替代早期“vLLM/Triton 不可用”的阶段性判断。经过 gfx936 定向适配后，vLLM V1 已跑通；尚未完成的是高 batch 稳定性和吞吐优化。</p>
+  <p class="note">本页替代早期“vLLM/Triton 不可用”的阶段性判断。准确结论是：上游版本不能在该平台直接使用，但 vLLM 0.27.x 经 gfx936 / DTK 定向适配后已移植成功；尚未完成的是高 batch 稳定性和吞吐优化。</p>
 </div></section>
 <section class="card"><div class="head"><span class="idx">2</span>平台与适配边界</div><div class="body">
-  <table><tr><th>项目</th><th>公开配置</th></tr><tr><td>加速器</td><td>海光 BW1000 DCU，gfx936，单节点 8 卡，单卡约 64 GiB</td></tr><tr><td>工具链</td><td>DTK 26.04，GCC 12.2，PyTorch 2.13</td></tr><tr><td>推理引擎</td><td>vLLM 开发版本，V1 Engine</td></tr><tr><td>模型</td><td>DeepSeek V4 Flash FP4；内部存储信息已移除</td></tr><tr><td>运行约束</td><td><code>enforce_eager=True</code>；不默认启用未经 gfx936 验证的 collective 与实验 kernel</td></tr></table>
+  <table><tr><th>项目</th><th>公开配置</th></tr><tr><td>加速器</td><td>海光 BW1000 DCU，gfx936，单节点 8 卡，单卡约 64 GiB</td></tr><tr><td>工具链</td><td>DTK 26.04，GCC 12.2，PyTorch 2.13</td></tr><tr><td>推理引擎</td><td><strong>vLLM 0.27.x 开发版，V1 Engine；gfx936 定向移植成功</strong></td></tr><tr><td>模型</td><td>DeepSeek V4 Flash FP4；内部存储信息已移除</td></tr><tr><td>运行约束</td><td><code>enforce_eager=True</code>；不默认启用未经 gfx936 验证的 collective 与实验 kernel</td></tr></table>
   <p>FP4 MoE 当前使用 emulation，FP8 主干采用 BF16 software fallback。“跑通”指真实模型、真实权重和完整生成链路通过，并非仅完成 kernel 单测或模型加载。</p>
 </div></section>
 <section class="card"><div class="head"><span class="idx">3</span>关键修复与验证</div><div class="body">
@@ -66,6 +66,6 @@ DSV4_MOE_BACKEND=emulation</pre>
   <p class="note">公开版仅保留可复核的技术结论和聚合性能。集群名称、地域、账户、节点、分区、作业编号、绝对目录、内部镜像与日志位置均已移除。</p>
 </div></section>
 </main>
-<footer class="footer">DeepSeek V4 Flash FP4 · Hygon DCU gfx936 · vLLM V1 · 2026-08-26 · Public sanitized edition</footer>
+<footer class="footer">DeepSeek V4 Flash FP4 · Hygon DCU gfx936 · vLLM 0.27.x / V1 Engine · 2026-08-26 · Public sanitized edition</footer>
 </body>
 </html>
