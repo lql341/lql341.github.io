@@ -232,7 +232,7 @@
     <main>
       <div class="meta">完整技术报告 · 基线记录 2026-08-21 · 最新成果更新至 2026-08-26 · 公开脱敏版</div>
       <h1 id="deepseek-v4-flash-fp4-在海光-dcu-gfx936-上的-vllm-移植与调试报告">vLLM 0.27.x 移植成功：DeepSeek V4 Flash FP4 海光 DCU 完整报告</h1>
-<blockquote><strong>2026-08-26 更新：</strong>vLLM <code>0.27.x</code> 开发版经 gfx936 / DTK 定向适配后，V1 Engine 已使用真实 DeepSeek V4 Flash FP4 权重完成端到端推理。TP=4 与 TP=8 均可运行；TP=4 固定生成 32 token 约 <code>0.99 tok/s</code>，是当前单请求推荐配置。TP=8 约 <code>0.68–0.81 tok/s</code>，主要受 collective 限制。</blockquote>
+<blockquote><strong>2026-08-26 核心成果：</strong>vLLM <code>0.27.x</code> 已成功移植到海光 DCU gfx936。经 DTK 定向适配，V1 Engine 使用真实 DeepSeek V4 Flash FP4 权重完成 TP=4/8 端到端推理；Sparse MLA、MXFP4 MoE 与连续 decode 整条混合精度链路均已跑通。当前已从“功能移植”进入稳定性与性能工程阶段。</blockquote>
 <h2 id="0-后续优化进展">0. 2026-08-24 至 08-26 后续优化进展</h2>
 <h3>0.1 从功能跑通到稳定性能基线</h3>
 <ul>
