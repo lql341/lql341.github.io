@@ -67,13 +67,14 @@ hr { border: 0 !important; border-top: 1px solid var(--report-line) !important; 
 .report-site-nav {
   width: min(1280px, calc(100% - 40px));
   min-height: 72px;
-  margin: 0 auto 18px;
+  margin: 0 auto 18px !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 26px;
   border-bottom: 1px solid var(--report-line);
 }
+.reader-nav.report-site-nav { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--report-line) !important; border-radius: 0 !important; }
 .report-site-nav .report-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--report-text); font-weight: 800; letter-spacing: -.02em; text-decoration: none; }
 .report-site-nav .report-brand::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--report-accent); box-shadow: 0 0 20px rgba(155,234,52,.42); }
 .report-site-nav nav { display: flex; align-items: center; gap: 22px; }
@@ -83,7 +84,7 @@ hr { border: 0 !important; border-top: 1px solid var(--report-line) !important; 
 
 /* Shared editorial hierarchy. */
 .container { max-width: var(--report-max) !important; }
-.header, body > header, .mast {
+.header, body > header:not(.report-site-nav), .mast {
   color: var(--report-text) !important;
   background: linear-gradient(145deg, rgba(20,28,15,.98), rgba(8,10,8,.98)) !important;
   border: 1px solid var(--report-line) !important;
@@ -92,7 +93,7 @@ hr { border: 0 !important; border-top: 1px solid var(--report-line) !important; 
 }
 .header { padding: clamp(34px, 5vw, 58px) !important; }
 .mast { padding: clamp(36px, 5vw, 62px) 0 !important; background: transparent !important; border-width: 0 0 1px !important; border-radius: 0 !important; }
-.header::before, body > header::before, .mast::before { color: var(--report-accent) !important; }
+.header::before, body > header:not(.report-site-nav)::before, .mast::before { color: var(--report-accent) !important; }
 h1 { color: var(--report-text) !important; font-weight: 650 !important; letter-spacing: -.045em !important; }
 h2, .section h2, .card-header, .sec-head h2 { color: var(--report-text) !important; }
 h2, .section h2, .sec-head { border-color: var(--report-line-strong) !important; }
@@ -123,12 +124,17 @@ p, li { color: inherit; }
 .wrap > section, .page > section { margin: 16px 0 !important; padding: clamp(22px, 4vw, 34px) !important; border: 1px solid var(--report-line) !important; border-radius: 14px !important; }
 .card { border-left: 3px solid var(--report-accent) !important; }
 .card-header { background: var(--report-surface-2) !important; border-color: var(--report-line) !important; }
-.callout.lesson, .highlight-box { background: var(--report-accent-soft) !important; border-left-color: var(--report-accent) !important; }
+.callout.lesson, .highlight-box, .note { color: var(--report-text) !important; background: var(--report-accent-soft) !important; border-left-color: var(--report-accent) !important; }
 .callout.warn { background: rgba(241,212,134,.07) !important; border-left-color: var(--report-warning) !important; }
 .callout.note { background: rgba(169,212,255,.06) !important; border-left-color: #a9d4ff !important; }
 
-.table-wrap, .tw { border-color: var(--report-line) !important; border-radius: 10px !important; }
+.table-wrap, .tw { border-color: var(--report-line) !important; border-radius: 10px !important; background: var(--report-surface) !important; box-shadow: none !important; }
 table { color: var(--report-text) !important; background: transparent !important; }
+@media (max-width: 680px) {
+  table { max-width: none !important; }
+  .table-wrap, .tw { max-width: 100% !important; overflow-x: auto !important; }
+  .page, .wrap, .content, main { overflow-x: clip !important; }
+}
 th { color: var(--report-text) !important; background: var(--report-surface-3) !important; border-color: var(--report-line) !important; }
 td { color: #c5cec6 !important; border-color: var(--report-line) !important; }
 tr:nth-child(even) { background: rgba(155,234,52,.025) !important; }
@@ -149,7 +155,7 @@ a { color: var(--report-accent); }
 .badge-fail, .badge.dead, .status-fail { color: var(--report-danger) !important; background: rgba(255,146,125,.07) !important; }
 .footer, footer, .foot { color: #6f796f !important; background: transparent !important; border-color: var(--report-line) !important; }
 
-/* MinerU keeps its useful long-document TOC, but joins the same visual system. */
+/* All reports use the shared generated outline; old side and in-body TOCs are suppressed. */
 .shell { background: transparent !important; }
 .sidebar { background: #070907 !important; border-color: var(--report-line) !important; }
 .sidebar .brand { color: var(--report-text) !important; }
@@ -175,8 +181,9 @@ main, .wrap, .page, .content, .container, .reader-stage {
   max-width: var(--report-max) !important;
 }
 main, .wrap, .page, .content, .container { font-size: var(--report-body-size) !important; }
-.report-banner {
+.report-banner.report-banner {
   display: block !important;
+  box-sizing: border-box !important;
   width: 100% !important;
   max-width: var(--report-max) !important;
   margin: 0 auto 28px !important;
@@ -186,8 +193,9 @@ main, .wrap, .page, .content, .container { font-size: var(--report-body-size) !i
   border: 1px solid var(--report-line) !important;
   border-radius: 16px !important;
   box-shadow: inset 0 1px rgba(255,255,255,.035) !important;
+  text-align: left !important;
 }
-.report-banner h1 {
+.report-banner.report-banner h1 {
   max-width: 940px !important;
   margin: 10px 0 16px !important;
   color: var(--report-text) !important;
@@ -197,7 +205,11 @@ main, .wrap, .page, .content, .container { font-size: var(--report-body-size) !i
   letter-spacing: -.045em !important;
   border: 0 !important;
   padding: 0 !important;
+  overflow-wrap: anywhere !important;
+  hyphens: auto;
+  text-wrap: balance;
 }
+.report-banner::after { content: none !important; display: none !important; }
 .report-banner p, .report-banner .subtitle, .report-banner .standfirst,
 .report-banner .meta, .report-banner .reader-meta, .report-banner .runline {
   color: var(--report-muted) !important;
@@ -206,14 +218,14 @@ main, .wrap, .page, .content, .container { font-size: var(--report-body-size) !i
 }
 .report-banner .eyebrow, .report-banner .tag, .report-banner .reader-kicker,
 .report-banner .kicker { color: var(--report-accent) !important; }
-body > header.report-banner {
+body > header.report-banner.report-banner {
   padding: clamp(26px, 4.5vw, 48px) !important;
   background: var(--report-banner) !important;
   border: 1px solid var(--report-line) !important;
   border-radius: 16px !important;
 }
 body main > section, body .container > section, body .content-inner > section,
-body .wrap > section, body .page > section {
+body .wrap > section, body .page > section, body .report-generated-section {
   margin: 16px 0 !important;
   padding: clamp(22px, 3.5vw, 30px) !important;
   color: var(--report-text) !important;
@@ -222,6 +234,54 @@ body .wrap > section, body .page > section {
   border-radius: 14px !important;
   box-shadow: none !important;
 }
+.section {
+  width: min(calc(100% - 40px), var(--report-max)) !important;
+  margin: 16px auto !important;
+  padding: clamp(22px, 3.5vw, 30px) !important;
+  border: 1px solid var(--report-line) !important;
+  border-radius: 14px !important;
+}
+main:not(.reader-stage) { padding: 0 0 72px !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.report-no-sidebar { display: block !important; width: min(calc(100% - 40px), var(--report-max)) !important; max-width: var(--report-max) !important; margin: 20px auto !important; padding: 0 !important; gap: 0 !important; }
+.report-no-sidebar > aside, .report-no-sidebar > .sidebar { display: none !important; }
+.report-no-sidebar > main, .report-no-sidebar > .content { width: 100% !important; max-width: var(--report-max) !important; min-width: 0 !important; padding: 0 0 72px !important; }
+.report-no-sidebar > .content { flex: none !important; }
+.legacy-report-toc { display: none !important; }
+.report-outline {
+  width: min(calc(100% - 40px), var(--report-max));
+  margin: 0 auto 26px;
+  color: var(--report-text);
+  background: linear-gradient(145deg, rgba(16,21,16,.96), rgba(8,10,8,.96));
+  border: 1px solid var(--report-line);
+  border-radius: 14px;
+}
+.report-banner + .report-outline { width: min(calc(100% - 40px), var(--report-max)); }
+.report-outline summary {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.report-outline summary::-webkit-details-marker { display: none; }
+.report-outline summary > span { color: var(--report-accent); font: 700 10px/1.4 ui-monospace, monospace; letter-spacing: .12em; }
+.report-outline summary > strong { margin-left: auto; color: var(--report-text); font-size: 13px; }
+.report-outline summary > small { color: var(--report-muted); font: 11px/1.4 ui-monospace, monospace; }
+.report-outline summary > b { color: var(--report-accent); font-size: 18px; transition: transform .2s ease; }
+.report-outline[open] summary > b { transform: rotate(45deg); }
+.report-outline nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; padding: 0 20px 18px; border-top: 1px solid var(--report-line); }
+.report-outline-link { display: block; overflow: hidden; padding: 10px 4px; color: var(--report-muted) !important; border-bottom: 1px solid var(--report-line); font-size: 12px; line-height: 1.5; text-decoration: none; text-overflow: ellipsis; }
+.report-outline-link:hover { color: var(--report-accent) !important; }
+.report-outline-page { text-align: center; }
+body .content-inner > .report-outline, body main > .report-outline,
+body .container > .report-outline, body .wrap > .report-outline,
+body .page > .report-outline { width: 100% !important; }
+body > .report-outline, body .container > .report-outline { width: min(calc(100% - 40px), var(--report-max)) !important; }
+main:not(.reader-stage) p, main:not(.reader-stage) li { font-size: var(--report-body-size) !important; }
+body .report-banner p, body .report-banner .subtitle, body .report-banner .standfirst,
+body .report-banner .meta, body .report-banner .reader-meta, body .report-banner .runline { font-size: 13px !important; }
 body h2, body main h2, .section h2, .sec-head h2 {
   color: var(--report-text) !important;
   font-size: var(--report-h2-size) !important;
@@ -236,7 +296,14 @@ body h3, body main h3 {
   line-height: 1.4 !important;
 }
 body h4, body main h4 { color: var(--report-text) !important; font-size: 16px !important; line-height: 1.45 !important; }
-.container, .wrap, .page { width: min(calc(100% - 40px), var(--report-max)) !important; margin-left: auto !important; margin-right: auto !important; }
+.container, .wrap, .page {
+  width: min(calc(100% - 40px), var(--report-max)) !important;
+  max-width: var(--report-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 0 0 72px !important;
+}
+.content-inner { width: 100% !important; max-width: var(--report-max) !important; margin-left: auto !important; margin-right: auto !important; }
 .layout { max-width: 1380px !important; }
 .reader-hero.report-banner { padding: clamp(26px, 4.5vw, 48px) !important; }
 
@@ -247,7 +314,17 @@ body h4, body main h4 { color: var(--report-text) !important; font-size: 16px !i
   body h2, body main h2, .section h2, .sec-head h2 { font-size: 22px !important; }
   body h3, body main h3 { font-size: 18px !important; }
   .container, .wrap, .page { width: min(calc(100% - 28px), var(--report-max)) !important; }
+  .section { width: min(calc(100% - 28px), var(--report-max)) !important; }
+  .report-outline { width: min(calc(100% - 28px), var(--report-max)); margin-bottom: 20px; }
+  .report-outline summary { gap: 9px; padding: 14px; }
+  .report-outline nav { grid-template-columns: 1fr; padding: 0 14px 14px; }
+  .report-no-sidebar { width: min(calc(100% - 28px), var(--report-max)) !important; }
 }
+
+body th { color: var(--report-text) !important; background: var(--report-surface-3) !important; border-color: var(--report-line) !important; }
+body td { color: #c5cec6 !important; background: transparent !important; border-color: var(--report-line) !important; }
+body tr:nth-child(even) td { background: rgba(155,234,52,.025) !important; }
+body tr:hover td { background: rgba(155,234,52,.045) !important; }
 
 @media print {
   .report-site-nav { display: none; }
