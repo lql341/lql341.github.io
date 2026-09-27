@@ -7,7 +7,7 @@ date: 2026-09-27
 tags: [PaddleOCR, Z100, Transformers, OCR]
 tagsZh: [PaddleOCR, Z100, Transformers, OCR]
 href: /reports/paddleocr-z100-transformers-report.html
-hrefEn: /reports/en/paddleocr-z100.html
+hrefEn: /reports/en/paddleocr-z100-transformers-report.html
 featured: true
 homeOrder: 1
 metric: 0.49 pages/s

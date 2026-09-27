@@ -8,7 +8,7 @@ date: 2026-08-30
 tags: [LaTeX, XeLaTeX, Typesetting, Reproducibility]
 tagsZh: [LaTeX, XeLaTeX, 科研排版, 可复现构建]
 href: /reports/latex-bilingual-toolchain-report.html
-hrefEn: /reports/en/xelatex-toolchain.html
+hrefEn: /reports/en/latex-bilingual-toolchain-report.html
 featured: true
 homeOrder: 6
 metric: 9 / 9

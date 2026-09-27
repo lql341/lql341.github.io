@@ -7,7 +7,7 @@ date: 2026-09-27
 tags: [MinerU, Z100, HIP, Slurm]
 tagsZh: [MinerU, Z100, HIP, Slurm]
 href: /reports/mineru-cluster-build-report.html
-hrefEn: /reports/en/mineru-z100.html
+hrefEn: /reports/en/mineru-cluster-build-report.html
 featured: true
 homeOrder: 2
 metric: 955 docs/hour

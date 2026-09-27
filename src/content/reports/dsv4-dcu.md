@@ -6,6 +6,9 @@ date: 2026-08-26
 tags: [DeepSeek, DCU, vLLM, FP4]
 tagsZh: [DeepSeek, DCU, vLLM, FP4]
 href: /reports/dsv4-dcu-report.html
+hrefEn: /reports/en/dsv4-dcu-report.html
+summaryEn: Documents the vLLM 0.27.x port for DeepSeek V4 Flash FP4 on gfx936, including the root cause, patch history, validation evidence, performance, and batch limits.
+metricLabelEn: port validated on gfx936 · TP=4/8
 featured: true
 homeOrder: 4
 metric: vLLM 0.27.x

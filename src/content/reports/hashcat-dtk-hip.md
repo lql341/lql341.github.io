@@ -6,6 +6,9 @@ date: 2026-08-17
 tags: [Hashcat, HIP, ABI, Performance]
 tagsZh: [Hashcat, HIP, ABI 兼容, 性能测试]
 href: /reports/hashcat-dtk-hip-report.html
+hrefEn: /reports/en/hashcat-dtk-hip-report.html
+summaryEn: ABI adaptation, build debugging, algorithm validation, and HIP/OpenCL comparisons across two Hygon DCU generations and DTK releases.
+metricLabelEn: validated SHA2-256 throughput
 featured: true
 homeOrder: 2
 metric: 5.914 GH/s

@@ -6,6 +6,9 @@ date: 2026-08-16
 tags: [GROMACS, Z100, HIP, Benchmark]
 tagsZh: [GROMACS, Z100, HIP, 基准测试]
 href: /reports/gromacs-z100-report.html
+hrefEn: /reports/en/gromacs-z100-report.html
+summaryEn: Build fixes, correctness checks, and controlled performance comparisons of native HIP and the CUDA translation path on Hygon Z100.
+metricLabelEn: maximum measured HIP speedup
 featured: true
 homeOrder: 5
 metric: 3.20×

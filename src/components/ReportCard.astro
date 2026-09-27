@@ -3,16 +3,17 @@ interface Props {
   title: string;
   titleEn: string;
   summary: string;
+  summaryEn?: string;
   href: string;
+  hrefEn?: string;
   tags: string[];
   date: Date;
 }
-const { title, titleEn, summary, href, tags, date } = Astro.props;
+const { titleEn, summary, summaryEn, href, hrefEn, tags, date } = Astro.props;
 ---
 <article class="report-card">
   <div class="tag-row">{tags.map((tag) => <span class="tag">{tag}</span>)}</div>
-  <h2><a href={href}>{titleEn}</a></h2>
-  <p class="cn-title">{title}</p>
-  <p>{summary}</p>
-  <div class="card-footer"><time datetime={date.toISOString()}>{date.toISOString().slice(0, 10)}</time><a href={href}>Read report →</a></div>
+  <h2><a href={hrefEn ?? href}>{titleEn}</a></h2>
+  <p>{summaryEn ?? summary}</p>
+  <div class="card-footer"><time datetime={date.toISOString()}>{date.toISOString().slice(0, 10)}</time><a href={hrefEn ?? href}>Read report →</a></div>
 </article>

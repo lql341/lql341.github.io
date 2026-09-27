@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MinerU on Hygon Z100: Production Baseline and 4.0.7 Evaluation</title>
+<meta name="keywords" content="MinerU, Hygon DCU, Z100, OCR, production baseline, performance">
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-20">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-size:15px;line-height:1.72}
+  a{text-decoration:none} a:hover{text-decoration:underline}
+  code,pre,.mono{font-family:"SF Mono","JetBrains Mono",Consolas,monospace}
+  .shell{display:flex;max-width:1440px;margin:0 auto}
+  .sidebar{
+    position:sticky;top:0;align-self:flex-start;width:272px;flex:0 0 272px;height:100vh;
+    overflow-y:auto;padding:28px 18px 40px 28px;border-right:1px solid var(--report-line)
+  }
+  .brand{font:700 11px/1.4 "SF Mono",monospace;letter-spacing:.14em;text-transform:uppercase}
+  .brand-sub{font-size:12.5px;margin:6px 0 22px}
+  .toc{list-style:none;margin:0;padding:0}
+  .toc a{display:block;padding:7px 10px;margin:1px 0;font-size:13px;border-left:2px solid transparent;border-radius:5px}
+  .toc .num{font-family:"SF Mono",monospace;margin-right:7px;font-size:12px}
+  .content{flex:1;min-width:0;padding:0 40px 120px}
+  .content-inner{max-width:900px;margin:0 auto}
+  .mast{margin-top:18px;padding:54px 0 30px!important}
+  .tag{font:700 11.5px/1.4 "SF Mono",monospace;letter-spacing:.16em;text-transform:uppercase}
+  .mast h1{font-size:clamp(30px,4vw,46px);line-height:1.12;margin:14px 0 0}
+  .standfirst{font-size:17px;max-width:68ch;margin:18px 0 0}
+  .runline{display:flex;flex-wrap:wrap;gap:7px 24px;margin-top:22px;font:12px/1.6 "SF Mono",monospace;color:var(--report-muted)}
+  .runline b{color:#c5cec6}
+  section{margin-top:58px;scroll-margin-top:24px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--report-line-strong);padding-bottom:10px;margin-bottom:24px}
+  .sec-head .idx{font:700 15px/1 "SF Mono",monospace}
+  .sec-head h2{font-size:23px;margin:0}
+  h3{font-size:17px;margin:30px 0 13px}
+  p{margin:0 0 15px;max-width:76ch}
+  ul{max-width:76ch;padding-left:22px;margin:0 0 16px}
+  li{margin-bottom:6px}
+  .lede{font-size:16px}
+  .tw{overflow-x:auto;margin:0 0 22px;border:1px solid var(--report-line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--report-line);white-space:nowrap}
+  th:last-child,td:last-child{white-space:normal}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:0}
+  pre{padding:16px 18px;overflow-x:auto;font-size:12.8px;line-height:1.62;margin:0 0 18px}
+  p code,li code{padding:1.5px 6px;border:1px solid var(--report-line);border-radius:4px;font-size:12.8px}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--report-line);border:1px solid var(--report-line);margin:25px 0}
+  .metric{padding:18px 20px}
+  .metric .v{font:700 22px/1.2 "SF Mono",monospace;color:var(--report-accent)}
+  .metric .l{font-size:12px;color:var(--report-muted);margin-top:5px}
+  .callout{border-left:3px solid var(--report-muted);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0;max-width:76ch}
+  .callout .cl-label{display:block;font:700 11px/1.4 "SF Mono",monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+  .callout p{margin-bottom:0}
+  .badge{display:inline-flex;align-items:center;font:700 11px/1.3 "SF Mono",monospace;padding:3px 9px;border-radius:20px}
+  .badge.verified{color:var(--report-success);background:rgba(185,246,122,.08)}
+  .badge.boundary{color:var(--report-warning);background:rgba(241,212,134,.08)}
+  .decision-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:22px 0}
+  .decision{padding:20px;border:1px solid var(--report-line);border-radius:12px;background:linear-gradient(145deg,rgba(16,21,16,.96),rgba(8,10,8,.96))}
+  .decision h3{margin:0 0 8px;font-size:16px}
+  .decision p{font-size:13.5px;color:#c5cec6}
+  .flow{font-family:"SF Mono",monospace;font-size:12.5px;white-space:pre;overflow-x:auto;padding:19px 20px;border:1px solid var(--report-line);border-radius:10px;background:var(--report-code);color:#dce5dc}
+  .archive-link{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:18px 20px;border:1px solid var(--report-line-strong);border-radius:12px;background:var(--report-accent-soft)}
+  .foot{margin-top:80px;padding-top:22px;border-top:1px solid var(--report-line);font:11.5px/1.6 "SF Mono",monospace}
+  .menu-btn{display:none}
+  @media(max-width:960px){
+    .sidebar{position:fixed;z-index:40;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .2s;width:280px;box-shadow:0 0 40px rgba(0,0,0,.5)}
+    .sidebar.open{transform:translateX(0)}
+    .content{padding:0 20px 90px}
+    .menu-btn{display:flex;position:fixed;top:16px;left:16px;z-index:50;padding:8px 12px;border-radius:20px;cursor:pointer}
+    .mast{padding-top:76px!important}
+  }
+  @media(max-width:680px){.decision-grid{grid-template-columns:1fr}}
+</style>
+  <script src="/reports/report-theme.js?v=20260927-20" defer></script>
+</head>
+<body>
+<div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a><a href="/reports/mineru-cluster-build-report.html">Chinese</a></nav></div>
+<button class="menu-btn" id="menuBtn">☰ Catalog</button>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">MinerU · Z100 DCU</div>
+    <div class="brand-sub">Production and Experimental Dual Track<br>gfx906 · Updated on 2026-09-27</div>
+    <ul class="toc" id="toc">
+      <li><a href="#s1"><span class="num">01</span>Current Conclusion</a></li>
+      <li><a href="#s2"><span class="num">02</span>Scope and Method</a></li>
+      <li><a href="#s3"><span class="num">03</span>Platform and Runtime</a></li>
+      <li><a href="#s4"><span class="num">04</span>3.4.4 Production line</a></li>
+      <li><a href="#s5"><span class="num">05</span>4.0.7 Experimental line</a></li>
+      <li><a href="#s6"><span class="num">06</span>Basic optimization</a></li>
+      <li><a href="#s7"><span class="num">07</span>version comparison</a></li>
+      <li><a href="#s8"><span class="num">08</span>four-speed verification</a></li>
+      <li><a href="#s9"><span class="num">09</span>MinerU Drop</a></li>
+      <li><a href="#s10"><span class="num">10</span>Selection suggestions</a></li>
+      <li><a href="#s11"><span class="num">11</span>Recurrence and Boundaries</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <div class="content-inner">
+      <header class="mast report-banner">
+        <div class="tag">Compatibility and Performance Decision Report · Desensitized Public Version</div>
+        <h1>MinerU on Hygon Z100</h1>
+        <p class="standfirst">This report evaluates <b>MinerU 3.4.4 as the production baseline</b> and <b>MinerU 4.0.7 as an experimental route</b>, and documents the deployment configuration and supporting tests. Detailed failure records and reproduction commands are available in the companion experiment archive.</p>
+        <div class="runline">
+          <span><b>Hardware</b> Z100 · gfx906 · 16 GB × 4</span>
+          <span><b>System</b> CentOS 7.6 · glibc 2.17</span>
+          <span><b>tool chain</b> GCC 12.2 · DTK 26.04</span>
+          <span><b>Version</b> MinerU 3.4.4 / 4.0.7</span>
+          <span><b>Scheduling</b> Slurm</span>
+        </div>
+      </header>
+
+      <section id="s1">
+        <div class="sec-head"><span class="idx">01</span><h2>Main conclusions</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>Question</th><th>Conclusion</th><th>Status</th></tr>
+            <tr><td>Stable mass production</td><td><strong>3.4.4 pipeline + resident Z100 worker</strong></td><td><span class="badge verified">Production Baseline</span></td></tr>
+            <tr><td>Quick preview/index creation</td><td><strong>4.0.7 Flash</strong></td><td><span class="badge verified">Available</span></td></tr>
+            <tr><td>4.x high-quality local analysis</td><td><strong>4.0.7 Basic</strong>: ONNX CPU or resident Torch/DCU</td><td><span class="badge verified">Available</span></td></tr>
+            <tr><td>Standard / Advanced</td><td>Transformers VLM isolation patch has passed functional verification and is for experimental use only</td><td><span class="badge boundary">Experimental</span></td></tr>
+            <tr><td>Batch submission interface</td><td>Slurm-native <strong>mineru-drop</strong>, supports 3.x / 4.x adapter</td><td><span class="badge verified">Verified</span></td></tr>
+          </table>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="v">955/h</div><div class="l">3.4.4 Four-card service pool throughput</div></div>
+          <div class="metric"><div class="v">12 s</div><div class="l">3.4.4 Warm state 14 pages GOC</div></div>
+          <div class="metric"><div class="v">2.64 s</div><div class="l">4.0.7 Basic/Torch Warm 2 pages</div></div>
+          <div class="metric"><div class="v">4 / 4</div><div class="l">4.0.7 functional checks passed</div></div>
+        </div>
+        <div class="callout lesson"><span class="cl-label">Summary</span>
+          <p>MinerU 4.0.7 has passed functional checks, but the available production evidence does not justify replacing 3.4.4. Keep the production and experimental environments separate; do not upgrade the production environment in place.</p>
+        </div>
+      </section>
+
+      <section id="s2">
+        <div class="sec-head"><span class="idx">02</span><h2>Test scope and method</h2></div>
+        <p class="lede">report does not combine different MinerU modes, warm/cold states, and page counts into a single "speed ranking."</p>
+        <div class="tw">
+          <table>
+            <tr><th>Evidence</th><th>Purpose</th><th>Restrictions</th></tr>
+            <tr><td>Same as PDF, same page range, same resource</td><td>3.4.4 pipeline and 4.0.7 Basic cold comparison</td><td>output protocol is different</td></tr>
+            <tr><td>Repeated analysis of</td><td>Measure the warm speed after the model is stationary</td><td>without Slurm queue</td></tr>
+            <tr><td>Service pool concurrent stress test</td><td>Test production throughput, back pressure and fault recovery</td><td>Only 3.4.4 completed long-term verification</td></tr>
+            <tr><td>single page VLM smoke</td><td>proves that Standard / Advanced can run</td><td>Long document throughput cannot be extrapolated</td></tr>
+          </table>
+        </div>
+        <ul>
+          <li><strong>cold</strong>: New process, including import, model loading and first execution.</li>
+          <li><strong>Warm</strong>: Reuse the loaded model in the same process.</li>
+          <li><strong>Flash</strong> and <strong>Basic/pipeline</strong> has different qualities, so the quality-equivalent throughput is not directly compared.</li>
+        </ul>
+      </section>
+
+      <section id="s3">
+        <div class="sec-head"><span class="idx">03</span><h2>Test platform and runtime environment</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>Capabilities</th><th>Actual measurement</th><th>Meaning</th></tr>
+            <tr><td>FP32 GEMM</td><td>About 9.1 TFLOPS</td><td>Stable across retests</td></tr>
+            <tr><td>FP16 GEMM</td><td>About 16.1 TFLOPS</td><td>is about 1.8×</td></tr>
+            <tr><td>BF16 GEMM</td><td>About 5.8 TFLOPS</td><td>No hardware income</td></tr>
+            <tr><td>Triton / torch.compile</td><td>Not available</td><td>gfx906 and DTK runtime boundaries</td></tr>
+            <tr><td>vLLM HIP kernel</td><td>PagedAttention can run</td><td>is not equal to the full vLLM service already compatible with</td></tr>
+          </table>
+        </div>
+        <h3>Unified runtime closure</h3>
+        <p>CentOS 7's glibc 2.17 cannot directly load some wheels. Both environments reuse the same principle:</p>
+        <pre><code>module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+
+&lt;GLIBC_2_28_LD_SO&gt; \
+  --library-path "&lt;GLIBC_LIB&gt;:&lt;GCC_LIB&gt;:&lt;DTK_LIBS&gt;:&lt;SYSTEM_LIBS&gt;" \
+  &lt;VENV&gt;/bin/python "$@"</code></pre>
+        <p><code>sitecustomize.py</code> At the same time, point the multiprocessing spawn worker to the launcher to prevent the child process from falling back to the system glibc.</p>
+      </section>
+
+      <section id="s4">
+        <div class="sec-head"><span class="idx">04</span><h2>MinerU 3.4.4 production baseline</h2></div>
+        <p class="lede">3.4.4 is not in the "old version", but in the fact that it has completed quality, steady-state throughput, backpressure, retry and failure recovery verification.</p>
+        <div class="tw">
+          <table>
+            <tr><th>Project</th><th>Result</th></tr>
+            <tr><td>Backend</td><td>pipeline</td></tr>
+            <tr><td>4-card service pool</td><td><strong>955 docs/hour</strong>, concurrently 12</td></tr>
+            <tr><td>Stability</td><td>72 requests, 0 failed, 0 rejected</td></tr>
+            <tr><td>Warm GOC</td><td>14 pages about 12 seconds, 0.86 s/page</td></tr>
+            <tr><td>fault recovery</td><td>is under pressure test. Kill worker, automatically rebuild, and the request is not lost.</td></tr>
+            <tr><td>memory</td><td>72 No increase in RSS before and after request</td></tr>
+          </table>
+        </div>
+        <div class="flow">client
+   │
+   ▼
+Slurm Service Pool Gateway──Backpressure/Minimum Load/Retry
+   │
+   ├── Z100 worker 0
+   ├── Z100 worker 1
+   ├── Z100 worker 2
+   └── Z100 worker 3</div>
+        <div class="callout note"><span class="cl-label">Reason for retention</span>
+          <p>It is still the only path currently with complete production stress test evidence. Unless 4.0.7 completes equivalent corpus, warm service and failure experiments, the default production adapter will not be switched.</p>
+        </div>
+      </section>
+
+      <section id="s5">
+        <div class="sec-head"><span class="idx">05</span><h2>MinerU 4.0.7 Experimental environment and verification</h2></div>
+        <p>4.0.7 uses independent venv, model directory and configuration and does not cover 3.4.4. The new version uses tier to express quality and         <code>small_backend</code> and <code>vlm.engine</code> expresses the actual engine.</p>
+        <div class="tw">
+          <table>
+            <tr><th>Old 3.x</th><th>4.0.7 corresponds to</th><th>implements</th></tr>
+            <tr><td>Fast native analysis</td><td>Flash</td><td>Native text / Flash OCR</td></tr>
+            <tr><td>pipeline</td><td>Basic</td><td>ONNX or Torch small model</td></tr>
+            <tr><td>hybrid-engine</td><td>Standard</td><td>small model + VLM</td></tr>
+            <tr><td>vlm-engine</td><td>Advanced</td><td>Higher VLM inference investment</td></tr>
+          </table>
+        </div>
+        <h3>Experimental environment configuration</h3>
+        <pre><code>MinerU             4.0.7
+DocVortex          0.5.1
+ONNX Runtime       1.20.1
+Torch              2.7.1 + DTK 26.04
+torchvision        0.22.0 + DTK 26.04
+Transformers       5.17.0
+NumPy              1.26.4
+OpenCV             4.11.0</code></pre>
+        <p>official llama.cpp Linux wheel requires glibc 2.34, and the current user mode runtime only reaches 2.28.
+        Standard / Advanced therefore use isolation patches to expose existing Transformers backends in the source code.</p>
+      </section>
+
+      <section id="s6">
+        <div class="sec-head"><span class="idx">06</span><h2>Basic mode performance optimization</h2></div>
+        <p class="lede">The performance bottleneck is not the single-page operator, but "create a new Python + load all models for each task".</p>
+        <h3>ONNX Runtime CPU thread configuration</h3>
+        <div class="tw">
+          <table>
+            <tr><th>intra-op thread</th><th>Cold 2 pages</th><th>Warm 2 pages</th><th>Suggestions</th></tr>
+            <tr><td>4</td><td>76.29 s</td><td>10.43 s</td><td>Resource conservation</td></tr>
+            <tr><td>8</td><td><strong>31.63 s</strong></td><td>6.60 s</td><td>Total throughput priority</td></tr>
+            <tr><td>16</td><td>33.64 s</td><td><strong>6.13 s</strong></td><td>Single worker delay priority</td></tr>
+          </table>
+        </div>
+        <h3>Torch / Z100</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Status</th><th>2 pages take</th><th>changes</th></tr>
+            <tr><td>cold</td><td>198.12 s</td><td>model loading master</td></tr>
+            <tr><td>warm state, SDPA fallback math</td><td>2.86 s</td><td>multiplex singleton</td></tr>
+            <tr><td>warm, eager formula attention</td><td><strong>2.64 s</strong></td><td>About 8% faster</td></tr>
+          </table>
+        </div>
+        <div class="callout lesson"><span class="cl-label">has landed</span>
+          <p><code>mineru4-drop</code> Each Slurm worker has one <code>MinerUParser</code>and turn off formula SDPA on gfx906.
+          After 14 pages are forcibly split into 8+6 pages, the first block takes 148.8 seconds, and the second block only takes 10.3 seconds.</p>
+        </div>
+      </section>
+
+      <section id="s7">
+        <div class="sec-head"><span class="idx">07</span><h2>3.4.4 and 4.0.7 controlled comparison</h2></div>
+        <p>Same GOC PDF, pages 1–2, 8 CPU, 27 GB; DCU path uses 1 Z100 each.</p>
+        <div class="tw">
+          <table>
+            <tr><th>version/path</th><th>Slurm total time taken</th><th>model stage</th><th>Judgment</th></tr>
+            <tr><td>3.4.4 pipeline / CPU</td><td>165 s</td><td>36.95 s</td><td>Baseline</td></tr>
+            <tr><td>4.0.7 Basic / ONNX CPU</td><td><strong>93 s</strong></td><td>37.15 s</td><td>Peripheral startup is shorter</td></tr>
+            <tr><td>3.4.4 pipeline / Z100</td><td><strong>236 s</strong></td><td><strong>60.02 s</strong></td><td>Cold DCU Faster</td></tr>
+            <tr><td>4.0.7 Basic / Torch Z100</td><td>293 s</td><td>71.97 s</td><td>Cold is slower</td></tr>
+          </table>
+        </div>
+        <ul>
+          <li>CPU model stage is almost unchanged; 4.0.7 cold start advantage comes from import, preprocessing and output chain.</li>
+          <li>DCU cold 4.0.7 is slower, but warm drops to 2.64 seconds / 2 pages.</li>
+          <li>has different output protocols across versions, so the total time consumption is an application-level comparison, not a pure kernel benchmark.</li>
+        </ul>
+      </section>
+
+      <section id="s8">
+        <div class="sec-head"><span class="idx">08</span><h2>MinerU 4.0.7 functional verification</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>Tier</th><th>Resources / Backend</th><th>Sample</th><th>Result</th><th>Positioning</th></tr>
+            <tr><td>Flash</td><td>CPU native text</td><td>14 pages</td><td>69 s operation, model stage 16.8 s</td><td>Preview / Index</td></tr>
+            <tr><td>Basic</td><td>ONNX CPU / Torch Z100</td><td>2-page and 14-page blocks</td><td><span class="badge verified">passed and optimized</span></td><td>Local high quality</td></tr>
+            <tr><td>Standard</td><td>Torch + Transformers VLM</td><td>1 page cold</td><td>160.9 s</td><td>Experimental</td></tr>
+            <tr><td>Advanced</td><td>Transformers VLM</td><td>1 page warm status</td><td>24.3 s</td><td>Experimental</td></tr>
+          </table>
+        </div>
+        <div class="callout warn"><span class="cl-label">Do not misread</span>
+          <p>Standard is loaded for the first time, and Advanced reuses the VLM in the same process; the two cannot be ranked based on quality or speed.
+          This set of data only proves that all four gears can complete real analysis in the target environment.</p>
+        </div>
+      </section>
+
+      <section id="s9">
+        <div class="sec-head"><span class="idx">09</span><h2>MinerU Drop batch-processing interface</h2></div>
+        <div class="flow">native push file/directory
+        │
+        ▼
+Shared inbox ─ SHA256 / number of pages / chunking plan
+        │
+        ▼
+Slurm job array ─ One DCU per worker, model resident, atomic pick-up task
+        │
+        ▼
+afterany CPU merge ── Markdown / JSON / images / manifest
+        │
+        ▼
+status / retry / fetch</div>
+        <h3>adapter implements</h3>
+        <div class="tw">
+          <table>
+            <tr><th>remote root</th><th>version</th><th>Purpose</th></tr>
+            <tr><td><code>mineru-drop</code></td><td>3.4.4</td><td>Stable production default</td></tr>
+            <tr><td><code>mineru4-drop</code></td><td>4.0.7 Basic/Torch</td><td>New version of protocol and experimental batch</td></tr>
+          </table>
+        </div>
+        <pre><code># 3.4.4
+mineru-drop push &lt;PDF_OR_DIRECTORY&gt;
+
+# 4.0.7
+mineru-drop --remote-root mineru4-drop push &lt;PDF_OR_DIRECTORY&gt;
+
+# 通用
+mineru-drop [--remote-root ...] status --batch &lt;BATCH_ID&gt;
+mineru-drop [--remote-root ...] retry  --batch &lt;BATCH_ID&gt;
+mineru-drop [--remote-root ...] fetch  --batch &lt;BATCH_ID&gt;</code></pre>
+        <p>The long document defaults to 128 pages or less, and will be divided into 96 pages if it exceeds 128 pages. A small number of long documents are given priority to 1 worker,
+        Avoid multiple workers each responsible for a model cold start; expand to 4 workers for a large number of documents.</p>
+      </section>
+
+      <section id="s10">
+        <div class="sec-head"><span class="idx">10</span><h2>Deployment configuration recommendations</h2></div>
+        <div class="decision-grid">
+          <div class="decision"><h3>Batch final analysis</h3><p><strong>3.4.4 pipeline</strong><br>has four-card throughput, stability, backpressure and failure recovery evidence.</p></div>
+          <div class="decision"><h3>Quick search and preview</h3><p><strong>4.0.7 Flash</strong><br>does not require local large models and is suitable for the first pass of scanning and indexing.</p></div>
+          <div class="decision"><h3>4.x output protocol scenario</h3><p><strong>4.0.7 Basic</strong><br>CPU uses ONNX 8/16 threads; Z100 must be a resident model.</p></div>
+          <div class="decision"><h3>Complex page parsing evaluation</h3><p><strong>Standard / Advanced</strong><br>Only manually specify small batches and does not enter the default automatic routing.</p></div>
+        </div>
+        <h3>Recommended route</h3>
+        <pre><code>原生文本，只需索引        → 4.0.7 Flash
+需要最终 Markdown / JSON  → 3.4.4 pipeline
+必须使用 4.x schema       → 4.0.7 Basic
+极复杂页面、人工复核      → Standard / Advanced</code></pre>
+      </section>
+
+      <section id="s11">
+        <div class="sec-head"><span class="idx">11</span><h2>Reproduction procedure and scope</h2></div>
+        <h3>Minimum recurrence constraint</h3>
+        <ul>
+          <li>The login node prepares dependencies and models; the computing node runs offline.</li>
+          <li>module must be loaded before venv.</li>
+          <li>The main process and the spawn child process must share the glibc 2.28 launcher.</li>
+          <li>Slurm scripts must pass real workload exit codes.</li>
+          <li>4.0.7 ONNX Runtime 1.20.1 uses relabeled wheel and can only run under external glibc 2.28.</li>
+        </ul>
+        <h3>Known limitations</h3>
+        <div class="tw">
+          <table>
+            <tr><th>border</th><th>Impact</th></tr>
+            <tr><td>gfx906 No Flash Attention</td><td>Torch formula/VLM attention fallback; the formula model has been switched to eager</td></tr>
+            <tr><td>mineru-llama-cpp requires glibc 2.34</td><td>official local Standard/Advanced engine cannot be installed</td></tr>
+            <tr><td>Vendor vLLM version is lower than 4.0.7 Claim scope</td><td>Not used as the 4.x default VLM engine</td></tr>
+            <tr><td>Cross-block paragraphs and tables</td><td>manifest clearly indicates that sampling is required for review</td></tr>
+          </table>
+        </div>
+        <div class="archive-link">
+          <div><strong>Complete experimental file</strong><br><span class="lede">retains Triton, vLLM, glibc, failure paths, service pool implementation and all historical commands.</span></div>
+          <a href="/reports/mineru-cluster-build-report-archive.html">Open file →</a>
+        </div>
+      </section>
+
+      <div class="foot">Initial experiment: 2026-08-12 ~ 2026-08-13 · Dual version reconstruction: 2026-09-27 · Redacted public edition</div>
+    </div>
+  </main>
+</div>
+
+<script>
+  var btn=document.getElementById('menuBtn');
+  var sidebar=document.getElementById('sidebar');
+  if(btn){
+    btn.addEventListener('click',function(){sidebar.classList.toggle('open')});
+    sidebar.addEventListener('click',function(e){if(e.target.tagName==='A')sidebar.classList.remove('open')});
+  }
+  var links=Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+  var sections=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
+  function onScroll(){
+    var pos=window.scrollY+120,current=sections[0];
+    for(var i=0;i<sections.length;i++){if(sections[i].offsetTop<=pos)current=sections[i]}
+    links.forEach(function(a){a.classList.remove('active')});
+    if(current){
+      var match=links.find(function(a){return a.getAttribute('href')==='#'+current.id});
+      if(match)match.classList.add('active');
+    }
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script>
+</body>
+</html>

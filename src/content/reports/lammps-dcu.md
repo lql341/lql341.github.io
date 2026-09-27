@@ -7,6 +7,7 @@ date: 2026-08-18
 tags: [LAMMPS, HPC, HIP, Kokkos]
 tagsZh: [LAMMPS, 高性能计算, HIP, Kokkos]
 href: /reports/lammps-dcu-report.html
+hrefEn: /reports/en/lammps-dcu-report.html
 featured: true
 homeOrder: 3
 metric: 4.6–6.3×
