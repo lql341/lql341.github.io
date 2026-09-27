@@ -243,109 +243,109 @@
 <div class="header report-banner">
   <h1>LAMMPS Hygon DCU build and performance validation on two platforms</h1>
   <div class="subtitle">gfx936/BW + gfx906/Z100 · DTK 25.04.2–26.04 · Kokkos/HIP · GPU package · GPU-aware MPI</div>
-  <div class="subtitle">Author: opensource_community · Fusion update: 2026-08-18</div>
+  <div class="subtitle">Author: opensource_community · Consolidated update: 2026-08-18</div>
 </div>
 
 <div class="section">
-  <h2>Test platform and verification scope</h2>
-  <p>This report reorganizes two independent verifications based on the same engineering link. Platform A is responsible for the architecture adaptation, GPU package comparison and source code optimization of gfx936; Platform B is responsible for the native architecture construction, correctness and multi-card expansion of gfx906/Z100. The region, cluster alias, SSH address, partition name, node name, and absolute user directory are all desensitized.</p>
+  <h2>1. Test platforms and verification scope</h2>
+  <p>This report brings together two independent validations built around the same engineering workflow. Platform A covers gfx936 architecture support, GPU package comparisons, and source optimizations; Platform B covers native gfx906/Z100 builds, correctness, and multi-card scaling. Locations, cluster aliases, SSH addresses, partition and node names, and absolute user paths are redacted.</p>
   <div class="platform-grid">
     <div class="platform-card">
-      <h3>Platform A · gfx936/BW</h3>
+      <h3>1.1 Platform A · gfx936/BW</h3>
       <div class="info-grid">
         <span class="label">System</span><span class="value">Sugon 8.9 (Linux)</span>
         <span class="label">CPU</span><span class="value">Hygon C86 (128 cores, 64 cores/socket)</span>
-        <span class="label">DCU</span><span class="value">C-3000 BW，gfx936，80 CU，1500 MHz，64 GB</span>
-        <span class="label">tool chain</span><span class="value">GCC 9.3.0，DTK 25.04.2 / hipcc Clang 17</span>
+        <span class="label">DCU</span><span class="value">C-3000 BW, gfx936, 80 CU, 1500 MHz, 64 GB</span>
+        <span class="label">Toolchain</span><span class="value">GCC 9.3.0, DTK 25.04.2 / hipcc Clang 17</span>
         <span class="label">MPI</span><span class="value">MPICH 4.1.2; extended verification using OpenMPI 5.0.7</span>
-        <span class="label">Software</span><span class="value">CMake 3.24.1，LAMMPS 22 Jul 2025 Update 4，Kokkos 4.6.2</span>
+        <span class="label">Software</span><span class="value">CMake 3.24.1, LAMMPS 22 Jul 2025 Update 4, Kokkos 4.6.2</span>
       </div>
     </div>
     <div class="platform-card">
-      <h3>Platform B · gfx906/Z100</h3>
+      <h3>1.2 Platform B · gfx906/Z100</h3>
       <div class="info-grid">
         <span class="label">System</span><span class="value">CentOS 7.6 / glibc 2.17</span>
         <span class="label">CPU</span><span class="value">Hygon C86 7185 (32 cores)</span>
         <span class="label">DCU</span><span class="value">Z100 / Device 66a1 / Vega 20, gfx906, 64 CU, 16 GB/card, 4 cards per machine</span>
-        <span class="label">node memory</span><span class="value">123 GB</span>
-        <span class="label">tool chain</span><span class="value">GCC 9.3.0，DTK 26.04，hipcc → dcc 25.10.0-0 / Clang 17</span>
-        <span class="label">Software</span><span class="value">CMake 3.25.0，LAMMPS 22 Jul 2025 Update 5，Kokkos 4.6.2</span>
-        <span class="label">MPI</span><span class="value">OpenMPI 5.0.7 (source code compilation,<code>--with-rocm</code>）</span>
-        <span class="label">scheduler</span><span class="value">Slurm 3.2.10; CPU compile queue and 1–4 card test queue names desensitized</span>
+        <span class="label">Node memory</span><span class="value">123 GB</span>
+        <span class="label">Toolchain</span><span class="value">GCC 9.3.0, DTK 26.04, hipcc → dcc 25.10.0-0 / Clang 17</span>
+        <span class="label">Software</span><span class="value">CMake 3.25.0, LAMMPS 22 Jul 2025 Update 5, Kokkos 4.6.2</span>
+        <span class="label">MPI</span><span class="value">OpenMPI 5.0.7 (built from source with <code>--with-rocm</code>)</span>
+        <span class="label">Scheduler</span><span class="value">Slurm 3.2.10; CPU build and 1–4 DCU test partition names redacted</span>
       </div>
     </div>
   </div>
 </div>
 
 <div class="section">
-  <h2>Build strategies and issue analysis</h2>
+  <h2>2. Build strategies and issue analysis</h2>
 
-  <h3>2.1 Solution 1: GPU package + HIP backend</h3>
-  <p><strong>Try:</strong>Use <code>-D PKG_GPU=ON -D GPU_API=HIP -D HIP_ARCH=gfx936</code></p>
+  <h3>2.1 GPU package with the HIP backend</h3>
+  <p><strong>Configuration:</strong> <code>-D PKG_GPU=ON -D GPU_API=HIP -D HIP_ARCH=gfx936</code></p>
   <p><strong>First result:</strong>Compiled successfully, but hung when running</p>
-  <p><strong>First analysis:</strong>GPU package was added by DTK's cmake <code>-xhip</code> compile flag that causes hipcc to generate HIP device code for all .cpp files. HIP initialization stuck while running.</p>
-  <p><strong>After repair:</strong>by setting <code>AMDGPU_TARGETS="gfx936"</code> and disabled <code>HIP_USE_DEVICE_SORT</code>, compiled and run successfully.<strong>But performance tests show that the GPU package is 4.6-6.3 times slower than Kokkos</strong>(see comparative analysis in Section 6 for details).</p>
+  <p><strong>Initial diagnosis:</strong>DTK's CMake configuration applies the <code>-xhip</code> flag to the GPU package, causing hipcc to compile every <code>.cpp</code> file for the device. The resulting executable hung during HIP initialization.</p>
+  <p><strong>After the fix:</strong>Setting <code>AMDGPU_TARGETS="gfx936"</code> and disabling <code>HIP_USE_DEVICE_SORT</code> allowed the build to compile and run. <strong>Performance tests nevertheless showed the GPU package to be 4.6–6.3× slower than Kokkos</strong> (see the comparison in Section 6).</p>
 
-  <h3>2.2 Solution 2: KOKKOS package + HIP backend (architecture mismatch)</h3>
-  <p><strong>Try:</strong>Use <code>-D PKG_KOKKOS=ON -D Kokkos_ENABLE_HIP=ON</code></p>
-  <p><strong>Result:</strong>is compiled successfully, but an error occurs when running:<code>running kernels compiled for gfx906 on gfx936</code></p>
-  <p><strong>Analysis:</strong>Kokkos 4.6.2 does not support the gfx936 architecture and automatically detects fallback to gfx906. The instruction sets of gfx906 and gfx936 are incompatible, resulting in <code>hipErrorInvalidKernelFile</code>。</p>
+  <h3>2.2 Kokkos HIP backend with the default architecture (mismatch)</h3>
+  <p><strong>Configuration:</strong> <code>-D PKG_KOKKOS=ON -D Kokkos_ENABLE_HIP=ON</code></p>
+  <p><strong>Result:</strong>The build succeeds, but execution fails with <code>running kernels compiled for gfx906 on gfx936</code>.</p>
+  <p><strong>Analysis:</strong>Kokkos 4.6.2 does not recognize gfx936 and falls back to gfx906. Because the gfx906 and gfx936 instruction sets are incompatible, execution fails with <code>hipErrorInvalidKernelFile</code>.</p>
 
-  <h3>2.3 Solution 3: Modify Kokkos source code to support gfx936 (final solution)</h3>
-  <p><strong>Idea:</strong>Manually added gfx936 architecture support in Kokkos' cmake configuration and HIP backend code.</p>
+  <h3>2.3 Add gfx936 support to Kokkos</h3>
+  <p><strong>Approach:</strong>Add gfx936 support explicitly to Kokkos' CMake configuration and HIP backend.</p>
 
   <div class="mod-file">
     <div class="fn">📄 Modification 1: lib/kokkos/cmake/kokkos_arch.cmake</div>
-    <div class="desc">Add <code>AMD_GFX936</code>, corresponding mark <code>gfx936</code>; place gfx936 before gfx906 to ensure auto-detection matches gfx936 first; add <code>936</code> .</div>
+    <div class="desc">Register <code>AMD_GFX936</code> and its <code>gfx936</code> target name. List gfx936 before gfx906 so automatic detection selects the correct architecture first, and register the numeric alias <code>936</code>.</div>
   </div>
 
   <div class="mod-file">
     <div class="fn">📄 Modification 2: lib/kokkos/cmake/KokkosCore_config.h.in</div>
-    <div class="desc">Add <code>#cmakedefine KOKKOS_ARCH_AMD_GFX936</code>。</div>
+    <div class="desc">Add <code>#cmakedefine KOKKOS_ARCH_AMD_GFX936</code>.</div>
   </div>
 
   <div class="mod-file">
     <div class="fn">📄 Modification 3: lib/kokkos/core/src/HIP/Kokkos_HIP_Instance.hpp</div>
-    <div class="desc">at <code>HIPTraits</code> of <code>WarpSize</code> Added <code>defined(KOKKOS_ARCH_AMD_GFX936)</code>. Hygon BW series wavefront size is 64, the same as gfx906/gfx908.</div>
+    <div class="desc">Include <code>defined(KOKKOS_ARCH_AMD_GFX936)</code> in the <code>HIPTraits</code> condition that sets <code>WarpSize</code>. Hygon BW DCUs use a wavefront size of 64, as do gfx906 and gfx908.</div>
   </div>
 
   <div class="mod-file">
     <div class="fn">📄 Modification 4: lib/kokkos/core/src/HIP/Kokkos_HIP_IsXnack.hpp</div>
-    <div class="desc">at <code>gpu_arch_can_access_system_allocations</code> to the <code>defined(KOKKOS_ARCH_AMD_GFX936)</code> to <code>return false</code> branch. Hygon DCU does not support system memory access.</div>
+    <div class="desc">Add <code>defined(KOKKOS_ARCH_AMD_GFX936)</code> to the <code>gpu_arch_can_access_system_allocations</code> branch that returns <code>false</code>. Hygon DCUs do not support access to system allocations.</div>
   </div>
 
   <h3>2.4 gfx906/Z100: native architecture path</h3>
   <p>Unlike gfx936, gfx906 (Vega 20) has been natively supported by Kokkos 4.6.2, so there is no need to modify the four architecture files of Kokkos and directly enable <code>Kokkos_ARCH_AMD_GFX906=ON</code> and <code>AMDGPU_TARGETS=gfx906</code>. This reduces architecture porting costs, but DTK 26.04 and the cluster toolchain expose another set of build issues.</p>
 
   <h3>2.5 DTK 26.04 cuda_wrappers host mode conflict</h3>
-  <p>When compiled to about 98%,<code>main.cpp</code> because <code>cuda_wrappers/algorithm</code> reported <code>unknown type name '__host__'</code>. LAMMPS Update 5 in <code>cmake/CMakeLists.txt:854</code> To solve the HIP SFINAE problem of nlohmann/json, put <code>lmp</code> The target is forced to <code>-x c++</code>; hipcc of DTK 26.04 still injects cuda_wrappers in host mode, making the standard <code>&lt;algorithm&gt;</code> was incorrectly parsed.</p>
-  <div class="mod-file"><div class="fn">📄 DTK 26.04 compatible fix</div><div class="desc">Change the target's <code>-x c++</code> changed to <code>-xhip --offload-arch=gfx906</code>：<pre>target_compile_options(lmp PRIVATE
+  <p>At about 98% of the build, <code>main.cpp</code> failed because <code>cuda_wrappers/algorithm</code> reported <code>unknown type name '__host__'</code>. In LAMMPS Update 5, <code>cmake/CMakeLists.txt:854</code> forces the <code>lmp</code> target to <code>-x c++</code> to address an nlohmann/json HIP SFINAE issue. DTK 26.04's hipcc still injects CUDA wrappers in host mode, causing the standard <code>&lt;algorithm&gt;</code> header to be parsed incorrectly.</p>
+  <div class="mod-file"><div class="fn">📄 DTK 26.04 compatibility fix</div><div class="desc">Replace the target's <code>-x c++</code> option with <code>-xhip --offload-arch=gfx906</code>:<pre>target_compile_options(lmp PRIVATE
   "$&lt;$&lt;COMPILE_LANGUAGE:CXX&gt;:SHELL:-xhip --offload-arch=gfx906&gt;")</pre>The same issue is not reproduced on Platform A in DTK 25.04.2 and is therefore logged as a DTK 26.04 regression rather than a general LAMMPS defect.</div></div>
 
-  <h3>2.6 CPU node HSA symbolic chain not available</h3>
-  <p> <code>libhsa-runtime64.so</code> symbolic chain depends on DCU driver directory <code>/opt/hyhal/</code>, the CPU compilation node does not have this directory, so CMake cannot discover the HSA runtime. The solution is to bypass the dead symbolic chain and explicitly change <code>HSA_RUNTIME_LIBRARY</code> points to the real library file in the shared software area; the public command is uniformly written as <code>&lt;DTK_ROOT&gt;/hyhal/lib/libhsa-runtime64.so</code>。</p>
+  <h3>2.6 HSA library symlink unavailable on the CPU node</h3>
+  <p>The <code>libhsa-runtime64.so</code> symlink resolves through the DCU driver directory <code>/opt/hyhal/</code>, which is absent from the CPU build node. CMake therefore cannot find the HSA runtime. Set <code>HSA_RUNTIME_LIBRARY</code> explicitly to the actual shared-library path; the public commands use the placeholder <code>&lt;DTK_ROOT&gt;/hyhal/lib/libhsa-runtime64.so</code>.</p>
 
-  <h3>2.7 make damage and login node OOM</h3>
-  <p>Platform B’s system <code>/usr/bin/make</code> ELF interpreter points to non-existent <code>/opt/glibc-2.25/lib/ld-linux.so.2</code>, use the <code>module load compiler/make/4.4</code>. The login node has about 251 GB of memory shared by about 249 users, and the measured available memory is about 46 GB; when hipcc compiles about 1000 C++ files, dcc is terminated by the OOM killer. Finally, the compilation is submitted to the CPU computing queue, applying for 32 cores and about 111 GB of exclusive memory.</p>
+  <h3>2.7 Broken make interpreter and login-node memory pressure</h3>
+  <p>On Platform B, the system <code>/usr/bin/make</code> references a missing ELF interpreter at <code>/opt/glibc-2.25/lib/ld-linux.so.2</code>; load <code>compiler/make/4.4</code> instead. The login node has about 251 GB of shared memory for roughly 249 users, with only about 46 GB available during testing. When hipcc compiled roughly 1,000 C++ files, dcc was killed by the OOM killer. The build was moved to the CPU compute queue and submitted with 32 cores and about 111 GB of exclusive memory.</p>
 
-  <h3>2.8 The default three architectures cause three times the compilation pressure</h3>
-  <p>DTK 26.04 default target is <code>gfx906;gfx926;gfx928</code>causes each source file to be compiled three times, amplifying the time and memory overhead. Explicitly execute <code>export AMDGPU_TARGETS=gfx906</code>, only generates target architecture code.</p>
+  <h3>2.8 Restrict the build to the target architecture</h3>
+  <p>DTK 26.04 targets <code>gfx906;gfx926;gfx928</code> by default, compiling each source file three times and increasing build time and memory use. Set <code>export AMDGPU_TARGETS=gfx906</code> to generate code only for the target architecture.</p>
 
   <h3>2.9 gfx906 GPU-aware MPI path</h3>
-  <p>All 12 pairs of P2P combinations of the four Z100s on platform B in the same node return <code>hipDeviceCanAccessPeer=1</code>. But DTK 26.04 is missing <code>libhsakmt.a</code>, Unable to build UCX ROCm transport layer. The alternative is to build OpenMPI 5.0.7 from source, using only <code>--with-rocm</code> provides <code>accelerator: rocm</code> and <code>mpiext: rocm</code>, run with shared memory and disable UCX network path:<code>--mca pml ob1 --mca btl vader,self</code> and <code>UCX_TLS=sm,self</code>。</p>
+  <p>All 12 peer-to-peer checks among the four Z100 cards on Platform B returned <code>hipDeviceCanAccessPeer=1</code>. DTK 26.04 lacks <code>libhsakmt.a</code>, however, so UCX's ROCm transport cannot be built. The alternative is to build OpenMPI 5.0.7 from source with <code>--with-rocm</code>, which provides <code>accelerator: rocm</code> and <code>mpiext: rocm</code>. Use shared memory and disable UCX's network path with <code>--mca pml ob1 --mca btl vader,self</code> and <code>UCX_TLS=sm,self</code>.</p>
 
   <h3>2.10 Build differences between the two platforms</h3>
-  <table><thead><tr><th>link</th><th>gfx936/BW</th><th>gfx906/Z100</th></tr></thead><tbody>
-    <tr><td>Kokkos architecture</td><td>needs to be supplemented by gfx936 to support</td><td>natively supports gfx906</td></tr>
-    <tr><td>DTK specific problem</td><td>25.04.2 No host-mode regression</td><td>26.04 needs to fix cuda_wrappers conflict</td></tr>
+  <table><thead><tr><th>Area</th><th>gfx936/BW</th><th>gfx906/Z100</th></tr></thead><tbody>
+    <tr><td>Kokkos architecture</td><td>Requires an explicit gfx936 support patch</td><td>gfx906 is supported natively</td></tr>
+    <tr><td>DTK-specific issue</td><td>No host-mode regression in 25.04.2</td><td>DTK 26.04 requires a cuda_wrappers workaround</td></tr>
     <tr><td>GPU-aware MPI</td><td>OpenMPI + UCX + ROCm</td><td>OpenMPI <code>--with-rocm</code> + shared memory, no UCX ROCm</td></tr>
-    <tr><td>build location</td><td>Log in to the node to complete compilation</td><td>Login node memory competition, transfer to CPU computing node</td></tr>
+    <tr><td>Build location</td><td>Build completed on the login node</td><td>Moved from the memory-contended login node to a CPU compute node</td></tr>
   </tbody></table>
 </div>
 
 <div class="section">
-  <h2>Build configuration and commands</h2>
-  <pre><span class="comment"># 使用 hipcc 编译器，启用 KOKKOS + HIP + OpenMP 包</span>
+  <h2>3. Build configuration and commands</h2>
+  <pre><span class="comment"># Use hipcc and enable the Kokkos, HIP, and OpenMP packages</span>
 cmake ../lammps-22Jul2025/cmake \
   -D PKG_KOKKOS=ON \
   -D Kokkos_ENABLE_HIP=ON \
@@ -361,8 +361,8 @@ cmake ../lammps-22Jul2025/cmake \
   -D CMAKE_HIP_COMPILER=hipcc \
   -D HIP_PATH=&lt;DTK_ROOT&gt;/hip</pre>
 
-  <h3>3.1 gfx906/Z100 single card build</h3>
-  <pre><span class="comment"># 仅生成 gfx906；共享软件与安装目录均使用公开占位符</span>
+  <h3>3.1 Single-card build on gfx906/Z100</h3>
+  <pre><span class="comment"># Build for gfx906 only; public placeholders are used for shared software and install paths</span>
 export AMDGPU_TARGETS=gfx906
 
 cmake -S lammps-22Jul2025/cmake -B build-gfx906 \
@@ -379,7 +379,7 @@ cmake -S lammps-22Jul2025/cmake -B build-gfx906 \
   -D CMAKE_CXX_COMPILER=hipcc -D CMAKE_C_COMPILER=gcc \
   -D CMAKE_HIP_COMPILER=hipcc -D HIP_PATH=&lt;DTK_ROOT&gt;/hip</pre>
   <table><thead><tr><th>Steps</th><th>Platform B Final Solution</th></tr></thead><tbody>
-    <tr><td>source code</td><td><code>wget https://download.lammps.org/tars/lammps-stable.tar.gz</code>，LAMMPS 22 Jul 2025 Update 5</td></tr>
+    <tr><td>Source code</td><td><code>wget https://download.lammps.org/tars/lammps-stable.tar.gz</code>; LAMMPS 22 Jul 2025 Update 5</td></tr>
     <tr><td>CMake patch</td><td>Line 854:<code>-x c++</code> → <code>-xhip --offload-arch=gfx906</code></td></tr>
     <tr><td>Single card build</td><td><code>BUILD_MPI=OFF</code>, execute</td></tr>
     <tr><td>MPI build</td><td>OpenMPI 5.0.7 + <code>--with-rocm</code>, LAMMPS changed to <code>BUILD_MPI=ON</code></td></tr>
@@ -406,19 +406,19 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
 </div>
 
 <div class="section">
-  <h2>Performance test results</h2>
+  <h2>4. Performance results</h2>
 
-  <h3>Test Configuration and Workload</h3>
+  <h3>4.1 Test configuration and workload</h3>
   <div class="info-grid">
     <span class="label">CPU test</span><span class="value">32,000 atoms, 16 OMP threads, 20,000 steps</span>
     <span class="label">DCU test</span><span class="value">256,000 atoms, 1 DCU card, 20,000 steps (8 times the number of atoms)</span>
   </div>
 
-  <h3>Performance test data</h3>
+  <h3>4.2 Benchmark results</h3>
   <table>
     <thead>
       <tr>
-        <th>indicator</th>
+        <th>Metric</th>
         <th>CPU (16-core Hygon C86)</th>
         <th>DCU (1× C-3000 BW)</th>
         <th>acceleration ratio</th>
@@ -476,11 +476,11 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
     </tbody>
   </table>
 
-  <h3>DCU resource monitoring result</h3>
+  <h3>4.3 DCU resource monitoring</h3>
   <table>
     <thead>
       <tr>
-        <th>indicator</th>
+        <th>Metric</th>
         <th>Value</th>
       </tr>
     </thead>
@@ -492,7 +492,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
     </tbody>
   </table>
 
-  <h3>Main results</h3>
+  <h3>5. Main results</h3>
   <div class="conclusion-item">📌 DCU single card processes 8 times the number of atoms, and the total time consumption is only 1/20 of that of CPU</div>
   <div class="conclusion-item">📌 Converted to the same scale, a single DCU card is equivalent to the computing power of about 160-core CPU</div>
   <div class="conclusion-item">📌 Pair compute speedup of 219x, indicating that this compute-intensive workload can significantly benefit from GPU</div>
@@ -501,7 +501,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
 
   <h3>5.1 gfx906/Z100 Correctness and Energy Conservation</h3>
   <p>platform B uses the same input to run Kokkos/HIP and CPU/OpenMP 16 threads respectively to avoid judging the success of the transplant based on performance alone.</p>
-  <table><thead><tr><th>Calculation example</th><th>indicator</th><th>GPU (Kokkos)</th><th>CPU (OpenMP)</th><th>Deviation</th></tr></thead><tbody>
+  <table><thead><tr><th>Calculation example</th><th>Metric</th><th>GPU (Kokkos)</th><th>CPU (OpenMP)</th><th>Deviation</th></tr></thead><tbody>
     <tr><td>LJ 10000 steps</td><td>TotEng</td><td>-4.62126</td><td>-4.62119</td><td>0.0015%</td></tr>
     <tr><td>LJ 10000 steps</td><td>Temp</td><td>0.69723</td><td>0.69591</td><td>0.19%</td></tr>
     <tr><td>EAM 1000 steps</td><td>TotEng</td><td>-106640.19</td><td>-106640.19</td><td>Printing accuracy is consistent within</td></tr>
@@ -519,7 +519,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   </tbody></table>
 
   <h3>5.3 gfx906/Z100 single card weak expansion</h3>
-  <table><thead><tr><th>Calculation example</th><th>Atomic number</th><th>step/s</th><th>Matom-step/s</th><th>Observe</th></tr></thead><tbody>
+  <table><thead><tr><th>Calculation example</th><th>Atomic number</th><th>step/s</th><th>Matom-step/s</th><th>Observation</th></tr></thead><tbody>
     <tr><td>LJ</td><td>32K</td><td>2234</td><td>71.5</td><td>—</td></tr>
     <tr><td>LJ</td><td>256K</td><td>472</td><td>120.9</td><td>—</td></tr>
     <tr><td>LJ</td><td>2M</td><td>66.9</td><td>137.1</td><td>Enters the saturation zone</td></tr>
@@ -538,24 +538,24 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
     <tr><td>EAM</td><td>2</td><td>22.5（0.88×）</td><td>39.9</td><td>1.77×</td><td>1.56×</td></tr>
     <tr><td>EAM</td><td>4</td><td>40.5</td><td>59.5</td><td>1.47×</td><td>2.33×</td></tr>
   </tbody></table>
-  <p>GPU-aware MPI shifts card 2 from slowdown to 1.35–1.56× speedup, and card 4 up to 1.86–2.33×. This result is in stark contrast to Platform A's multi-card non-breakout single card, indicating that the communication stack, P2P topology, problem size, and site configuration are all part of the conclusion.</p>
+  <p>GPU-aware MPI changes two-card performance from a slowdown to a 1.35–1.56× speedup, and four-card performance reaches 1.86–2.33×. This result is in stark contrast to Platform A's multi-card non-breakout single card, indicating that the communication stack, P2P topology, problem size, and site configuration are all part of the conclusion.</p>
 
-  <h3>5.5 Cross-platform performance observation</h3>
-  <table><thead><tr><th>indicator</th><th>gfx906/Z100</th><th>gfx936/BW</th><th>Observe</th></tr></thead><tbody>
+  <h3>5.5 Cross-platform performance comparison</h3>
+  <table><thead><tr><th>Metric</th><th>gfx906/Z100</th><th>gfx936/BW</th><th>Observation</th></tr></thead><tbody>
     <tr><td>Architecture / CU / Memory</td><td>Vega 20 / 64 / 16 GB</td><td>gfx936 / 80 / 64 GB</td><td>Different hardware and capacity</td></tr>
     <tr><td>LJ 256K</td><td>472 step/s</td><td>about 912 steps/s</td><td>About 52%</td></tr>
-    <tr><td>LJ saturation throughput</td><td>About 134 Matom-step/s</td><td>About 80 Matom-step/s</td><td>Platform B Approximately 1.68×</td></tr>
-    <tr><td>EAM 2M</td><td>25.2 step/s</td><td>About 21 step/s</td><td>Platform B Approximately 1.2×</td></tr>
-    <tr><td>2 Card LJ Zoom</td><td>1.35×</td><td>0.71–0.79×</td><td>Platform B is better</td></tr>
+    <tr><td>LJ saturation throughput</td><td>About 134 Matom-step/s</td><td>About 80 Matom-step/s</td><td>Platform B is about 1.68× faster</td></tr>
+    <tr><td>EAM 2M</td><td>25.2 step/s</td><td>About 21 step/s</td><td>Platform B is about 1.2× faster</td></tr>
+    <tr><td>Two-card LJ scaling</td><td>1.35×</td><td>0.71–0.79×</td><td>Platform B is better</td></tr>
   </tbody></table>
-  <p class="note">The two environments do not have the same input, version and communication stack. The above table only retains the trend observations of the original report and cannot be used as a strict hardware ranking. Platform B's same-node PCIe P2P efficiency is an important factor in multi-card performance.</p>
+  <p class="note">The two environments do not have the same input, version and communication stack. This table preserves only the trends reported in the original results and cannot be used as a strict hardware ranking. Platform B's same-node PCIe P2P efficiency is an important factor in multi-card performance.</p>
 </div>
 
 <div class="section">
-  <h2>GPU package and Kokkos backend performance comparison</h2>
+  <h2>6. GPU package and Kokkos performance comparison</h2>
 
   <h3>6.1 Test purpose</h3>
-  <p>Verifies whether there is a more efficient GPU acceleration solution than Kokkos. The GPU package uses hand-written optimized HIP kernels that may theoretically be more efficient than Kokkos' general abstraction.</p>
+  <p>This section evaluates whether the GPU package offers a more efficient acceleration path than Kokkos. The GPU package uses hand-written optimized HIP kernels that may theoretically be more efficient than Kokkos' general abstraction.</p>
 
   <h3>6.2 GPU package compilation repair</h3>
   <div class="highlight-box">
@@ -570,7 +570,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   <table>
     <thead>
       <tr>
-        <th>indicator</th>
+        <th>Metric</th>
         <th>GPU Package + HIP</th>
         <th>Kokkos + HIP</th>
         <th>Kokkos Advantages</th>
@@ -602,7 +602,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   <table>
     <thead>
       <tr>
-        <th>indicator</th>
+        <th>Metric</th>
         <th>GPU Package + HIP</th>
         <th>Kokkos + HIP</th>
         <th>Kokkos Advantages</th>
@@ -630,25 +630,25 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
     </tbody>
   </table>
 
-  <h3>Analysis of the reasons why the 6.5 GPU package is slow</h3>
-  <div class="conclusion-item">📌 <strong>neighbor list built on CPU</strong>: The GPU package output shows "Neigh mode: Hybrid (binning on host)", each reconstruction requires CPU→GPU data transfer, while Kokkos builds the neighbor list entirely on the GPU</div>
-  <div class="conclusion-item">📌 <strong>GPU package design favors multi-GPU</strong>: The single-GPU scenario is expensive and requires additional fix gpu command to manage resources</div>
-  <div class="conclusion-item">📌 <strong>Kokkos’ GPU execution scope is more complete</strong>: pair, neighbor and comm are all executed on the GPU, reducing data transmission between the host and the device</div>
+  <h3>6.5 Why the GPU package is slower</h3>
+  <div class="conclusion-item">📌 <strong>Neighbor list built on the CPU</strong>: The the GPU package reports “Neigh mode: Hybrid (binning on host).” Each rebuild transfers data from CPU to GPU, while Kokkos builds the neighbor list entirely on the GPU</div>
+  <div class="conclusion-item">📌 <strong>GPU package design favors multi-GPU</strong>: The single-GPU scenario is expensive and requires an additional <code>fix gpu</code> command to manage resources</div>
+  <div class="conclusion-item">📌 <strong>Kokkos’ GPU execution scope is more complete</strong>: pair, neighbor, and communication work all run on the GPU, reducing data transmission between the host and the device</div>
 
   <h3>6.6 Hygon native compiler confirmation</h3>
-  <p>By analyzing the DTK tool chain, it is confirmed that the current solution has used<strong>Hygon native compiler</strong>：</p>
-  <pre><span class="comment"># hipcc 最终调用海光原生 dcc 编译器</span>
+  <p>Inspection of the DTK toolchain confirms that this build uses the <strong>Hygon native compiler</strong>:</p>
+  <pre><span class="comment"># hipcc ultimately invokes Hygon's native dcc compiler</span>
 hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
            ↓
-  海光 ISA bitcode: oclc_isa_version_936.bc</pre>
-  <p>Kokkos' <code>AMD_GFX936</code> is just a naming convention. The underlying compilation uses Hygon’s own <code>dcc</code> compiler + Hygon ISA bitcode,<strong>is already natively compiled</strong>。</p>
+  Hygon ISA bitcode: oclc_isa_version_936.bc</pre>
+  <p>Kokkos' <code>AMD_GFX936</code> is an architecture label. Compilation uses Hygon's <code>dcc</code> compiler and Hygon ISA bitcode, so the resulting code is <strong>compiled natively for the DCU</strong>.</p>
 </div>
 
 <div class="section">
-  <h2>Performance hotspot analysis and code optimization</h2>
+  <h2>7. Hotspot analysis and code optimization</h2>
 
   <h3>7.1 HIP Hotspot Tracking</h3>
-  <p>uses DTK 25.04.2 <code>hipprof --hip-trace --stats</code> Hotspot analysis of the 1,048,576-atom dynamic LJ benchmark.</p>
+  <p>Hotspots in the 1,048,576-atom dynamic LJ benchmark were analyzed with DTK 25.04.2 <code>hipprof --hip-trace --stats</code>. of the 1,048,576-atom dynamic LJ benchmark.</p>
   <table>
     <thead>
       <tr><th>Kernel</th><th>Number of calls</th><th>Total time</th><th>proportion</th></tr>
@@ -660,13 +660,13 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
       <tr><td>all remaining kernels</td><td>-</td><td>0.344 s</td><td>1.74%</td></tr>
     </tbody>
   </table>
-  <p>Pair and Neighbor together account for 92.8% of device time and are the only targets worth optimizing.</p>
+  <p>Pair and Neighbor account for 92.8% of device time and are the only worthwhile optimization targets.</p>
 
   <h3>7.2 PMC hardware counter analysis</h3>
-  <p>performs PMC collection on Pair and Neighbor hotspots and extracts key indicators:</p>
+  <p>PMC counters were collected for the Pair and Neighbor hotspots:</p>
   <table>
     <thead>
-      <tr><th>indicator</th><th>LJ pair force</th><th>Neighbor build</th></tr>
+      <tr><th>Metric</th><th>LJ pair force</th><th>Neighbor build</th></tr>
     </thead>
     <tbody>
       <tr><td>VALU command</td><td>70,299,737</td><td>433,198,843</td></tr>
@@ -722,14 +722,14 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
       <tr><td>8</td><td>260.992</td><td>+4.41%</td></tr>
     </tbody>
   </table>
-  <p>The default BPT=2 is the worst among the four groups. BPT=1 improves by +4.31%, requiring only one line of code modification (<code>const int factor = 1;</code>), has been retained in the source code.</p>
+  <p>The default <code>BPT=2</code> performs worst among the four configurations. Setting <code>BPT=1</code> improves performance by 4.31% with a one-line change (<code>const int factor = 1;</code>); this setting is retained in the source.</p>
 </div>
 
 <div class="section">
-  <h2>CPU and DCU performance comparison</h2>
+  <h2>8. CPU and DCU performance comparison</h2>
 
-  <h3>8.1 Flaws in the original "160 cores" conclusion</h3>
-  <p>report claims that a single DCU card is equivalent to a 160-core CPU. This conclusion is based on<strong>Different atomic number</strong>:</p>
+  <h3>8.1 Limitations of the original “160 cores” comparison</h3>
+  <p>The original report equates one DCU card with a 160-core CPU, based on results from different system sizes:</p>
   <table>
     <thead><tr><th>Platform</th><th>Atomic number</th><th>timesteps/s</th><th>Matom-step/s</th></tr></thead>
     <tbody>
@@ -737,7 +737,7 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
       <tr><td>DCU (original)</td><td>256,000</td><td>912.28</td><td>233.544</td></tr>
     </tbody>
   </table>
-  <p>Matom-step/s is 233.544 / 1.452 = 160.8×, but this is a cross-scale comparison. GPU utilization is higher at scale, and cross-scale comparisons systematically exaggerate GPU speedups.</p>
+  <p>The normalized throughput ratio is 233.544 / 1.452 = 160.8×, but the CPU and DCU results use different atom counts. The larger DCU case achieves higher GPU utilization, so this cross-scale ratio overstates the speedup for a like-for-like comparison.</p>
 
   <h3>8.2 Fair comparison of same scale (32,000 atoms)</h3>
   <table>
@@ -747,16 +747,16 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
       <tr><td><strong>DCU (1× C-3000 BW)</strong></td><td><strong>3,206.09</strong></td><td><strong>102.595</strong></td><td><strong>60.6×</strong></td></tr>
     </tbody>
   </table>
-  <p>Under the same scale, the acceleration ratio of a single DCU card is about <strong>60 times</strong>instead of 160x. Follow-up testing showed that GPU utilization was only 20-41% (depending on pair style), with the bottleneck being CPU-side frame overhead.</p>
+  <p>At the same scale, one DCU card is about <strong>60× faster</strong>, rather than 160×. Follow-up tests measured GPU utilization of 20–41%, depending on the pair style; CPU-side framework overhead was the main bottleneck.</p>
 
-  <h3>8.3 Changes in GPU acceleration effect after the number of atoms is expanded</h3>
-  <div class="conclusion-item">📌 <strong>GPU acceleration increases as the number of atoms increases</strong>: 60× when 32K, estimated ~172× when 1M. Reason: fixed overhead dilution, GPU occupancy increase, calculation/memory access ratio improvement</div>
-  <div class="conclusion-item">📌 <strong>LJ benchmark GPU utilization is only 20%</strong>: Pair calculation accounts for only 6.8%, Modify (CPU side frame) accounts for 76%. LJ is too lightweight and not suitable for GPU optimization</div>
-  <div class="conclusion-item">📌 <strong>EAM benchmark GPU utilization increased to 41%</strong>: Pair calculation accounts for 36.8%, and the calculation amount is 20.7× that of LJ. EAM is a more reasonable GPU benchmark</div>
+  <h3>8.3 How problem size changes the GPU speedup</h3>
+  <div class="conclusion-item">📌 <strong>GPU speedup grows with system size</strong>: 60× at 32K atoms and an estimated ~172× at 1M, as fixed overhead is amortized, GPU occupancy rises, and the compute-to-memory-access ratio improves</div>
+  <div class="conclusion-item">📌 <strong>GPU utilization is only 20% on the LJ benchmark</strong>: Pair calculations account for 6.8% of runtime, while Modify (CPU-side framework work) accounts for 76%. LJ is too lightweight to be a representative GPU optimization target</div>
+  <div class="conclusion-item">📌 <strong>GPU utilization reaches 41% on the EAM benchmark</strong>: Pair calculations account for 36.8% of runtime, and EAM performs 20.7× as much computation as LJ. EAM is a more representative GPU benchmark</div>
 </div>
 
 <div class="section">
-  <h2>Optimization experiment results</h2>
+  <h2>9. Optimization experiments</h2>
 
   <h3>9.1 Effective optimization</h3>
   <table>
@@ -873,13 +873,13 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
   <h3>9.3 Summary of key experiences</h3>
   <div class="conclusion-item">📌 <strong>LJ benchmark is not suitable for GPU optimization</strong>: GPU is only 20% active, Pair accounts for 6.8%. The optimization effect is amplified (transpose +13.6% on EAM only +3.2%)</div>
   <div class="conclusion-item">📌 <strong>EAM is a more reasonable GPU benchmark</strong>: GPU active 41%, Pair accounts for 36.8%, calculation amount 20.7× LJ</div>
-  <div class="conclusion-item">📌 <strong>Memory access optimization income decreases with computing density</strong>: transpose +13.6% on LJ, only +3.2% on EAM</div>
-  <div class="conclusion-item">📌 <strong>GPU utilization is limited by Modify</strong>: Modify accounts for 57-76% of the time, which is the overhead of the CPU side framework. It is difficult to optimize</div>
+  <div class="conclusion-item">📌 <strong>Memory-access optimizations yield less as compute intensity increases</strong>: transpose +13.6% on LJ, only +3.2% on EAM</div>
+  <div class="conclusion-item">📌 <strong>GPU utilization is limited by Modify overhead</strong>: Modify consumes 57–76% of runtime as CPU-side framework overhead, which is difficult to reduce</div>
   <div class="conclusion-item">📌 <strong>Multi-GPU requires GPU-aware MPI + compute intensive potential function + large number of atoms</strong>: Three conditions are indispensable</div>
 </div>
 
 <div class="section">
-  <h2>MPI build and GPU-aware communication configuration</h2>
+  <h2>10. MPI build and GPU-aware communication</h2>
 
   <h3>10.1 Background</h3>
   <p>LAMMPS multi-GPU requires MPI support. There is an ABI mismatch between the OpenMPI that comes with the system (compiled with GCC 8.5.0) and the current GCC 9.3.0, resulting in <code>MPI_Finalize</code> when <code>double free</code> crash. In addition, non-GPU-aware MPI requires CPU↔GPU data copy during each communication step, which results in huge communication overhead.</p>
@@ -896,17 +896,17 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
   </table>
 
   <h3>10.3 Compilation steps</h3>
-  <pre><span class="comment"># 下载并编译 OpenMPI 5.0.7</span>
+  <pre><span class="comment"># Download and build OpenMPI 5.0.7</span>
 wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.7.tar.gz
 tar xzf openmpi-5.0.7.tar.gz && cd openmpi-5.0.7
 
-<span class="comment"># 加载依赖</span>
+<span class="comment"># Load dependencies</span>
 module purge
 module load compiler/gcc/9.3.0
 module load compiler/dtk/25.04.2
 module load &lt;UCX_MODULE&gt;
 
-<span class="comment"># 配置：启用 UCX 通信层 + ROCm GPU 加速器</span>
+<span class="comment"># Configure UCX and ROCm GPU support</span>
 ./configure --prefix=$HOME/softwares/mpi/install \
   --enable-mpi-fortran=no \
   --with-ucx=&lt;UCX_ROOT&gt; \
@@ -914,7 +914,7 @@ module load &lt;UCX_MODULE&gt;
 
 make -j32 && make install</pre>
 
-  <h3>10.4 GPU-aware MPI component</h3>
+  <h3>10.4 GPU-aware MPI components</h3>
   <table>
     <thead><tr><th>Component</th><th>Description</th><th>Verification command</th></tr></thead>
     <tbody>
@@ -926,7 +926,7 @@ make -j32 && make install</pre>
   </table>
 
   <h3>10.5 LAMMPS MPI build</h3>
-  <pre><span class="comment"># 使用自编译 MPI 构建 LAMMPS</span>
+  <pre><span class="comment"># Build LAMMPS with the locally built MPI</span>
 cmake -S lammps-22Jul2025/cmake -B build-mpi \
   -C cmake/presets/hygon-dcu-gfx936.cmake \
   -D CMAKE_CXX_COMPILER=$DTKROOT/bin/hipcc \
@@ -936,12 +936,12 @@ cmake -S lammps-22Jul2025/cmake -B build-mpi \
   -D MPI_CXX_LIBRARIES=$HOME/softwares/mpi/install/lib/libmpi.so</pre>
 
   <h3>10.6 Runtime configuration</h3>
-  <pre><span class="comment"># Slurm 作业脚本关键配置</span>
+  <pre><span class="comment"># Key Slurm job settings</span>
 module load &lt;UCX_MODULE&gt;
 export PATH=$HOME/softwares/mpi/install/bin:$PATH
 export LD_LIBRARY_PATH=$HOME/softwares/mpi/install/lib:$LD_LIBRARY_PATH
 
-<span class="comment"># 启动命令：-pk kokkos gpu/aware on 启用 GPU 直接通信</span>
+<span class="comment"># Enable GPU-aware communication with -pk kokkos gpu/aware on</span>
 mpirun -np 2 lmp -in input -k on g 1 -sf kk \
   -pk kokkos neigh/transpose on gpu/aware on</pre>
 
@@ -951,18 +951,18 @@ mpirun -np 2 lmp -in input -k on g 1 -sf kk \
     <tbody>
       <tr><td>System MPI (GCC 8.5, no UCX)</td><td>104.65</td><td>42%</td><td><span style="color:var(--warning)">crash</span></td><td>No</td></tr>
       <tr><td>Self-compiled MPI (GCC 9.3, no UCX)</td><td>104.65</td><td>42%</td><td>✅</td><td>No</td></tr>
-      <tr><td><strong>GPU-aware MPI (GCC 9.3 + UCX+ROCm)</strong></td><td><strong>176.95</strong></td><td><strong>40%</strong></td><td>✅</td><td><strong>is</strong></td></tr>
+      <tr><td><strong>GPU-aware MPI (GCC 9.3 + UCX+ROCm)</strong></td><td><strong>176.95</strong></td><td><strong>40%</strong></td><td>✅</td><td><strong>Yes</strong></td></tr>
     </tbody>
   </table>
-  <p><strong>GPU-aware MPI improves 2 GPU performance by 69% (105→177 step/s), and the Comm time is reduced from 20.2s to 11.4s (-43%).</strong>This is achieved through UCX+ROCm to avoid CPU↔GPU data copying.</p>
+  <p><strong>GPU-aware MPI improves two-card performance by 69% (105 → 177 steps/s) and reduces communication time from 20.2 s to 11.4 s (−43%).</strong> The UCX + ROCm path avoids copying data through the CPU.</p>
 
-  <h3>10.8 UCX Selection Instructions</h3>
-  <p>DTK 25.04.2 does not come with the UCX library. Test environment passed <code>&lt;UCX_MODULE&gt;</code> provides UCX components with ROCm transport layer. OpenMPI 5.0.7 by <code>--with-ucx</code> and <code>--with-rocm</code> links related components to achieve GPU-aware communication.</p>
+  <h3>10.8 UCX selection guidance</h3>
+  <p>DTK 25.04.2 does not include UCX. The tested <code>&lt;UCX_MODULE&gt;</code> provides UCX components with ROCm transport support. Building OpenMPI 5.0.7 with <code>--with-ucx</code> and <code>--with-rocm</code> links these components and enables GPU-aware communication.</p>
   <p>UCX module path:<code>&lt;UCX_ROOT&gt;</code></p>
   <p>ROCm path:<code>&lt;DTK_ROOT&gt;</code></p>
 
   <h3>10.9 gfx906/Z100: Same-node solution without UCX ROCm</h3>
-  <p>Platform B lacks static <code>libhsakmt.a</code>, does not build the UCX ROCm transport layer. OpenMPI still recognizes device pointers via the ROCm accelerator extension and uses shared memory within the same node:</p>
+  <p>Platform B lacks the static library <code>libhsakmt.a</code>, so the UCX ROCm transport cannot be built. OpenMPI can still recognize device pointers through its ROCm accelerator extension and use shared memory for communication among cards on the same node:</p>
   <pre>./configure --prefix=&lt;USER_HOME&gt;/softwares/mpi/ompi-install \
   --enable-mpi-fortran=no \
   --with-rocm=&lt;DTK_ROOT&gt; \
@@ -972,11 +972,11 @@ export UCX_TLS=sm,self
 mpirun --mca pml ob1 --mca btl vader,self \
   -np &lt;GPU_COUNT&gt; lmp -in input \
   -k on g 1 -sf kk -pk kokkos gpu/aware on</pre>
-  <p>This build is confirmed to deliver <code>accelerator: rocm</code> and <code>mpiext: rocm</code>. It is intended for intra-node 1–4 card P2P testing and does not represent cross-node RDMA validation.</p>
+  <p>This build exposes <code>accelerator: rocm</code> and <code>mpiext: rocm</code>. It was used for intra-node peer-to-peer tests with one to four cards; it does not validate cross-node RDMA.</p>
 </div>
 
 <div class="section">
-  <h2>Artifact directory structure</h2>
+  <h2>11. Artifact directory structure</h2>
   <div class="file-tree">
     <span class="dir">~/softwares/lammps/</span><br>
     ├── <span class="dir">lammps-22Jul2025/</span>     <span class="comment"># Source code (Git repository)</span><br>
@@ -1005,17 +1005,17 @@ mpirun --mca pml ob1 --mca btl vader,self \
 </div>
 
 <div class="section">
-  <h2>Conclusion and scope of application</h2>
+  <h2>12. Conclusions and scope</h2>
 
   <div class="highlight-box">
     <div class="title">Recommended solution</div>
     <p style="font-size: 16px; margin-top: 10px;">Within the range of hardware, software versions and workloads described in this report,<strong>KOKKOS + HIP + neigh/transpose on</strong> achieved the best overall performance.</p>
   </div>
 
-  <h3>12.1 Architecture and Compilation</h3>
+  <h3>12.1 Architecture and compilation</h3>
   <div class="conclusion-item">✅ <strong>gfx936 native compilation</strong>: hipcc → dcc (Hygon DCU C compiler), generates Hygon ISA code</div>
   <div class="conclusion-item">✅ <strong>Kokkos architecture supports</strong>: gfx926/928/936/938 registered to cmake and HIP core file</div>
-  <div class="conclusion-item">✅ <strong>GPU-aware MPI ready</strong>：OpenMPI 5.0.7 + UCX 1.18.0 DTK + ROCm</div>
+  <div class="conclusion-item">✅ <strong>GPU-aware MPI is available</strong>:OpenMPI 5.0.7 + UCX 1.18.0 DTK + ROCm</div>
 
   <h3>12.2 Effective optimization</h3>
   <div class="conclusion-item">✅ <strong>neigh/transpose on</strong>: LJ +13.6%, EAM +3.2%; it is a runtime option, no need to modify the source code</div>
@@ -1027,7 +1027,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
   <div class="conclusion-item">❌ fix nve/kk source code: mask fast path -0.12%, single type quality -0.49%</div>
   <div class="conclusion-item">❌ BPT=1: LJ +4.3%, but EAM only +0.6%; rolled back, current evidence is insufficient to support this as a stable and generalizable optimization</div>
 
-  <h3>12.4 Multi-GPU Scaling</h3>
+  <h3>12.4 Multi-GPU scaling</h3>
   <table>
     <thead><tr><th>Pair Style</th><th>Mode</th><th>1 GPU</th><th>2 GPU</th><th>4 GPU</th><th>2/1</th><th>4/1</th></tr></thead>
     <tbody>
@@ -1042,7 +1042,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
   </table>
   <p><strong>EAM 2/1 ratio 0.78→0.87→0.90, trend improving but not breaking 1.0.</strong>GPU package has good scalability (2/1=1.32) but single card is slow (~1.8× KOKKOS).</p>
 
-  <h3>12.5 CPU vs DCU Fair comparison</h3>
+  <h3>12.5 Fair comparison of CPU and DCU performance</h3>
   <table>
     <thead><tr><th>vs.</th><th>Original report</th><th>After correction</th><th>Question</th></tr></thead>
     <tbody>
@@ -1051,7 +1051,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
     </tbody>
   </table>
 
-  <h3>12.6 Single GPU linear scaling</h3>
+  <h3>12.6 Single-GPU scaling</h3>
   <table>
     <thead><tr><th>Atomic number</th><th>step/s</th><th>Matom-step/s</th><th>Pair%</th><th>memory</th></tr></thead>
     <tbody>
@@ -1063,44 +1063,44 @@ mpirun --mca pml ob1 --mca btl vader,self \
       <tr><td>32M</td><td>—</td><td>—</td><td>—</td><td>OOM</td></tr>
     </tbody>
   </table>
-  <p><strong>Matom-step/s stable 80-85, linear scaling. 32M OOM due to the initial allocation of 2000/atom for the neighbor list, which exceeds 64GB.</strong>The video memory reaches the bottleneck before the computing power.</p>
+  <p><strong>Throughput is stable at 80–85 Matom-step/s with near-linear scaling. The 32M-atom case runs out of memory because the neighbor list initially allocates 2,000 entries per atom, exceeding 64 GB.</strong> Memory capacity becomes the limit before compute throughput.</p>
 
-  <h3>12.7 Key Lessons</h3>
+  <h3>12.7 Key lessons</h3>
   <div class="conclusion-item">⚠️ <strong>LJ is not suitable for GPU benchmark</strong>: The GPU is only 20% active, and the optimization effect is amplified</div>
   <div class="conclusion-item">⚠️ <strong>EAM is a reasonable GPU benchmark</strong>: GPU active 41%, Pair accounts for 36.8%</div>
   <div class="conclusion-item">⚠️ <strong>Device utilization during the active computing phase can approach 100%</strong>(HIP trace sampling), but end-to-end performance is still limited by CPU-side framework overhead (Modify accounts for 57-76%)</div>
-  <div class="conclusion-item">⚠️ <strong>Video memory precedes computing power bottleneck</strong>: 32M neighbor list initial allocation 256GB &gt; 64GB</div>
-  <div class="conclusion-item">⚠️ <strong>Multi-GPU three conditions</strong>: GPU-aware MPI + compute-intensive potential function + large number of atoms (&gt;500K per GPU), both are indispensable</div>
+  <div class="conclusion-item">⚠️ <strong>Memory capacity limits scale before compute throughput:</strong> the 32M-atom neighbor-list allocation requires 256 GB, exceeding the 64 GB available</div>
+  <div class="conclusion-item">⚠️ <strong>Three requirements for multi-GPU scaling:</strong> GPU-aware MPI, a compute-intensive potential, and a large system (&gt;500K atoms per GPU) are all necessary.</div>
   <div class="conclusion-item">⚠️ <strong>GPU package vs KOKKOS</strong>: The GPU package has good scalability but a single card is slow. KOKKOS is fast with a single card but poor with multiple GPUs.</div>
 
-  <h3>12.8 gfx906/Z100 known limitations and bypasses</h3>
+  <h3>12.8 gfx906/Z100 limitations and workarounds</h3>
   <div class="highlight-box">
     <div class="title">CHARMM/Kokkos neighbor list</div>
-    <p><code>dihedral charmm/kk</code> only implements HALF neighbor list, while GPU mode defaults to <code>neighflag=FULL</code>；<code>atom_style full</code> and <code>lj/charmm/coul/long</code> forces full again, causing a conflict. Use <code>-pk kokkos neigh half</code> post-rhodo runs on GPU and matches CPU results, but the missing FULL implementation still falls within the upstream boundary.</p>
+    <p><code>dihedral charmm/kk</code> implements only HALF neighbor lists, while GPU mode defaults to <code>neighflag=FULL</code>. <code>atom_style full</code> together with <code>lj/charmm/coul/long</code> also forces FULL lists, creating a conflict. Running the post-rhodo case on the GPU with <code>-pk kokkos neigh half</code> matches the CPU result. The missing FULL-list implementation remains an upstream limitation.</p>
   </div>
   <table><thead><tr><th>Category</th><th>Restrictions</th><th>Process/Affect</th></tr></thead><tbody>
     <tr><td>DTK 26.04</td><td>host mode injection cuda_wrappers</td><td>Change lmp target to <code>-xhip --offload-arch=gfx906</code></td></tr>
     <tr><td>DTK 26.04</td><td>Missing <code>libhsakmt.a</code></td><td>Unable to build UCX ROCm; use OpenMPI <code>--with-rocm</code></td></tr>
     <tr><td>HSA runtime</td><td>symbolic chain depends on <code>/opt/hyhal</code></td><td>Explicitly specify the real library in the shared software area</td></tr>
     <tr><td>Compilation</td><td>generates gfx906/926/928 three-architecture by default</td><td>Fixed <code>AMDGPU_TARGETS=gfx906</code></td></tr>
-    <tr><td>Hardware</td><td>gfx906 No FP8/BF16 hardware support and MFMA Matrix Core</td><td>does not affect the traditional molecular dynamics verification of this article and does not extrapolate to matrix workloads</td></tr>
-    <tr><td>Video memory</td><td>Single card 16 GB, LJ upper limit is about 16M atoms</td><td>Larger models require multiple cards to split or reduce memory usage</td></tr>
-    <tr><td>Scheduling</td><td>Test queue rejects more than 8 CPU cores</td><td>The multi-card test was completed with a total of 8 cores; the specific partition name has been desensitized</td></tr>
+    <tr><td>Hardware</td><td>gfx906 No FP8/BF16 support or MFMA matrix cores</td><td>This does not affect the molecular-dynamics tests in this report; results should not be extrapolated to matrix workloads</td></tr>
+    <tr><td>GPU memory</td><td>16 GB per card; LJ runs are limited to about 16 million atoms</td><td>Larger systems require multiple cards or lower memory use</td></tr>
+    <tr><td>Scheduling</td><td>The test partition rejects requests for more than 8 CPU cores</td><td>The multi-card test used 8 CPU cores in total; the partition name is redacted</td></tr>
   </tbody></table>
 
-  <h3>12.9 Summary of dual platform experience</h3>
+  <h3>12.9 Lessons from the two platforms</h3>
   <div class="conclusion-item">✅ <strong>First distinguish the architecture support status</strong>: gfx906 has been natively supported by Kokkos; gfx936 needs to register the architecture, wavefront and system allocation attributes, and the two cannot reuse the same patch assumption.</div>
-  <div class="conclusion-item">⚠️ <strong>DTK upgrades may have no performance gain or may introduce build regressions</strong>: The performance of 25.04.4/26.04 on platform A is basically unchanged, but 26.04 on platform B introduces the cuda_wrappers host-mode problem.</div>
-  <div class="conclusion-item">✅ <strong>Heavy HIP compiled and placed on computing node</strong>: The shared login node memory will fluctuate violently with concurrent users; resource applications must comply with the site CPU×memory upper limit and explicitly pass the exit code.</div>
-  <div class="conclusion-item">✅ <strong>GPU-aware does not have to rely heavily on UCX ROCm</strong>: Platform B via OpenMPI <code>--with-rocm</code> and shared memory implement same-node GPU-aware; Platform A verifies the UCX+ROCm path.</div>
-  <div class="conclusion-item">⚠️ <strong>Self-compiled OpenMPI to control the transport layer</strong>: Platform B uses <code>pml ob1</code>、<code>btl vader,self</code> and <code>UCX_TLS=sm,self</code>to prevent unadapted InfiniBand/UCX paths from triggering GID assertions.</div>
-  <div class="conclusion-item">⚠️ <strong>Multi-card expansion depends on three conditions</strong>: GPU-aware MPI, more than about 500K atoms per card, and a sufficiently computationally intensive potential function are indispensable; video memory capacity may be the upper limit before computing power.</div>
+  <div class="conclusion-item">⚠️ <strong>DTK upgrades may have no performance gain or may introduce build regressions</strong>: Performance on platform A was nearly unchanged between DTK 25.04.4 and 26.04, but 26.04 on platform B introduces the cuda_wrappers host-mode problem.</div>
+  <div class="conclusion-item">✅ <strong>Compile HIP workloads on compute nodes</strong>: Memory use on a shared login node can fluctuate substantially with concurrent users. Submit resource requests within the site CPU-to-memory limit, and propagate the job exit code explicitly.</div>
+  <div class="conclusion-item">✅ <strong>GPU-aware does not have to rely heavily on UCX ROCm</strong>: Platform B provides same-node GPU-aware communication through OpenMPI <code>--with-rocm</code> and shared memory; Platform A uses the UCX+ROCm path.</div>
+  <div class="conclusion-item">⚠️ <strong>Build OpenMPI locally to control the transport layer</strong>: Platform B uses <code>pml ob1</code>, <code>btl vader,self</code>, and <code>UCX_TLS=sm,self</code> to avoid GID assertions in unsupported InfiniBand/UCX paths.</div>
+  <div class="conclusion-item">⚠️ <strong>Multi-card scaling requires</strong> GPU-aware MPI, roughly 500K or more atoms per card, and a sufficiently compute-intensive potential. Memory capacity may become the limit before compute throughput.</div>
 </div>
 
 <div class="section">
-  <h2>Upstream improvement suggestions</h2>
+  <h2>13. Upstream improvement proposals</h2>
 
-  <h3>13.1 Kokkos Upstream</h3>
+  <h3>13.1 Kokkos upstream</h3>
   <table>
     <thead><tr><th>Contribution</th><th>Content</th><th>file</th><th>Status</th></tr></thead>
     <tbody>
@@ -1110,7 +1110,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
     </tbody>
   </table>
 
-  <h3>13.2 LAMMPS Upstream</h3>
+  <h3>13.2 LAMMPS upstream</h3>
   <table>
     <thead><tr><th>Contribute</th><th>Content</th><th>Status</th></tr></thead>
     <tbody>
@@ -1120,7 +1120,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
     </tbody>
   </table>
 
-  <h3>13.3 ROCm/HIP compatible ecology</h3>
+  <h3>13.3 ROCm/HIP compatibility ecosystem</h3>
   <table>
     <thead><tr><th>Contribution</th><th>Content</th><th>Status</th></tr></thead>
     <tbody>
@@ -1131,7 +1131,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
   </table>
 </div>
 
-<div class="footer">   Author: opensource_community &nbsp;·&nbsp; First edition: August 4, 2026 &nbsp;·&nbsp; Fusion Update: August 18, 2026 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936 / gfx906) &nbsp;·&nbsp; Both sets of computing environments have been desensitized </div>
+<div class="footer">   Author: opensource_community &nbsp;·&nbsp; First edition: August 4, 2026 &nbsp;·&nbsp; Consolidated update: August 18, 2026 &nbsp;·&nbsp; LAMMPS + Kokkos + HIP (gfx936 / gfx906) &nbsp;·&nbsp; Both compute environments are redacted </div>
 
 </div>
 </body>

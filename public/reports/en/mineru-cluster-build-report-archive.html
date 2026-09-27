@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MinerU on Hygon Z100 DCU: Full Experiment Archive</title>
+<meta name="description" content="Full experimental record for MinerU on Hygon Z100 DCU, including environment validation, performance measurements, service-pool tests, and reproduction commands.">
+<meta name="keywords" content="MinerU, Hygon DCU, Z100, vLLM, OCR, deployment, experiment archive">
+<style>
+  :root{
+    --void:#121014;
+    --surface:#1A1712;
+    --surface-2:#211D17;
+    --surface-3:#282319;
+    --ink:#EDE6DA;
+    --ink-2:#BDB3A4;
+    --muted:#847B6D;
+    --hair:#332C22;
+    --hair-2:#42392C;
+
+    --amber:#E0A34E;
+    --amber-deep:#F0C078;
+    --amber-wash:#2C2318;
+
+    --verified:#4FC2A4;
+    --verified-wash:#122A26;
+
+    --superseded:#8C8175;
+    --superseded-wash:#221F1A;
+
+    --boundary:#E0764E;
+    --boundary-wash:#2C1D18;
+
+    --danger:#E0764E;
+
+    --mono:"SF Mono",'JetBrains Mono',"Fira Code",Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+    margin:0;
+  }
+  a{color:var(--amber-deep); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code, pre, .mono{font-family:var(--mono);}
+
+  /* ---------- layout ---------- */
+  .shell{display:flex; max-width:1440px; margin:0 auto;}
+  .sidebar{
+    position:sticky; top:0; align-self:flex-start;
+    width:272px; flex:0 0 272px;
+    height:100vh; overflow-y:auto;
+    padding:28px 18px 40px 28px;
+    border-right:1px solid var(--hair);
+  }
+  .sidebar::-webkit-scrollbar{width:6px;}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--hair-2); border-radius:3px;}
+  .brand{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--amber); font-weight:600; margin-bottom:4px;
+  }
+  .brand-sub{font-size:12.5px; color:var(--muted); margin-bottom:24px; line-height:1.5;}
+  .toc{list-style:none; margin:0; padding:0;}
+  .toc li{margin:0;}
+  .toc a{
+    display:block; padding:7px 10px; margin:1px 0;
+    font-size:13px; color:var(--ink-2); border-radius:5px;
+    border-left:2px solid transparent;
+  }
+  .toc a:hover{background:var(--surface-2); text-decoration:none; color:var(--ink);}
+  .toc a.active{color:var(--amber-deep); border-left-color:var(--amber); background:var(--surface-2);}
+  .toc .num{font-family:var(--mono); color:var(--muted); margin-right:7px; font-size:12px;}
+
+  .content{flex:1; min-width:0; padding:0 40px 120px;}
+  .content-inner{max-width:840px; margin:0 auto;}
+
+  /* ---------- masthead ---------- */
+  .mast{padding:56px 0 28px; border-bottom:1px solid var(--hair);}
+  .mast .tag{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--amber); font-weight:600;
+  }
+  .mast h1{
+    font-size:clamp(28px,3.6vw,40px); line-height:1.15; letter-spacing:-.02em;
+    font-weight:800; margin:14px 0 0; color:var(--ink);
+  }
+  .mast .standfirst{font-size:16px; color:var(--ink-2); max-width:66ch; margin-top:16px;}
+  .mast .standfirst b{color:var(--amber-deep); font-weight:650;}
+  .runline{
+    display:flex; flex-wrap:wrap; gap:7px 24px; margin-top:22px;
+    font-family:var(--mono); font-size:12px; color:var(--muted);
+  }
+  .runline b{color:var(--ink-2); font-weight:600;}
+
+  /* ---------- sections ---------- */
+  section{margin-top:58px; scroll-margin-top:24px;}
+  .sec-head{
+    display:flex; align-items:baseline; gap:12px; border-bottom:1px solid var(--hair-2);
+    padding-bottom:10px; margin-bottom:24px;
+  }
+  .sec-head .idx{font-family:var(--mono); color:var(--amber); font-weight:700; font-size:15px;}
+  .sec-head h2{font-size:22px; font-weight:750; letter-spacing:-.012em; margin:0; color:var(--ink);}
+  h3{font-size:17px; font-weight:700; margin:32px 0 14px; color:var(--ink);}
+  h4{font-size:14.5px; font-weight:700; margin:22px 0 10px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.02em;}
+  p{margin:0 0 15px; max-width:74ch; color:var(--ink);}
+  p:last-child{margin-bottom:0;}
+  .lede{font-size:16px; color:var(--ink-2);}
+  ul,ol{max-width:74ch; padding-left:22px; margin:0 0 15px;}
+  li{margin-bottom:5px;}
+  strong{color:var(--amber-deep); font-weight:650;}
+
+  /* ---------- summary metrics ---------- */
+  .metrics{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1px; background:var(--hair); border:1px solid var(--hair); margin:28px 0;
+  }
+  .metric{background:var(--surface); padding:18px 20px;}
+  .metric .v{font-family:var(--mono); font-size:22px; font-weight:700; color:var(--amber-deep);}
+  .metric .l{font-size:12px; color:var(--muted); margin-top:5px;}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto; margin:0 0 20px; border:1px solid var(--hair); border-radius:6px;}
+  table{border-collapse:collapse; width:100%; font-size:13.5px;}
+  th, td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--hair); white-space:nowrap;}
+  td:last-child, th:last-child{white-space:normal;}
+  th{
+    background:var(--surface-2); color:var(--ink-2); font-weight:650; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+  td code{font-size:12.5px; color:var(--amber-deep);}
+
+  /* ---------- code blocks ---------- */
+  pre{
+    background:var(--surface-2); border:1px solid var(--hair); border-radius:7px;
+    padding:16px 18px; overflow-x:auto; font-size:12.8px; line-height:1.62; margin:0 0 18px;
+    color:var(--ink-2);
+  }
+  pre code{color:inherit; background:none; padding:0;}
+  p code, li code{
+    background:var(--surface-3); color:var(--amber-deep); padding:1.5px 6px;
+    border-radius:4px; font-size:12.8px; border:1px solid var(--hair-2);
+  }
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border-left:3px solid var(--muted); background:var(--surface); border-radius:0 7px 7px 0;
+    padding:13px 18px; margin:18px 0; font-size:13.8px; max-width:74ch;
+  }
+  .callout .cl-label{
+    font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    font-weight:700; margin-bottom:5px; display:block;
+  }
+  .callout.lesson{border-left-color:var(--amber); background:var(--amber-wash);}
+  .callout.lesson .cl-label{color:var(--amber-deep);}
+  .callout.warn{border-left-color:var(--boundary); background:var(--boundary-wash);}
+  .callout.warn .cl-label{color:var(--boundary);}
+  .callout.note{border-left-color:var(--hair-2);}
+  .callout.note .cl-label{color:var(--muted);}
+  .callout p{margin-bottom:0;}
+  .callout p + p{margin-top:8px;}
+
+  /* ---------- badges ---------- */
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px;
+    font-weight:700; padding:2.5px 9px; border-radius:20px; letter-spacing:.01em;
+  }
+  .badge.verified{background:var(--verified-wash); color:var(--verified);}
+  .badge.superseded{background:var(--superseded-wash); color:var(--superseded);}
+  .badge.boundary{background:var(--boundary-wash); color:var(--boundary);}
+  .badge.dead{background:var(--superseded-wash); color:var(--superseded); text-decoration:line-through;}
+
+  /* ---------- diagram ---------- */
+  .diagram{
+    font-family:var(--mono); font-size:12.3px; line-height:1.55; white-space:pre;
+    background:var(--surface-2); border:1px solid var(--hair); border-radius:7px;
+    padding:20px 22px; overflow-x:auto; color:var(--ink-2); margin:20px 0;
+  }
+
+  /* ---------- correction cards (§12) ---------- */
+  .corr{
+    border:1px solid var(--hair); border-radius:8px; margin:20px 0; overflow:hidden;
+  }
+  .corr-head{
+    display:flex; align-items:center; gap:10px; padding:12px 18px;
+    background:var(--surface-2); border-bottom:1px solid var(--hair);
+  }
+  .corr-head .n{font-family:var(--mono); color:var(--muted); font-size:12px;}
+  .corr-head .t{font-weight:700; font-size:14.5px;}
+  .corr-body{padding:16px 18px;}
+  .corr-body p{margin-bottom:10px;}
+
+  /* ---------- footer ---------- */
+  .foot{
+    margin-top:80px; padding-top:22px; border-top:1px solid var(--hair);
+    font-family:var(--mono); font-size:11.5px; color:var(--muted);
+  }
+
+  /* ---------- mobile ---------- */
+  .menu-btn{display:none;}
+  @media (max-width:960px){
+    .sidebar{
+      position:fixed; z-index:40; left:0; top:0; bottom:0; background:var(--void);
+      transform:translateX(-100%); transition:transform .2s ease; width:280px; box-shadow:0 0 40px rgba(0,0,0,.5);
+    }
+    .sidebar.open{transform:translateX(0);}
+    .content{padding:0 20px 100px;}
+    .menu-btn{
+      display:flex; align-items:center; gap:8px; position:fixed; top:16px; left:16px; z-index:50;
+      background:var(--surface); border:1px solid var(--hair-2); color:var(--ink);
+      font-family:var(--mono); font-size:12px; padding:8px 12px; border-radius:20px; cursor:pointer;
+    }
+    .mast{padding-top:76px;}
+  }
+
+  /* Site report palette: dark technical archive with teal accents. */
+  :root{
+    --void:#07101d; --surface:#0d1a2b; --surface-2:#12233a; --surface-3:#173351;
+    --ink:#eef5fc; --ink-2:#b8c7d8; --muted:#9eb0c7; --hair:#243954; --hair-2:#315171;
+    --amber:#5eead4; --amber-deep:#5eead4; --amber-wash:rgba(94,234,212,.08);
+    --verified:#a6e3a1; --verified-wash:rgba(166,227,161,.10);
+    --superseded:#9eb0c7; --superseded-wash:rgba(158,176,199,.09);
+    --boundary:#f9e2af; --boundary-wash:rgba(249,226,175,.09); --danger:#f9e2af;
+  }
+  body{background:radial-gradient(circle at 12% 0,#11385f 0,transparent 34%),var(--void);}
+  .sidebar{border-right-color:var(--hair);}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--hair-2);}
+  .toc a:hover,.toc a.active{background:var(--surface-2);}
+  .mast{border-bottom-color:var(--hair);}
+  .sec-head{border-bottom-color:var(--hair-2);}
+  .metric{background:var(--surface);}
+  .tw{border-color:var(--hair);}
+  th{background:var(--surface-3);color:var(--ink);}
+  td{border-bottom-color:var(--hair);}
+  tr:nth-child(even){background:rgba(96,165,250,.045);}
+  pre,.diagram{background:#081321;border-color:var(--hair);}
+  .corr,.callout{background:rgba(96,165,250,.045);border-color:var(--hair);}
+  .callout.lesson{background:rgba(94,234,212,.055);border-left-color:var(--amber);}
+  .callout.warn{background:var(--boundary-wash);border-left-color:var(--boundary);}
+</style>
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-20">
+  <script src="/reports/report-theme.js?v=20260927-20" defer></script>
+</head>
+<body>
+<div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a><a href="/reports/mineru-cluster-build-report-archive.html">中文</a><a href="/reports/en/mineru-cluster-build-report.html">English main report</a></nav></div>
+
+<button class="menu-btn" id="menuBtn">☰ Contents</button>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">MinerU · Z100 DCU</div>
+    <div class="brand-sub">Compatibility and Deployment Testing<br>Test cluster · gfx906 · 2026-08-12 to 13<br>Environment revalidation · 2026-09-27</div>
+    <ul class="toc" id="toc">
+      <li><a href="#s1"><span class="num">01</span>Summary of Findings</a></li>
+      <li><a href="#s2"><span class="num">02</span>Background and Scope</a></li>
+      <li><a href="#s3"><span class="num">03</span>Hardware Capability Assessment</a></li>
+      <li><a href="#s4"><span class="num">04</span>Triton: A Three-Layer Error Chain</a></li>
+      <li><a href="#s5"><span class="num">05</span>vLLM Porting Feasibility</a></li>
+      <li><a href="#s6"><span class="num">06</span>End-to-End Parsing</a></li>
+      <li><a href="#s7"><span class="num">07</span>Output Quality Validation</a></li>
+      <li><a href="#s8"><span class="num">08</span>Performance Testing</a></li>
+      <li><a href="#s9"><span class="num">09</span>Service-Pool Architecture and Implementation</a></li>
+      <li><a href="#s10"><span class="num">10</span>Service-Pool Load Testing</a></li>
+      <li><a href="#s11"><span class="num">11</span>Approaches That Did Not Work</a></li>
+      <li><a href="#s12"><span class="num">12</span>Assumptions Revisited</a></li>
+      <li><a href="#s13"><span class="num">13</span>Bare-Metal Deployment</a></li>
+      <li><a href="#s14"><span class="num">14</span>Environment Recovery and Reproduction</a></li>
+      <li><a href="#s15"><span class="num">15</span>Appendix: Command Reference</a></li>
+      <li><a href="#s16"><span class="num">16</span>Data and Job Index</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <div class="content-inner">
+
+      <header class="mast report-banner">
+        <div class="tag">Full Experiment Archive · Redacted Public Edition</div>
+        <h1>MinerU on Hygon Z100 DCU</h1>
+        <p class="standfirst">           This archive documents environment validation, service-pool implementation, and performance testing. It records the results, reproduction commands, measurements, and source job IDs for each approach, along with the evidence used to test the underlying assumptions.         </p>
+        <div class="runline">
+          <span><b>Cluster</b> Test cluster (national supercomputing facility)</span>
+          <span><b>Hardware</b> 4 × Hygon Z100 DCUs (gfx906)</span>
+          <span><b>Operating system</b> CentOS 7.6 / glibc 2.17</span>
+          <span><b>Software stack</b> DTK 26.04</span>
+          <span><b>Test dates</b> 2026-08-12 to 2026-08-13; revalidated 2026-09-27</span>
+          <span><b>Deployment model</b> Bare metal (systemd)</span>
+        </div>
+      </header>
+
+      <!-- §1 -->
+      <section id="s1">
+        <div class="sec-head"><span class="idx">01</span><h2>Key findings</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>Metric</th><th>Result</th><th>Evidence</th></tr>
+            <tr><td>Service-pool throughput</td><td><strong>955 docs/hour</strong>(4 cards, concurrency 12)</td><td><code>soak.log</code></td></tr>
+            <tr><td>Stability</td><td>72 requests; 0 failures; 0 rejections</td><td>§10</td></tr>
+            <tr><td>Fault recovery</td><td>Worker killed during load test; restarted automatically without losing requests</td><td>§10.3</td></tr>
+            <tr><td>Memory leak</td><td>None (no RSS growth across 72 requests)</td><td>§10.4</td></tr>
+            <tr><td>Backend selection</td><td><strong>pipeline</strong> 3.9 s/page; VLM at 14.93 s/page is not recommended</td><td>§8.1</td></tr>
+            <tr><td>FP16 / FP32 / BF16</td><td>16.15 / 9.01 / 5.83 TFLOPS</td><td>§3</td></tr>
+            <tr><td>Triton / <code>torch.compile</code></td><td><span class="badge boundary">✕ Architecture limitation</span> Not supported on gfx906</td><td>§4</td></tr>
+            <tr><td>vLLM HIP kernel</td><td><span class="badge verified">✓ Available</span> PagedAttention verified in testing</td><td>§5</td></tr>
+            <tr><td>CPU queue</td><td>Equivalent output; 8.9× slower at steady state</td><td>§8.3</td></tr>
+            <tr><td>Reproduction after environment drift</td><td><span class="badge verified">✓ Passed</span> 14-page pipeline run; exit code 0</td><td>§14</td></tr>
+          </table>
+        </div>
+        <div class="callout lesson">
+          <span class="cl-label">Summary</span>
+          <p>MinerU can run in production on Z100 using the pipeline backend. Triton is unavailable on this architecture, but MinerU does not require it.</p>
+        </div>
+      </section>
+
+      <!-- §2 -->
+      <section id="s2">
+        <div class="sec-head"><span class="idx">02</span><h2>Background and validation scope</h2></div>
+
+        <h3>2.1 Initial environment status</h3>
+        <p>The prior work set up the environment and produced a V2 report claiming that “all tests passed.” A review found one critical gap:</p>
+        <pre><code>ssh -p &lt;SSH_PORT&gt; &lt;CLUSTER_HOST&gt; 'ls ~/.cache/modelscope/hub ~/models ~/output 2>/dev/null'
+# all directories are empty</code></pre>
+        <p><strong>MinerU had never parsed a document.</strong> The V2 report's “end-to-end test” measured only magika file-type detection—the first preprocessing step in MinerU, not document parsing. No models had been downloaded.</p>
+
+        <h3>2.2 Reusable software and data</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Item</th><th>Path / version</th></tr>
+            <tr><td>venv</td><td><code>&lt;USER_HOME&gt;/mineru-venv-py310</code>(Python 3.10.14)</td></tr>
+            <tr><td>torch</td><td>2.7.1+das.opt1.dtk2604</td></tr>
+            <tr><td>MinerU</td><td>Version 3.4.4 (editable install; source patched for magika compatibility)</td></tr>
+            <tr><td>glibc 2.28</td><td><code>&lt;USER_HOME&gt;/glibc-2.28-rpm/</code> (path used at the time; relocated during revalidation, see §14)</td></tr>
+            <tr><td>Wrappers</td><td><code>dcu-python</code> / <code>mineru</code> / <code>mineru-api</code></td></tr>
+          </table>
+        </div>
+
+        <h3>2.3 Cluster resources and runtime constraints</h3>
+        <pre><code>cat ~/&lt;SKILL_CONFIG&gt;</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>Constraint</th><th>Value</th></tr>
+            <tr><td>Memory limit</td><td><code>cpus-per-task × 3569 MB</code></td></tr>
+            <tr><td>DCU queue</td><td><code>kshdnormal</code>, QOS enforces <code>--gres=dcu:1</code></td></tr>
+            <tr><td>CPU queue</td><td><code>kshcnormal</code>, several nodes; no GRES restriction</td></tr>
+            <tr><td>External network on compute nodes</td><td>❌ None</td></tr>
+            <tr><td><code>/tmp</code></td><td>Not shared across nodes</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- §3 -->
+      <section id="s3">
+        <div class="sec-head"><span class="idx">03</span><h2>Hardware capabilities and software environment</h2></div>
+
+        <h3>3.1 Initial probe results and limitations</h3>
+        <p>Probe job <code>&lt;JOB_ID&gt;</code>:</p>
+        <pre><code>sbatch ~/probe_caps.slurm     # see cluster/probe_caps.py</code></pre>
+        <pre><code>torch 2.7.1 devices 4
+arch: gfx906:sramecc-:xnack- mem GB: 17.2
+[OK]   bf16 matmul: supported=True maxerr=0.250
+[OK]   fp16 matmul: 4.85 TFLOPS          ← suspicious: slower than FP32
+[OK]   fp32 matmul: 8.91 TFLOPS
+[FAIL] triton kernel: FileNotFoundError: '.../gcc-11.2.0-install/bin/gcc'
+[OK]   SDPA: flash_avail=True mem_eff=True
+[FAIL] torch.compile: FileNotFoundError: (same error)
+[OK]   torch._int_mm: ok (512, 512)
+[OK]   onnxruntime: 1.16.3 providers=['AzureExecutionProvider','CPUExecutionProvider']</code></pre>
+        <p><strong>FP16 performance below FP32 was unexpected</strong>—the investigation found that the benchmark had no warm-up.</p>
+
+        <h3>Benchmark method after warm-up was added</h3>
+        <p>Job <code>&lt;JOB_ID&gt;</code>, with five warm-up iterations followed by 30 timed iterations:</p>
+        <pre><code>def bench(dt, n=2048, iters=30):
+    a = torch.randn(n, n, device="cuda", dtype=dt)
+    b = torch.randn(n, n, device="cuda", dtype=dt)
+    for _ in range(5): c = a @ b          # ← warm-up
+    torch.cuda.synchronize(); s = time.time()
+    for _ in range(iters): c = a @ b
+    torch.cuda.synchronize()
+    return 2 * n**3 / ((time.time() - s) / iters) / 1e12</code></pre>
+        <pre><code>fp32: 9.01 TFLOPS
+fp16: 16.15 TFLOPS      ← 1.8× FP32
+bf16: 5.73 TFLOPS
+--- force the rocBLAS/hipBLAS backend ---
+fp16: 16.12 TFLOPS      ← unchanged; rocBLAS was already in use
+bf16: 5.83 TFLOPS</code></pre>
+
+        <h3>3.3 Final capability matrix</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Capability</th><th>Result</th><th>Notes</th></tr>
+            <tr><td>FP16 GEMM</td><td><strong>16.15 TFLOPS</strong></td><td>Use FP16 for inference</td></tr>
+            <tr><td>FP32 GEMM</td><td>9.01 TFLOPS</td><td></td></tr>
+            <tr><td>BF16 GEMM</td><td>5.83 TFLOPS</td><td>Software emulation; slowest option</td></tr>
+            <tr><td><code>torch._int_mm</code></td><td><span class="badge verified">✓</span></td><td>INT8 available</td></tr>
+            <tr><td>SDPA</td><td><span class="badge boundary">⚠ Degraded</span></td><td>Falls back to the math backend; no Flash or memory-efficient attention</td></tr>
+            <tr><td>Multi-GPU</td><td><span class="badge verified">✓ 4 cards</span></td><td>16 GB per card (the report states 17.2 GB)</td></tr>
+            <tr><td>hipBLASLt</td><td><span class="badge dead">✕ No gfx906 kernel</span></td><td>The library contains kernels only for gfx928; runtime warnings are emitted</td></tr>
+            <tr><td>FP8 / MFMA</td><td><span class="badge dead">✕</span></td><td>Vega20 architecture limitation</td></tr>
+          </table>
+        </div>
+        <div class="callout lesson">
+          <span class="cl-label">Methodological lesson</span>
+          <p>Benchmarks involving one-time costs (kernel tuning, JIT compilation, or model loading) must include warm-up; otherwise, the conclusion may be completely reversed.</p>
+        </div>
+      </section>
+
+      <!-- §4 -->
+      <section id="s4">
+        <div class="sec-head"><span class="idx">04</span><h2>Triton build failure analysis</h2></div>
+        <p class="lede">This case shows why environment failures must be traced across layers: <strong>the initial error did not identify the underlying cause.</strong></p>
+
+        <h3>4.1 Incorrect GCC path</h3>
+        <pre><code>FileNotFoundError: '&lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc'</code></pre>
+        <p>This directory appeared in the user's <code>PATH</code>, but <strong>it did not exist</strong>:</p>
+        <pre><code>echo $PATH | tr ':' '\n' | grep gcc
+# &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin   ← invalid path
+ls &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc
+# ls: cannot access ...: No such file or directory</code></pre>
+        <p>Triton initially appeared unavailable; investigation showed that the configured GCC path pointed to a nonexistent directory.</p>
+
+        <h3>4.2 System GCC version and library-path issue</h3>
+        <p>After correcting the path to the existing gcc-11.2.0:</p>
+        <pre><code>cc1: error while loading shared libraries: libisl.so.15: cannot open shared object file</code></pre>
+        <p>Compilers installed on the cluster, tested individually:</p>
+        <pre><code>echo "int main(){return 0;}" > /tmp/t.c
+for cc in &lt;SOFTWARE_ROOT&gt;/compiler/gcc-11.2.0/bin/gcc \
+          &lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0/bin/gcc \
+          &lt;SOFTWARE_ROOT&gt;/compiler/gcc-13.3.0/bin/gcc \
+          /opt/rh/devtoolset-7/root/usr/bin/gcc \
+          &lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04/llvm/bin/clang; do
+  $cc /tmp/t.c -o /tmp/t.out 2>/dev/null && echo "OK   $cc" || echo "FAIL $cc"
+done</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>Compiler</th><th>Result</th></tr>
+            <tr><td>gcc-11.2.0</td><td><span class="badge dead">✕ Missing libisl.so.15</span></td></tr>
+            <tr><td><strong>gcc-12.2.0</strong></td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td>gcc-13.3.0</td><td><span class="badge dead">✕ Missing libisl.so.15</span></td></tr>
+            <tr><td><strong>devtoolset-7</strong></td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td><strong>DTK clang</strong></td><td><span class="badge verified">✓</span></td></tr>
+          </table>
+        </div>
+
+        <h3>4.3 Root cause: unsupported gfx906 target</h3>
+        <p>After switching to GCC 12.2.0 (job <code>&lt;JOB_ID&gt;</code>):</p>
+        <pre><code>loc("probe_triton.py":4:0): error: unsupported target: 'gfx906'
+RuntimeError: PassManager::run failed</code></pre>
+
+        <h3>4.4 Validation against Hygon's Triton build</h3>
+        <p>Hygon also publishes a DCU-specific Triton build, which warranted a separate test:</p>
+        <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"
+# triton-3.1.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl</code></pre>
+        <p>Install it in an isolated directory to avoid affecting the working environment:</p>
+        <pre><code>cp triton-3.1.0+...manylinux_2_28_x86_64.whl triton-3.1.0+...manylinux2014_x86_64.whl
+pip install --no-deps --target=&lt;USER_HOME&gt;/dcu-triton-test <retagged.whl></code></pre>
+        <p>The first run could not find <code>libgcvm.so.17git</code>. The library was in <code>dtk-26.04/dcc/gcvm/lib</code>, which was missing from the wrapper's library path. Adding that directory to <code>dcu-python</code>'s <code>ALL_LIBS</code> resolved the issue (job <code>&lt;JOB_ID&gt;</code>):</p>
+        <pre><code>triton: 3.1.0 from &lt;USER_HOME&gt;/dcu-triton-test/triton/__init__.py
+arch: gfx906:sramecc-:xnack-
+[FAIL] RuntimeError: PassManager::run failed
+error: unsupported target: 'gfx906'      ← same result as the PyPI build</code></pre>
+        <p>Source inspection confirmed the architecture allowlist:</p>
+        <pre><code>grep -ohE "gfx9[0-9]{2}[a-z]*" triton/backends/amd/compiler.py | sort -u
+# gfx928 gfx936 gfx940 gfx941 gfx942
+grep -ohE "gfx9[0-9]{2}[a-z]*" triton/backends/hcu/compiler.py | sort -u
+# gfx928 gfx936 gfx938 gfx940 gfx941 gfx942</code></pre>
+        <p><strong>gfx906 is not listed.</strong></p>
+
+        <div class="callout warn">
+          <span class="cl-label">⚠ A misleading clue</span>
+          <p><code>strings libtriton.so | grep gfx906</code> A search does find gfx906. That entry is in LLVM upstream's AMDGPU target list.           <strong>LLVM recognizing an architecture does not mean Triton supports it</strong>. Test the installed build; do not infer support from strings in the binary.</p>
+        </div>
+        <div class="callout note">
+          <span class="cl-label">Conclusion</span>
+          <p>Neither Triton 3.x (the PyPI build nor Hygon's DCU build) supports gfx906,<code>torch.compile</code> so Triton-dependent features are unavailable           <strong>This is an architectural limitation; configuration changes cannot resolve it.</strong></p>
+        </div>
+      </section>
+
+      <!-- §5 -->
+      <section id="s5">
+        <div class="sec-head"><span class="idx">05</span><h2>vLLM porting feasibility</h2></div>
+
+        <h3>5.1 Backend capability boundaries</h3>
+        <p>First, distinguish two easily confused terms:</p>
+        <ul>
+          <li><strong>VLM</strong> = Vision-Language Model, a type of<strong>model</strong>(MinerU2.5-Pro-2605-1.2B is one example)</li>
+          <li><strong>vLLM</strong> is an inference engine that provides PagedAttention.</li>
+        </ul>
+        <p>MinerU has two layers of options, differing by one letter:</p>
+        <div class="diagram">Parsing backend (how the document is parsed)
+  ├── pipeline        Specialized small models: layout + OCR + formulas + tables
+  ├── vlm-engine      A large VLM reads each page end to end
+  └── hybrid-engine
+        └─ Selects an inference engine within vlm-engine
+              ├── transformers   PyTorch only; slowest
+              ├── vllm-engine    ← vLLM is used here
+              └── lmdeploy</div>
+
+        <h3>5.2 gfx906 kernel architecture validation</h3>
+        <p>Hygon also provides a DCU build of vLLM:</p>
+        <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/vllm/DAS1.8/"
+# vllm-0.11.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl</code></pre>
+        <p>Inspect the packaged code objects:</p>
+        <pre><code>strings vllm/_C.abi3.so     | grep -oE "gfx[0-9]{3,4}" | sort -u
+# gfx906 gfx926 gfx928 gfx936 gfx938
+strings vllm/_moe_C.abi3.so | grep -oE "gfx[0-9]{3,4}" | sort -u
+# gfx906 gfx926 gfx928 gfx936 gfx938</code></pre>
+        <p><strong>Hygon excludes gfx906 from Triton's supported targets but retains it in vLLM's HIP kernels.</strong></p>
+
+        <h3>5.3 Runtime test (job <code>&lt;JOB_ID&gt;</code>)</h3>
+        <pre><code>from vllm import _custom_ops as ops
+# PagedAttention is vLLM's core attention operation
+ks = torch.tensor(1.0, device="cuda"); vs = torch.tensor(1.0, device="cuda")
+ops.paged_attention_v1(out, q, kc, vc, nkvh, 1.0/(hd**0.5),
+                       btab, slen, bs, bs*2, None, "auto", ks, vs, 0,0,0,64,0)</code></pre>
+        <pre><code>arch: gfx906:sramecc-:xnack-
+[OK] import vllm 0.11.0
+[OK] vllm._C loaded
+[OK] rms_norm (HIP): maxerr=0.0010
+[OK] rotary_embedding (HIP): ran
+[OK] paged_attention_v1 (HIP) ★: out(4, 8, 64) finite=True</code></pre>
+
+        <h3>5.4 Conclusion and remaining work</h3>
+        <p><strong>vLLM has a working execution path on Z100</strong>—all core HIP kernels work, the opposite of the Triton result.</p>
+        <p><strong>Unresolved</strong>: platform detection fails (<code>is_rocm: False</code>). vLLM uses <code>import amdsmi</code> to detect ROCm:</p>
+        <pre><code># vllm/platforms/__init__.py:109
+import amdsmi
+amdsmi.amdsmi_init()</code></pre>
+        <p>but DTK 26.04 provides only the older <code>rocm_smi</code> interface (<code>.hyhal/rocm_smi/bin/rsmiBindings.py</code>). Completing inference requires an <code>amdsmi</code> shim or a patch to <code>rocm_platform_plugin()</code>.</p>
+        <p><strong>No benefit for MinerU</strong>: vLLM's strengths are PagedAttention and continuous batching for high-concurrency, long-form generation. MinerU's VLM workload uses a single-page image and short output, so it does not benefit from these features. The vLLM path is still worth pursuing for an LLM inference service on Z100.</p>
+      </section>
+
+      <!-- §6 -->
+      <section id="s6">
+        <div class="sec-head"><span class="idx">06</span><h2>Parsing workflow failures and fixes</h2></div>
+        <p class="lede">Each new error showed that diagnosis had progressed to the next layer. The issues below are listed in the order encountered:</p>
+
+        <h3>6.1 Model not available</h3>
+        <p><code>modelscope</code> imports torch and fails on the login node, which has no DCU driver. Use <code>huggingface_hub</code>         (pure Python) with hf-mirror instead:</p>
+        <pre><code># Check endpoint reachability
+curl -s -o /dev/null -w "%{http_code}" https://hf-mirror.com/     # 200
+curl -s -o /dev/null -w "%{http_code}" https://huggingface.co/    # blocked from this network</code></pre>
+        <pre><code># cluster/dl_models.py
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+os.environ["HF_HOME"] = "&lt;USER_HOME&gt;/mineru-models/hf"
+from huggingface_hub import snapshot_download
+for repo in ["opendatalab/MinerU2.5-Pro-2605-1.2B",
+             "opendatalab/PDF-Extract-Kit-1.0"]:
+    snapshot_download(repo, max_workers=8)</code></pre>
+        <p>This downloads 20 GB. Set the local path:</p>
+        <pre><code>{
+  "models-dir": {
+    "pipeline": "&lt;USER_HOME&gt;/mineru-models/models/OpenDataLab--PDF-Extract-Kit-1.0/snapshots/master",
+    "vlm":      "&lt;USER_HOME&gt;/mineru-models/models/OpenDataLab--MinerU2.5-Pro-2605-1.2B/snapshots/master"
+  },
+  "model-source": "local",
+  "device-mode": "cuda"
+}</code></pre>
+
+        <h3>6.2 Resolve <code>libssl.so.3 not found</code></h3>
+        <pre><code>File "mineru/cli/fast_api.py", line 19, in <module>
+    import uvicorn
+ImportError: libssl.so.3: cannot open shared object file
+Error: Local mineru-api exited before becoming healthy.</code></pre>
+        <p><strong>Root cause:</strong> The MinerU CLI launches a <code>mineru-api</code> child process with the system <code>sys.executable</code>, bypassing the <code>dcu-python</code> wrapper.</p>
+        <p><strong>Workaround used at the time:</strong> Call the <code>do_parse()</code> Python API instead of the CLI. <strong>Permanent service fix:</strong> Add <code>/usr/local/lib64</code> to the wrapper's <code>ALL_LIBS</code>.</p>
+
+        <h3>6.3 <code>operator torchvision::nms does not exist</code></h3>
+        <p>torchvision 0.21.0 from PyPI is incompatible with the DCU Torch 2.7.1 ABI.</p>
+        <p>The DCU torchvision build is published in the sourcefind <strong><code>vision/</code></strong> directory, not <code>torchvision/</code>:</p>
+        <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/vision/DAS1.8/"
+# torchvision-0.22.0+das.opt1.dtk2604.torch271-cp310-...whl   ← built for torch 2.7.1</code></pre>
+        <p>Because the system glibc is 2.17, pip rejects the <code>manylinux_2_28</code> wheel. Retagging lets pip install it; the program itself already runs under the user-space glibc 2.28 loader:</p>
+        <pre><code>W=torchvision-0.22.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl
+cp $W ${W/manylinux_2_28/manylinux2014}
+pip install --no-deps --force-reinstall ${W/manylinux_2_28/manylinux2014}</code></pre>
+
+        <h3>6.4 Missing OCR/layout dependencies</h3>
+        <pre><code>pip install shapely pyclipper omegaconf einops ftfy</code></pre>
+
+        <h3>6.5 Resolve <code>BrokenProcessPool</code></h3>
+        <pre><code>concurrent.futures.process.BrokenProcessPool:
+  A process in the process pool was terminated abruptly</code></pre>
+        <p><strong>Root cause</strong>: MinerU renders PDFs using a <strong>spawn</strong> process pool:</p>
+        <pre><code># mineru/utils/pdf_image_tools.py:160
+if start_method != "spawn":
+    return ProcessPoolExecutor(max_workers=max_workers,
+                               mp_context=multiprocessing.get_context("spawn"))</code></pre>
+        <p>The <code>spawn</code> method starts a fresh interpreter through <code>sys.executable</code>, which loses the configured library paths.</p>
+        <p><strong>Fix</strong>——<code>sitecustomize.py</code>, imported automatically at Python startup so the change applies globally:</p>
+        <pre><code># <venv>/lib/python3.10/site-packages/sitecustomize.py
+import os
+_w = "&lt;USER_HOME&gt;/mineru-venv-py310/bin/dcu-python"
+if os.path.exists(_w):
+    import multiprocessing
+    multiprocessing.set_executable(_w)
+    try:
+        multiprocessing.get_context("spawn").set_executable(_w)
+    except Exception:
+        pass</code></pre>
+        <p>Verification:</p>
+        <pre><code>dcu-python -c "
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
+def f(x): return x*x
+if __name__=='__main__':
+    with ProcessPoolExecutor(2, mp_context=mp.get_context('spawn')) as ex:
+        print(list(ex.map(f,[1,2,3])))"
+# [1, 4, 9]</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">⚠ Caller warning</span>
+          <p>Any script that calls MinerU <strong>must</strong> include an <code>if __name__ == "__main__":</code> guard. A spawned worker imports the main module; without the guard, the script runs again, producing duplicate <code>[info]</code> output and then a <code>BrokenProcessPool</code> error. The MinerU documentation does not mention this requirement.</p>
+        </div>
+
+        <h3>6.6 Resolve <code>Unsupported model IR version: 10</code></h3>
+        <pre><code>onnxruntime.capi.onnxruntime_pybind11_state.Fail:
+  Load model from .../PP-LCNet_x1_0_table_cls.onnx failed:
+  Unsupported model IR version: 10, max supported IR version: 9</code></pre>
+        <p>onnxruntime 1.16.3 supports IR up to v9, but MinerU's table-classification model uses IR v10.</p>
+        <p>The V2 report concluded that ONNX Runtime ≥1.17 was incompatible because it was published only for <code>manylinux_2_28</code>. The wheel can in fact be retagged using the method in §6.3; <strong>this step is required.</strong></p>
+        <pre><code>curl -sL "https://pypi.tuna.tsinghua.edu.cn/simple/onnxruntime/" \
+  | grep -oE 'href="[^"]*onnxruntime-1\.20\.1-cp310-cp310-manylinux_2_27_x86_64[^"]*"'
+curl -sL -o ort.whl "https://pypi.tuna.tsinghua.edu.cn/packages/63/47/.../onnxruntime-1.20.1-...whl"
+cp ort.whl onnxruntime-1.20.1-cp310-cp310-manylinux2014_x86_64.whl
+pip install --no-deps --force-reinstall onnxruntime-1.20.1-cp310-cp310-manylinux2014_x86_64.whl</code></pre>
+
+        <h3>6.7 Additional fixes</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Issue</th><th>Fix</th></tr>
+            <tr><td>onnxruntime emits <code>pthread_setaffinity</code> an error</td><td>Set <code>OMP/ORT/OPENBLAS/MKL_NUM_THREADS=4</code></td></tr>
+            <tr><td><code>libgcvm.so.17git</code> is missing</td><td>Add <code>dtk-26.04/dcc/gcvm/lib</code> to the <code>ALL_LIBS</code></td></tr>
+            <tr><td><code>No module named mineru.cli.api</code></td><td>In version 3.4.4 the module is named <code>fast_api</code>; update the <code>mineru-api</code> wrapper</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- §7 -->
+      <section id="s7">
+        <div class="sec-head"><span class="idx">07</span><h2>Output quality validation</h2></div>
+        <p>Job <code>&lt;JOB_ID&gt;</code>; 23-page Mooncake paper, 0.58 MB.</p>
+        <pre><code>dcu-python parse_api.py ~/sourcecode/Mooncake/Mooncake-v3.pdf ~/parse-out/api-pipeline pipeline</code></pre>
+        <pre><code>[RESULT] backend=pipeline elapsed=146.8s
+[OUT] .../Mooncake-v3.md chars=81072
+processing-window multi-file infer finished, cost: 90.52, speed: 0.254 page/s</code></pre>
+        <p>Output files:</p>
+        <pre><code>Mooncake-v3.md                  81 KB    Markdown source
+Mooncake-v3_content_list.json  121 KB    structured content
+Mooncake-v3_middle.json        2.1 MB    intermediate representation
+Mooncake-v3_layout.pdf         835 KB    layout visualization
+Mooncake-v3_span.pdf           832 KB    span visualization
+images/                        26 files</code></pre>
+        <p>Checks performed (not just relying on a zero job exit code):</p>
+        <div class="tw">
+          <table>
+            <tr><th>Item</th><th>Result</th><th>Verification</th></tr>
+            <tr><td>Markdown</td><td>81,072 characters</td><td>Heading hierarchy, superscript author symbols ♠♡, and abstract structure all correct</td></tr>
+            <tr><td>Tables</td><td>3 HTML tables</td><td>Sampled LRUCache/LFUCache rows; values and rows are complete</td></tr>
+            <tr><td>Images</td><td>23 references / 26 files</td><td><code>images/</code> Files present on disk</td></tr>
+            <tr><td>Headings</td><td>31</td><td>Hierarchy matches the source</td></tr>
+            <tr><td><strong>Inline equations</strong></td><td><strong>17 LaTeX expressions</strong></td><td><code>$T_{queue}$</code>、<code>$\mathrm{MLP}$</code>、<code>$T_{prefill}$</code></td></tr>
+            <tr><td>Display equations</td><td>None</td><td>The source uses inline math; no missed display equations</td></tr>
+          </table>
+        </div>
+        <p>Excerpt from the first page:</p>
+        <pre><code># Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving
+
+Ruoyu Qin♠♡1 Zheming Li♠1 ... ♠Moonshot AI ♡Tsinghua University
+
+## Abstract
+
+Mooncake is the serving platform for Kimi, a leading LLM service provided by Moonshot AI...</code></pre>
+        <div class="callout lesson">
+          <span class="cl-label">Lesson from verification</span>
+          <p>Searching only for <code>$$</code> display equations returned no matches and nearly led to the wrong conclusion that formula recognition had failed. The paper uses inline math: <code>middle.json</code> contains 38 <code>inline_equation</code> entries, and MFR identifies 19 regions. <strong>Choose checks that match the content; the absence of one format does not prove a feature is missing.</strong></p>
+        </div>
+      </section>
+
+      <!-- §8 -->
+      <section id="s8">
+        <div class="sec-head"><span class="idx">08</span><h2>Performance tests and results</h2></div>
+
+        <h3>8.1 Backend comparison</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Backend</th><th>Job</th><th>Throughput</th><th>Assessment</th></tr>
+            <tr><td><strong>pipeline (DCU)</strong></td><td><code>&lt;JOB_ID&gt;</code></td><td><strong>3.9 s/page</strong>(90.5 s / 23 pages)</td><td><strong>Selected for production</strong></td></tr>
+            <tr><td>pipeline (CPU)</td><td><code>&lt;JOB_ID&gt;</code></td><td>10.1 s/page (231.3 s)</td><td>Equivalent output; see §8.3</td></tr>
+            <tr><td>VLM (transformers)</td><td><code>&lt;JOB_ID&gt;</code></td><td><strong>14.93 s/page</strong></td><td>Timed out after 50 minutes; incomplete</td></tr>
+          </table>
+        </div>
+        <p>VLM is 3.8× slower and has no acceleration path on gfx906. Triton is unavailable, so the <code>vllm-engine</code> path cannot run. <strong>VLM is not recommended for production.</strong></p>
+        <p>Confirming that VLM was computing rather than stalled:</p>
+        <pre><code>ssh &lt;COMPUTE_NODE&gt; "cat /proc/&lt;PID&gt;/status | grep -E '^State|^Threads'; ls /proc/&lt;PID&gt;/fd | grep -c kfd"
+# State: R (running)   Threads: 44   kfd handles: 1</code></pre>
+
+        <h3>8.2 Model loading dominates runtime</h3>
+        <p><strong>Share of runtime spent loading the model:</strong></p>
+        <div class="metrics">
+          <div class="metric"><div class="v">146.8s</div><div class="l">Single document (cold start)</div></div>
+          <div class="metric"><div class="v">22.5s</div><div class="l">Same document within a batch</div></div>
+          <div class="metric"><div class="v">~85%</div><div class="l">Model-loading share of runtime</div></div>
+        </div>
+        <p><strong>Model loading accounts for about 85% of the runtime.</strong> This rules out the “one job per document” design: 85% of the allocated time would be spent reloading the same models. Keep workers resident and process documents in batches.</strong></p>
+
+        <h3>8.3 CPU-queue output equivalence</h3>
+        <p>Byte-for-byte comparison of the output:</p>
+        <pre><code>diff ~/parse-out/cpu/Mooncake-v3/auto/Mooncake-v3.md \
+     ~/parse-out/api-pipeline/Mooncake-v3/auto/Mooncake-v3.md
+# Five-line diff:
+# 98,99c98
+# < ## Listing 1: Request samples.
+# ---
+# > Listing 1: Request samples.</code></pre>
+        <p><strong>81,074 vs 81,072 characters; the only difference is one heading level.</strong> The CPU queue is a viable production path, not merely a fallback.</p>
+        <p><strong>However, a single-document comparison substantially understates the performance gap:</strong></p>
+        <div class="tw">
+          <table>
+            <tr><th></th><th>Single document</th><th>Batch steady state</th></tr>
+            <tr><td>DCU</td><td>146.8 s</td><td>19.6 s</td></tr>
+            <tr><td>CPU</td><td>315.4 s</td><td>173.8 s</td></tr>
+            <tr><td><strong>Ratio</strong></td><td><strong>2.1×</strong></td><td><strong>8.9×</strong></td></tr>
+          </table>
+        </div>
+        <p>For one document, model loading dominates both paths, making CPU and DCU runtimes appear similar. <strong>This understates the steady-state throughput gap by about four times.</strong></p>
+        <p>On the CPU path, formula recognition is the main cost: MFR runs at 5.86 it/s on DCU versus 3.85 s/it on CPU (about 22× slower).</p>
+
+        <h3>8.4 Batch throughput (without HTTP)</h3>
+        <p>DCU job <code>&lt;JOB_ID&gt;</code>; CPU job <code>&lt;JOB_ID&gt;</code>:</p>
+        <pre><code>dcu-python throughput.py ~/pdf-corpus ~/parse-out/tput pipeline 4</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>Configuration</th><th>Including cold start</th><th>Steady state</th><th>Steady-state time per document</th></tr>
+            <tr><td>4 DCU</td><td>233 docs/h</td><td><strong>735 docs/h</strong></td><td>19.6 s</td></tr>
+            <tr><td>4 CPU worker</td><td>63 docs/h</td><td>83 docs/h</td><td>173.8 s</td></tr>
+          </table>
+        </div>
+        <p>With load balanced across four workers, runtimes were 176.4 / 177.4 / 185.3 / 185.7 s, <strong>a spread of less than 6%.</strong></p>
+        <p><strong>Bug found</strong>: workers did not exit after batch processing and remained stuck, each of the four processes retaining 3.8 GB RSS. MinerU's <code>_get_pdf_render_executor()</code> creates a persistent<strong>pool;</strong> its non-daemon child processes prevent the parent from exiting. Fix:</p>
+        <pre><code>from mineru.utils.pdf_image_tools import shutdown_pdf_render_executor
+shutdown_pdf_render_executor()   # called during worker shutdown</code></pre>
+        <p>After the fix, the CPU batch job exits normally and prints <code>BENCH_DONE</code> and <code>RC=0</code> exits cleanly.</p>
+
+        <h3>8.5 Queue configuration comparison</h3>
+        <p>Cluster load during the measurements:</p>
+        <pre><code>sinfo -p kshdnormal -o "%t %D" -h | sort    # alloc 735 / idle 2  (fully loaded)
+sinfo -p kshcnormal -o "%t %D" -h | sort    # idle 1106           (idle)</code></pre>
+        <p><strong>Total throughput = throughput per node × number of available nodes:</strong></p>
+        <ul>
+          <li>A few idle DCU nodes × 735 ≈ <strong>1,470 docs/h</strong></li>
+          <li>Several idle CPU nodes × 83 ≈ <strong>91,663 docs/h</strong></li>
+        </ul>
+        <p>The order-of-magnitude difference comes from node availability, not compute capacity. Use the CPU queue for large offline batches; reserve DCUs for latency-sensitive online requests and formula-heavy documents.</p>
+      </section>
+
+      <!-- §9 -->
+      <section id="s9">
+        <div class="sec-head"><span class="idx">09</span><h2>Service-pool architecture and implementation</h2></div>
+
+        <h3>9.1 Network reachability and service architecture</h3>
+        <p>Job <code>&lt;JOB_ID&gt;</code>. First verify whether compute nodes can serve requests:</p>
+        <pre><code># Start the service on a compute node and write its endpoint
+IP=$(hostname -I | awk '{print $1}'); PORT=$((30000 + RANDOM % 5000))
+dcu-python svc_hello.py $PORT &
+echo "$IP:$PORT" > ~/svc_endpoint.txt
+
+# Access it from the login node
+curl --max-time 8 "http://$(cat ~/svc_endpoint.txt)/"
+# MINERU_SVC_ALIVE on &lt;COMPUTE_NODE&gt;      ← reachable</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>Test</th><th>Result</th></tr>
+            <tr><td>Compute node binds to <code>0.0.0.0</code> Self-test</td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td><strong>Login node → compute-node port</strong></td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td>Compute node → external network</td><td><span class="badge dead">✕ (expected)</span></td></tr>
+          </table>
+        </div>
+        <p><strong>Cluster-internal network connectivity</strong>is available; this is separate from the lack of external access on compute nodes. The service pool can therefore expose a reachable service endpoint.</p>
+
+        <h3>9.2 Service-pool architecture</h3>
+        <div class="diagram">                    ┌───────────────────────────────┐
+Client ──HTTP──►│ Gateway :38080                │
+                 │ Health checks · least-load scheduling │
+                 │ Per-worker limits · retry on failure   │
+                 └───────────┬───────────────────┘
+                             │ Dispatch to an idle slot
+        ┌──────────┬─────────┴─────────┬──────────┐
+        ▼          ▼                   ▼          ▼
+   worker :38100 :38101             :38102     :38103
+      DCU 0       DCU 1               DCU 2      DCU 3
+        └──────────┴─────────┬─────────┴──────────┘
+                             ▼
+             Registry (shared directory; file mtime is heartbeat)</div>
+        <p><strong>Design rationale</strong>(Each decision is based on measurements, not assumptions):</p>
+        <div class="tw">
+          <table>
+            <tr><th>Decision</th><th>Rationale</th></tr>
+            <tr><td>One process per card</td><td>MinerU models are not thread-safe; concurrent requests in one process serialize</td></tr>
+            <tr><td><code>HIP_VISIBLE_DEVICES</code> Pin each worker to a card</td><td>Isolates GPU memory; an OOM in one worker does not affect the others</td></tr>
+            <tr><td><strong>Limit each worker to one concurrent request</strong></td><td>Established by load testing; see §10.1</td></tr>
+            <tr><td>Use file modification time as a heartbeat</td><td>Workers register and deregister themselves; the gateway scans the directory, with no separate service-discovery component</td></tr>
+            <tr><td>Retry failed requests on another worker</td><td>Parsing is idempotent, so retrying is safe</td></tr>
+          </table>
+        </div>
+
+        <h3>9.3 MinerU API endpoints</h3>
+        <pre><code>grep -n "@app\.\(get\|post\)" -A3 mineru/cli/fast_api.py</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>Route</th><th>Purpose</th></tr>
+            <tr><td><code>POST /file_parse</code></td><td>Synchronous parsing</td></tr>
+            <tr><td><code>POST /tasks</code></td><td>Asynchronous submission</td></tr>
+            <tr><td><code>GET /tasks/{id}</code> <code>/tasks/{id}/result</code></td><td>Asynchronous status query</td></tr>
+            <tr><td><code>GET /health</code></td><td>Health check (for gateway)</td></tr>
+          </table>
+        </div>
+
+        <h3>9.4 Key implementation excerpts</h3>
+        <p><strong>Gateway scheduling</strong> (<code>scripts/mineru_gateway.py</code>):</p>
+        <pre><code>def _acquire(exclude=()):
+    """Reserve a slot on the least-loaded healthy worker, waiting if all busy."""
+    deadline = time.time() + SLOT_WAIT_TIMEOUT
+    with _cv:
+        while True:
+            cands = [(v["inflight"], v["served"], u)
+                     for u, v in _workers.items()
+                     if v["healthy"] and u not in exclude
+                     and v["inflight"] < MAX_INFLIGHT]      # rate limit
+            if cands:
+                cands.sort()
+                url = cands[0][2]
+                _workers[url]["inflight"] += 1
+                return url
+            if time.time() >= deadline: return None
+            _cv.wait(2.0)                                    # queue instead of rejecting</code></pre>
+        <p><strong>Retry after failure:</strong></p>
+        <pre><code>for attempt in range(MAX_ATTEMPTS):
+    url = _acquire(exclude=tuple(tried))     # exclude workers that have already failed
+    ...
+    except urllib.error.HTTPError as e:
+        if e.code < 500:                     # client error (4xx): do not retry
+            return <passthrough>
+        _release(url, False)
+    tried.append(url)</code></pre>
+        <p><strong>Worker supervision</strong> (<code>cluster/mineru_worker.sh</code>):</p>
+        <pre><code>while true; do
+  mineru-api --host 0.0.0.0 --port $PORT &
+  APID=$!
+  # Register only after health checks pass; do not route traffic during model loading
+  for i in $(seq 1 90); do
+    curl -sf --max-time 3 "http://127.0.0.1:$PORT/health" >/dev/null && READY=1 && break
+    sleep 2
+  done
+  [ "$READY" = 1 ] && echo "{\"url\":\"$URL\",...}" > "$REGFILE"
+  # Heartbeat: touch while healthy; the gateway checks the modification time
+  while kill -0 $APID &lt;PID&gt;>/dev/null; do
+    curl -sf --max-time 5 ".../health" >/dev/null && touch "$REGFILE"
+    sleep 10
+  done
+  rm -f "$REGFILE"; sleep 5      # restart after a crash
+done</code></pre>
+
+        <h3>9.5 Startup</h3>
+        <pre><code>sbatch ~/mineru_pool.slurm        # cluster/mineru_pool.slurm</code></pre>
+        <pre><code>[t+95s] healthy workers: 4
+=== POOL READY ===
+{"pool_size": 4, "healthy": 4, "max_inflight_per_worker": 1, ...}</code></pre>
+        <p>Verified from the login node:</p>
+        <pre><code>curl -s "http://&lt;SERVICE_ENDPOINT&gt;/pool/status" | python3 -m json.tool</code></pre>
+      </section>
+
+      <!-- §10 -->
+      <section id="s10">
+        <div class="sec-head"><span class="idx">10</span><h2>Service-pool performance and stability tests</h2></div>
+
+        <h3>10.1 Performance comparison between gateway versions</h3>
+        <p>Same workload: 24 requests at concurrency 8</p>
+        <pre><code>python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 8 2</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>Metric</th><th>v1 (no concurrency limit or retry)</th><th><strong>v2 (production version)</strong></th></tr>
+            <tr><td><strong>Error rate</strong></td><td><strong>8.3%</strong> (2 × 502)</td><td><strong>0.0%</strong></td></tr>
+            <tr><td><strong>Throughput</strong></td><td>374 docs/h</td><td><strong>440 docs/h</strong> (+18%)</td></tr>
+            <tr><td><strong>Load distribution</strong></td><td>11 / 4 / 5 / 2</td><td><strong>6 / 5 / 7 / 6</strong></td></tr>
+            <tr><td>p50</td><td>27.2 s</td><td>38.0 s</td></tr>
+            <tr><td>p90</td><td>111.9 s</td><td>121.7 s</td></tr>
+          </table>
+        </div>
+        <p>Raw output:<code>data/loadtest.log</code>、<code>data/loadtest2.log</code></p>
+        <p><strong>Concurrency limits improved throughput</strong>—MinerU models are not thread-safe, so requests within a worker are processed serially. Sending more work to a busy worker only creates an internal queue. Load skew fell from 5.5:1 to 1.4:1.</p>
+        <p><strong>The increase in p50 latency is expected</strong>: v1's lower p50 was an artifact of a few requests reaching idle workers; p90 latency was higher and 8.3% of requests failed. v2 queues requests fairly across the pool.</p>
+
+        <h3>10.2 Overload test at three times worker capacity</h3>
+        <p>48 requests at concurrency 12:</p>
+        <pre><code>python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 12 4</code></pre>
+        <pre><code>total=48  ok=48  failed=0  error_rate=0.0%
+wall=180.9s  throughput=955 docs/hour  concurrency=12
+latency  p50=32.4s  p90=70.4s  p99=131.1s  min=11.9s  max=131.1s
+per-worker distribution:  11 / 11 / 14 / 12</code></pre>
+        <p>Pool status during the load test:</p>
+        <pre><code>"in_flight": 4  "waiting_for_slot": 8  "queue_peak": 8  "retries": 0  "rejected": 0</code></pre>
+        <p><strong>Backpressure worked as designed</strong>: four requests were allowed in flight; the other eight queued instead of failing.<strong>The pool slowed under overload without dropping requests.</strong></p>
+        <p>Throughput rose from 440 to 955 docs/hour as concurrency increased from 8 to 12, showing that the pipeline was not saturated at concurrency 8. The 955 docs/hour result<strong>exceeded the offline batch rate of 735</strong>because static per-card sharding leaves workers idle, while the service pool dispatches work dynamically to whichever slot becomes available.</p>
+
+        <h3>10.3 Worker recovery under load</h3>
+        <pre><code>PID=$(python3 -c "import json;print(json.load(open('.../&lt;COMPUTE_NODE&gt;-dcu3.json'))['pid'])")
+ssh &lt;COMPUTE_NODE&gt; "kill -9 $PID"        # PID &lt;PID&gt;</code></pre>
+        <p>After 50 seconds:</p>
+        <pre><code>before: "healthy": 3  "total_served": 5   "total_failed": 0
+after:  "healthy": 4  "total_served": 16  "total_failed": 0</code></pre>
+        <p>Confirmed worker replacement by PID change and logs:</p>
+        <pre><code>cat ~/mineru-registry/&lt;COMPUTE_NODE&gt;-dcu3.json
+# {"url":"http://&lt;SERVICE_ENDPOINT&gt;",...,"pid":&lt;PID&gt;}     ← 原 &lt;PID&gt;
+
+grep -a dcu3 pool-*.err | grep -E "restart|READY|exited"
+# [worker dcu3] exited, restarting in 5s (total restarts: 1)
+# [worker dcu3] starting on http://&lt;SERVICE_ENDPOINT&gt; (restart #1)
+# [worker dcu3] READY -> registered http://&lt;SERVICE_ENDPOINT&gt;</code></pre>
+        <p><strong>Recovery was tested under real load;<code>total_failed</code> there were zero failures and no lost requests.</strong></p>
+
+        <h3>10.4 Memory stability across 72 requests</h3>
+        <pre><code>ssh &lt;COMPUTE_NODE&gt; "ps -u &lt;USER&gt; -o rss,cmd --sort=-rss | grep -a fast_api | awk '{print \$1/1024}'"</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th></th><th>w0</th><th>w1</th><th>w2</th><th>w3</th></tr>
+            <tr><td>Before</td><td>4839</td><td>4780</td><td>4754</td><td>4744</td></tr>
+            <tr><td>After</td><td>4837</td><td>4773</td><td>4762</td><td>4742</td></tr>
+          </table>
+        </div>
+        <p><strong>No growth</strong>. The process count remained at four, with no buildup of spawned children.</p>
+
+        <h3>10.5 Summary</h3>
+        <div class="metrics">
+          <div class="metric"><div class="v">72</div><div class="l">Total requests (24 + 48)</div></div>
+          <div class="metric"><div class="v">0</div><div class="l">Failures</div></div>
+          <div class="metric"><div class="v">0</div><div class="l">Rejected</div></div>
+          <div class="metric"><div class="v">955/h</div><div class="l">Peak throughput</div></div>
+        </div>
+      </section>
+
+      <!-- §11 -->
+      <section id="s11">
+        <div class="sec-head"><span class="idx">11</span><h2>Approaches not adopted and operating limits</h2></div>
+        <p class="lede">Failed paths and their costs are documented to avoid repeating the same work.</p>
+
+        <h3>11.1 Embedding library paths in the ELF with patchelf <span class="badge dead">✕ Failed</span></h3>
+        <p><strong>Rationale:</strong> The <code>ld-linux</code> wrapper covers only the top-level process. Embedding library paths in the Python binary with <code>patchelf</code> might let every child process inherit them, which would be cleaner in theory.</p>
+        <pre><code>patchelf --set-interpreter $GLIBC_DIR/ld-linux-x86-64.so.2 python3.10</code></pre>
+        <pre><code>Inconsistency detected by ld.so: dl-call-libc-early-init.c: 37:
+  _dl_call_libc_early_init: Assertion `sym != NULL' failed!</code></pre>
+        <p>Even with an added rpath, the process still segfaulted; <code>ldd</code> also crashed:</p>
+        <pre><code>patchelf --set-interpreter ... --force-rpath --set-rpath "$G:/usr/local/lib64:/usr/lib64" python3.10
+./python3.10 -c "print(1)"        # Segmentation fault
+ldd python3.10                    # Segmentation fault</code></pre>
+        <p>Isolation tests:</p>
+        <div class="tw">
+          <table>
+            <tr><th>Test</th><th>Result</th></tr>
+            <tr><td>Change only the rpath; keep the system interpreter</td><td><span class="badge verified">✓ Passed</span></td></tr>
+            <tr><td>Change only the interpreter</td><td><span class="badge dead">✕ Assertion failed</span></td></tr>
+            <tr><td>Change both</td><td><span class="badge dead">✕ segfault</span></td></tr>
+          </table>
+        </div>
+        <div class="callout note">
+          <span class="cl-label">Conclusion</span>
+          <p>The glibc 2.28 <code>ld.so</code> loader cannot be combined with the system glibc 2.17 libraries, so the change was reverted from backup. <strong>Do not patch the ELF interpreter across this glibc version boundary;</strong> use a wrapper and <code>sitecustomize.py</code>.</p>
+        </div>
+
+        <h3>11.2 VLM backend <span class="badge boundary">⚠ Runs, but is not practical</span></h3>
+        <p>At 14.93 s/page, the 23-page run did not finish within the 50-minute limit. No acceleration path is available on gfx906: Triton is unavailable, so the <code>vllm-engine</code> / <code>lmdeploy</code> engine paths cannot run; only single-sequence inference through Transformers is available. The pipeline backend already produces higher-quality output and is 3.8× faster.</p>
+
+        <h3>11.3 Full vLLM inference <span class="badge boundary">⏸ Incomplete, not failed</span></h3>
+        <p>Core HIP kernels work in testing (§5), but platform detection is blocked at <code>import amdsmi</code>. DTK 26.04 provides only the older <code>rocm_smi</code>. A shim or patch is needed.<strong>The path is viable; the integration work is unfinished.</strong></p>
+
+        <h3>11.4 Failed approaches recorded in the V2 report</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Approach</th><th>Result</th><th>Reason</th></tr>
+            <tr><td>Install onnxruntime with Conda</td><td><span class="badge dead">✕</span></td><td>Channel access timed out</td></tr>
+            <tr><td>Singularity container</td><td><span class="badge dead">✕</span></td><td>Docker Hub was blocked</td></tr>
+            <tr><td>Python 3.8</td><td><span class="badge dead">✕</span></td><td>MinerU requires Python ≥3.10</td></tr>
+            <tr><td>Force-install Python 3.12 + onnx 1.17</td><td><span class="badge boundary">✕ (at the time)</span></td><td>This work resolved the same class of issue by retagging the wheel</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- §12 -->
+      <section id="s12">
+        <div class="sec-head"><span class="idx">12</span><h2>Assumptions tested and revised</h2></div>
+        <p class="lede">Three course corrections during the work changed the direction of the conclusions. They are recorded here because the method matters as much as the results.</p>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.1</span><span class="t">“FP16 offers no benefit” ← benchmark had no warm-up</span></div>
+          <div class="corr-body">
+            <p>Without warm-up, FP16 measured 4.85 TFLOPS, below FP32 at 8.91 TFLOPS, suggesting that FP16 offered no benefit on gfx906. After warm-up, FP16 reached <strong>16.15 TFLOPS, 1.8× the FP32 result.</strong></p>
+            <div class="callout lesson"><span class="cl-label">Lesson</span><p>Warm up any benchmark that includes one-time costs.</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.2</span><span class="t">“vLLM cannot run on gfx906” ← inferred from Triton's failure</span></div>
+          <div class="corr-body">
+            <p>The initial assessment tied vLLM availability on gfx906 to Triton support, without distinguishing their dependency layers. vLLM's PagedAttention uses hand-written HIP kernels and does not depend on Triton. Inspection confirmed that Hygon's <code>_C.abi3.so</code> contains kernels compiled for gfx906, and the <code>paged_attention_v1</code> operation ran successfully.</p>
+            <div class="callout lesson"><span class="cl-label">Lesson</span><p>Do not infer one component's support from another component's failure, even when they appear related. Validate each layer separately.</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.3</span><span class="t">“CPU is only 2.1× slower” ← extrapolated from a single document</span></div>
+          <div class="corr-body">
+            <p>For one document, 315.4 s vs 146.8 s suggested a 2.1× difference, leading to the claim that “the CPU queue is only slightly slower.” Batch steady-state measurements were 173.8 s vs 19.6 s, an <strong>8.9×</strong> difference.</p>
+            <p>A single-document run is dominated by model loading on both systems. Since model-loading times are similar on CPU and DCU, they mask the true throughput gap by a factor of four.</p>
+            <div class="callout lesson"><span class="cl-label">Lesson</span><p>Compare steady-state results when startup costs are fixed overhead.</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.4</span><span class="t">“Formula recognition is broken” ← checked only one output format</span></div>
+          <div class="corr-body">
+            <p>The initial check searched only for display equations delimited by <code>$$</code> and found none. The paper instead uses inline math throughout: 17 <code>$...$</code> expressions appear in the rendered text, and <code>middle.json</code> contains 38 <code>inline_equation</code> regions.</p>
+            <div class="callout lesson"><span class="cl-label">Lesson</span><p>Choose checks that match the content; the absence of one format does not prove a feature is missing.</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.5</span><span class="t">“ONNX Runtime no longer works” ← child process bypassed the loader</span></div>
+          <div class="corr-body">
+            <p>During environment revalidation on 2026-09-27, the top-level Python process used the user-space glibc 2.28 loader, but the local API process launched by the MinerU CLI used the system glibc 2.17 and reported <code>GLIBC_2.27 not found</code>. The wheel was valid; the runtime environment had not been propagated across the process boundary.</p>
+            <p>After loading the GCC 12.2 and DTK 26.04 modules, starting the main process with the same loader, and making multiprocessing children inherit that entry point, the 14-page pipeline completed and returned 0.</p>
+            <div class="callout lesson"><span class="cl-label">Lesson</span><p>Check library compatibility across the full process tree. A successful import in the parent does not prove that the CLI, service process, and spawned workers use the same runtime.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- §13 -->
+      <section id="s13">
+        <div class="sec-head"><span class="idx">13</span><h2>Deployment and runtime configuration</h2></div>
+        <p class="lede">The deployment is bare metal, outside Slurm.</p>
+
+        <h3>13.1 Runtime compatibility and operating-system requirements</h3>
+        <p>The cluster's <code>ld-linux</code> wrapper was created to work around CentOS 7's glibc 2.17, but it leaves child-process blind spots (§6.2 and §6.5).<strong>With bare-metal deployment, the operating system is under your control, so this issue can be avoided.</strong></p>
+        <p>The DCU Torch build requires <code>GLIBC_2.25</code>:</p>
+        <pre><code>objdump -T torch.libs/libevent_core*.so* | grep -oE "GLIBC_[0-9.]+" | sort -u -V | tail -3
+# GLIBC_2.14
+# GLIBC_2.17
+# GLIBC_2.25      ← actual requirement</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">⚠</span>
+          <p>Use <code>sort -V</code> for version-aware sorting. A lexicographic sort can place <code>GLIBC_2.25</code> before <code>GLIBC_2.9</code>, leading to the false conclusion that 2.9 is the newest required version.</p>
+        </div>
+        <p>The Torch wheels tagged <code>manylinux_2_17</code> and <code>manylinux_2_28</code> have the same MD5 hash, <code>7b098c2f9c036fcdb9ae244228bac822</code>. Only their tags differ; retagging does not remove the actual glibc requirement. Use Rocky Linux 8+, Ubuntu 20.04+, or CentOS 8+ to avoid the need for glibc wrappers and wheel retagging.</p>
+
+        <h3>13.2 Deployment</h3>
+        <pre><code>./mineru-baremetal-deploy.sh preflight    # Check glibc / DTK / virtualenv / models
+sudo ./mineru-baremetal-deploy.sh install # Generate the systemd unit
+sudo ./mineru-baremetal-deploy.sh start
+./mineru-baremetal-deploy.sh status</code></pre>
+        <p><code>systemd</code> handles startup and restarts the service after a crash with <code>Restart=always</code>. Set <code>TimeoutStartSec=300</code> to allow time for model loading. The registration script <strong>registers a worker only after its health checks pass</strong>, so traffic is not sent to a worker that is still loading the model.</p>
+
+        <h3>13.3 Requests</h3>
+        <pre><code>curl -X POST http://<host>:8000/file_parse \
+     -F "files=@paper.pdf" -F "backend=pipeline"
+
+curl http://<host>:8000/pool/status</code></pre>
+        <p>The <code>X-MinerU-Worker</code> response header identifies the worker that handled the request; <code>X-MinerU-Attempt</code> records the retry attempt.</p>
+
+        <h3>13.4 Monitoring</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Metric</th><th>Alert condition</th></tr>
+            <tr><td><code>healthy</code></td><td>&lt; Target threshold: alert</td></tr>
+            <tr><td><code>waiting_for_slot</code></td><td>Sustained &gt; more than 2× the worker count → scale out</td></tr>
+            <tr><td><code>total_failed</code></td><td>Alert on abnormal growth</td></tr>
+            <tr><td><code>retries</code></td><td>A sudden increase indicates an unstable worker</td></tr>
+            <tr><td><code>rejected</code></td><td>Any value above 0 requires immediate investigation</td></tr>
+          </table>
+        </div>
+
+        <h3>13.5 Scaling out</h3>
+        <p>Scale horizontally without changing the gateway: deploy workers on new machines (without a gateway), point the registry to the same shared-storage path (NFS/GPFS), and the gateway will discover them automatically.</p>
+        <p>The maximum workers on one node depends on its card count. If CPU work (such as layout analysis and OCR preprocessing) becomes the bottleneck, reduce <code>*_NUM_THREADS</code> per-worker concurrency or the worker count.</p>
+      </section>
+
+      <!-- §14 -->
+      <section id="s14">
+        <div class="sec-head"><span class="idx">14</span><h2>Environment recovery and reproduction</h2></div>
+        <p class="lede">On 2026-09-27, after the original experiment directory had been archived and relocated, the runtime closure was audited from scratch and an end-to-end pipeline parse was completed on a 14-page PDF.</p>
+
+        <div class="callout lesson">
+          <span class="cl-label">Conclusion</span>
+          <p>The Kunshan module environment<strong>does not provide a separate glibc module</strong>. Reproduction requires the GCC 12.2 and DTK 26.04 modules, a user-space glibc 2.28 loader, the correct local model configuration, and the same Python entry point for the parent and multiprocessing children.</p>
+        </div>
+
+        <h3>14.1 Reproduction scope and evidence</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Layer</th><th>Validation</th><th>Evidence</th></tr>
+            <tr><td>Login node</td><td>No standalone glibc module; GCC 12.2 and DTK 26.04 are available</td><td><code>module avail/show</code></td></tr>
+            <tr><td>Compute node</td><td>PyTorch import, device enumeration, and FP32/FP16/BF16 GEMM</td><td>Controlled single-card probe</td></tr>
+            <tr><td>Process tree</td><td>Main Python process and PDF-render worker use the same loader</td><td>Multiprocessing test</td></tr>
+            <tr><td>End to end</td><td>14-page PDF → Markdown / JSON / images / rendered PDF</td><td>Pipeline exit code 0</td></tr>
+          </table>
+        </div>
+        <p>The public edition omits usernames, cluster addresses, node names, actual job IDs, and real paths. It retains versions, error types, command structure, performance figures, and acceptance criteria.</p>
+
+        <h3>14.2 Environment audit</h3>
+        <p>Do not rerun old commands blindly. First check whether the wrapper, configuration, and model paths still exist:</p>
+        <pre><code>module -t avail 2&gt;&amp;1 | grep -Ei '(^|/)glibc([/-]|$)|compat-glibc'
+# Expected: no output; glibc 2.28 is not provided by a module.
+
+for f in \
+  &lt;VENV&gt;/bin/dcu-python \
+  &lt;VENV&gt;/bin/mineru \
+  &lt;VENV&gt;/bin/mineru-api \
+  &lt;VENV&gt;/lib/python3.10/site-packages/sitecustomize.py
+do
+  echo "=== $f ==="
+  sed -n '1,80p' "$f"
+done
+
+test -x &lt;GLIBC_ROOT&gt;/lib64/ld-linux-x86-64.so.2
+test -x &lt;VENV&gt;/bin/python3.10
+test -f &lt;MODEL_CONFIG&gt;
+test -d &lt;PIPELINE_MODEL_ROOT&gt;</code></pre>
+        <p>This revalidation found that the four old entry points still referenced an archived glibc directory. The model weights were still present, but the configuration file had moved to a new scripts directory.<strong>The environment may still be intact even when its entry-point paths are stale.</strong></p>
+
+        <h3>14.3 Module environment</h3>
+        <pre><code>module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;VENV&gt;/bin/activate
+
+module list
+# compiler/gcc/12.2.0
+# compiler/dtk/26.04
+
+gcc --version | head -1
+# gcc (GCC) 12.2.0
+
+echo "$ROCM_PATH"
+# &lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04</code></pre>
+        <p>The DTK module supplies HIP and math libraries, while the GCC module supplies a newer <code>libstdc++.so.6</code>. Neither replaces glibc. Loading only DTK, or adding only glibc to <code>--library-path</code>, can still result in <code>CXXABI_1.3.8 not found</code>.</p>
+
+        <h3>14.4 A single Python entry point</h3>
+        <p>Avoid maintaining several slightly different wrappers. Create one entry point and use it for the CLI, service, and spawned workers:</p>
+        <pre><code>#!/bin/bash
+set -u
+
+GLIBC_ROOT="${GLIBC_ROOT:-&lt;USER_HOME&gt;/softwares/runtime/glibc-2.28}"
+GCC_ROOT="${GCC_ROOT:-&lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0}"
+DTK_ROOT="${DTK_ROOT:-&lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04}"
+VENV="${VENV:-&lt;USER_HOME&gt;/mineru-venv-py310}"
+
+LD_SO="$GLIBC_ROOT/lib64/ld-linux-x86-64.so.2"
+PYTHON="$VENV/bin/python3.10"
+ALL_LIBS="$GLIBC_ROOT/lib64:$GCC_ROOT/lib64:\
+$DTK_ROOT/.hyhal/rocm_smi/lib:$DTK_ROOT/lib:$DTK_ROOT/lib64:\
+$DTK_ROOT/hip/lib:$DTK_ROOT/dcc/lib:$DTK_ROOT/dcc/gcvm/lib:\
+/usr/local/lib64:/usr/lib64"
+
+exec "$LD_SO" --library-path "$ALL_LIBS" "$PYTHON" "$@"</code></pre>
+        <p>Save as <code>&lt;RUN_DIR&gt;/dcu-python</code> and run <code>chmod +x</code>. Preflight checks:</p>
+        <pre><code>&lt;RUN_DIR&gt;/dcu-python - &lt;&lt;'PY'
+import ctypes, platform, sys
+import onnxruntime, torch
+print("python", sys.version.split()[0])
+print("libc", platform.libc_ver())
+print("torch", torch.__version__)
+print("onnxruntime", onnxruntime.__version__)
+print("devices", torch.cuda.device_count())
+print("arch", torch.cuda.get_device_properties(0).gcnArchName)
+PY</code></pre>
+
+        <h3>14.5 Local model configuration</h3>
+        <p>Do not rely on a default filename in the old working directory. Explicitly set a configuration file for the reproduction:</p>
+        <pre><code>{
+  "models-dir": {
+    "pipeline": "&lt;PIPELINE_MODEL_ROOT&gt;",
+    "vlm": "&lt;VLM_MODEL_ROOT&gt;"
+  },
+  "model-source": "local",
+  "device-mode": "cuda"
+}</code></pre>
+        <pre><code>export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1</code></pre>
+        <p>If the configuration path is missing, model initialization later reports         <code>AttributeError: 'NoneType' object has no attribute 'get'</code>. This does not indicate a corrupt model or a DCU operator failure.</p>
+
+        <h3>14.6 Dynamic-library setup for spawned workers</h3>
+        <p>MinerU 3.4.4 uses a PDF-render executor <code>spawn</code>. The reproduction script must set the executable before creating the process pool:</p>
+        <pre><code>import multiprocessing
+
+LAUNCHER = "&lt;RUN_DIR&gt;/dcu-python"
+multiprocessing.set_executable(LAUNCHER)
+try:
+    multiprocessing.get_context("spawn").set_executable(LAUNCHER)
+except Exception:
+    pass</code></pre>
+        <p>In production, put the same logic in <code>sitecustomize.py</code>. For a one-off reproduction, set it explicitly in the script to avoid modifying the shared virtual environment. In either case, verify that the launcher path exists.</p>
+
+        <h3>14.7 Call the pipeline API directly</h3>
+        <p>This revalidation does not use <code>mineru.cli.client</code>: the old CLI starts a local API child process. If that child uses the unwrapped <code>sys.executable</code>, it falls back to the system glibc 2.17.</p>
+        <pre><code>import multiprocessing
+import sys, time
+from pathlib import Path
+
+LAUNCHER = "&lt;RUN_DIR&gt;/dcu-python"
+multiprocessing.set_executable(LAUNCHER)
+try:
+    multiprocessing.get_context("spawn").set_executable(LAUNCHER)
+except Exception:
+    pass
+
+from mineru.cli.common import do_parse, read_fn
+
+def main():
+    pdf = Path(sys.argv[1])
+    output = Path(sys.argv[2])
+    data = read_fn(str(pdf))
+    started = time.perf_counter()
+    do_parse(
+        output_dir=str(output),
+        pdf_file_names=[pdf.stem],
+        pdf_bytes_list=[data],
+        p_lang_list=["ch"],
+        backend="pipeline",
+    )
+    print(f"PARSE_ELAPSED={time.perf_counter() - started:.3f}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">Why the main guard matters</span>
+          <p><code>spawn</code> reimports the main module; without a           <code>if __name__ == "__main__":</code>guard, the child process reruns the entire parsing script.</p>
+        </div>
+
+        <h3>14.8 Minimal Slurm job</h3>
+        <pre><code>#!/bin/bash -l
+#SBATCH -p &lt;DCU_PARTITION&gt;
+#SBATCH --gres=dcu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=27gb
+#SBATCH --time=00:20:00
+#SBATCH -J mineru-reproduce
+#SBATCH -o &lt;LOG_DIR&gt;/mineru-reproduce-%j.out
+#SBATCH -e &lt;LOG_DIR&gt;/mineru-reproduce-%j.err
+
+set -u
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;VENV&gt;/bin/activate
+
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+export OMP_NUM_THREADS=8
+export ORT_NUM_THREADS=8
+
+&lt;RUN_DIR&gt;/dcu-python \
+  &lt;RUN_DIR&gt;/reproduce.py \
+  &lt;INPUT_PDF&gt; \
+  &lt;OUTPUT_DIR&gt;
+rc=$?
+echo "PARSE_EXIT_RC=$rc"
+exit "$rc"</code></pre>
+        <p>After submission, check both the scheduler state and the workload exit code:</p>
+        <pre><code>sbatch reproduce.slurm
+sacct -j &lt;JOB_ID&gt; -X -o State,ExitCode,Elapsed -P -n
+grep -E "PARSE_ELAPSED|PARSE_EXIT_RC" &lt;LOG_FILE&gt;
+# COMPLETED | 0:0
+# PARSE_EXIT_RC=0</code></pre>
+
+        <h3>14.9 Result and artifact verification</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Item</th><th>2026-09-27 revalidation</th></tr>
+            <tr><td>Input</td><td>14-page technical-paper PDF</td></tr>
+            <tr><td>Pipeline exit code</td><td><span class="badge verified">0</span></td></tr>
+            <tr><td>Cold-start parsing time</td><td><strong>142.9 s</strong></td></tr>
+            <tr><td>Model initialization</td><td>17.2 s</td></tr>
+            <tr><td>Inference during the processing window</td><td>45.6 s, 0.307 pages/s</td></tr>
+            <tr><td>FP32 / FP16 / BF16</td><td>9.123 / 16.147 / 5.764 TFLOPS</td></tr>
+            <tr><td>Markdown</td><td>30,483 bytes</td></tr>
+            <tr><td><code>middle.json</code></td><td>893,576 bytes</td></tr>
+            <tr><td>Images extracted</td><td>27 files</td></tr>
+          </table>
+        </div>
+        <pre><code>test -s &lt;OUTPUT_DIR&gt;/*/auto/*.md
+test -s &lt;OUTPUT_DIR&gt;/*/auto/*_middle.json
+test -s &lt;OUTPUT_DIR&gt;/*/auto/*_layout.pdf
+
+find &lt;OUTPUT_DIR&gt; -type f | sort
+grep -c '^#' &lt;OUTPUT_DIR&gt;/*/auto/*.md
+grep -o '!\[\](images/' &lt;OUTPUT_DIR&gt;/*/auto/*.md | wc -l</code></pre>
+        <p>An exit code of 0 is only the first acceptance check. Also verify that the Markdown is nonempty, the structured JSON parses, images were written to disk, and headings, equations, and captions appear in the output.</p>
+
+        <h3>14.10 Errors and diagnosis</h3>
+        <div class="tw">
+          <table>
+            <tr><th>Symptom</th><th>Root cause</th><th>Resolution</th></tr>
+            <tr><td><code>ld-linux... No such file</code> / rc 127</td><td>Wrapper points to an archived glibc directory</td><td>Resolve the current runtime paths; do not modify the system ELF</td></tr>
+            <tr><td><code>CXXABI_1.3.8 not found</code></td><td>glibc/DTK loaded, but GCC runtime is missing</td><td>Load the GCC 12.2 module and add its <code>lib64</code> to the runtime closure</td></tr>
+            <tr><td><code>GLIBC_2.27 not found</code></td><td>API child process started by the CLI bypasses the loader</td><td>Call <code>do_parse()</code>directly or repair the service-entry wrapper</td></tr>
+            <tr><td><code>BrokenProcessPool</code></td><td>Spawned worker uses the system Python</td><td><code>multiprocessing.set_executable()</code></td></tr>
+            <tr><td><code>NoneType ... get</code></td><td>Model configuration path has moved</td><td>Set the path explicitly and check it before startup <code>MINERU_TOOLS_CONFIG_JSON</code></td></tr>
+            <tr><td><code>pthread_setaffinity</code> Repeated warning output</td><td>ONNX Runtime thread affinity conflicts with the cgroup CPU set</td><td>Limit the thread count; this did not affect correctness in this test</td></tr>
+            <tr><td><code>torchvision.io</code> zlib warning from</td><td>Optional image extension resolves to the system zlib</td><td>The pipeline succeeded; validate this extension separately before using it</td></tr>
+          </table>
+        </div>
+
+        <div class="callout note">
+          <span class="cl-label">Scope of applicability</span>
+          <p>These steps show that the MinerU 3.4.4 pipeline can be restored in this Z100/DTK 26.04 environment. They do not establish compatibility for every CLI or service entry point, VLM engine, or future release. After upgrading a wheel, module, or model, repeat the audit starting at §14.2.</p>
+        </div>
+      </section>
+
+      <!-- §15 -->
+      <section id="s15">
+        <div class="sec-head"><span class="idx">15</span><h2>Appendix: Command reference</h2></div>
+
+        <h3>15.1 Environment</h3>
+        <pre><code># Connect
+ssh -p &lt;SSH_PORT&gt; &lt;CLUSTER_HOST&gt;
+
+# Run these commands first in the job
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;USER_HOME&gt;/mineru-venv-py310/bin/activate
+
+# Offline mode (compute nodes have no external network access)
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+
+# Use GCC 12.2.0; GCC 11.2.0 and 13.3.0 lack libisl.so.15
+export CC=&lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0/bin/gcc
+
+# Limit threads when workers share a node
+export OMP_NUM_THREADS=4 ORT_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
+
+# On CentOS 7, launch Python through the §14 wrapper;
+# bare python or sys.executable falls back to system glibc 2.17.</code></pre>
+
+        <h3>15.2 Job template</h3>
+        <pre><code>#!/bin/bash
+#SBATCH -p kshdnormal
+#SBATCH --gres=dcu:4              # QOS requires at least 1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=111gb               # limit = CPUs × 3569 MB
+#SBATCH --time=02:00:00
+#SBATCH -o job-%j.out
+#SBATCH -e job-%j.err
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;USER_HOME&gt;/mineru-venv-py310/bin/activate
+...
+rc=$?; echo "EXIT_RC=$rc"; exit $rc     # Required so sacct reports the actual exit status</code></pre>
+        <p>Check the account limits without entering the queue first:</p>
+        <pre><code>sbatch --test-only job.slurm
+# "Job N to start at ..."  → request is within quota
+# "Requested node configuration is not available" → no free nodes (quota is valid)
+# "too much memory" → request exceeds the memory limit</code></pre>
+
+        <h3>15.3 Service pool</h3>
+        <pre><code>~/mineru_pool_ctl.sh status       # jobs, live workers, and gateway health
+~/mineru_pool_ctl.sh scale 2      # keep two pool jobs (four cards each)
+~/mineru_pool_ctl.sh stop         # stop jobs and clear the registry
+~/mineru_pool_ctl.sh endpoints    # print gateway addresses</code></pre>
+
+        <h3>15.4 Load testing</h3>
+        <pre><code>python3 loadtest.py <host:port> <corpus_dir> <concurrency> <rounds>
+python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 12 4</code></pre>
+
+        <h3>15.5 Troubleshooting</h3>
+        <pre><code># Do not rely on sacct State alone; inspect the job log
+sacct -j &lt;ID&gt; -X -o State,Elapsed,ExitCode -P -n
+
+# Filter verbose ONNX Runtime affinity messages
+grep -av "pthread_setaffinity" job-&lt;ID&gt;.err | tail -30
+
+# Check whether the process is working or stalled
+ssh <node> "cat /proc/<pid>/status | grep -E '^State|^Threads'"
+ssh <node> "ls /proc/<pid>/fd | grep -c kfd"     # >0 means a DCU handle is open
+
+# Check the wheel glibc requirements (use version sort: sort -V)
+objdump -T <lib>.so | grep -oE "GLIBC_[0-9.]+" | sort -u -V | tail -3</code></pre>
+
+        <h3>15.6 Retagging a manylinux wheel for installation</h3>
+        <p>When the runtime already uses glibc 2.28, pip's platform check is overly restrictive:</p>
+        <pre><code>cp pkg-1.0-cp310-cp310-manylinux_2_28_x86_64.whl \
+   pkg-1.0-cp310-cp310-manylinux2014_x86_64.whl
+pip install --no-deps --force-reinstall pkg-1.0-cp310-cp310-manylinux2014_x86_64.whl</code></pre>
+
+        <h3>15.7 Hygon DCU software downloads</h3>
+        <pre><code># Package index (torchvision is under vision/)
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/"
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/vision/DAS1.8/"
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/vllm/DAS1.8/"
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"</code></pre>
+        <p>Versions must match the PyTorch build exactly; for example: <code>...das.opt1.dtk2604.torch271</code>.</p>
+      </section>
+
+      <!-- data index -->
+      <section id="s16">
+        <div class="sec-head"><span class="idx">·</span><h2>16. Data and job index</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>Data</th><th>Job ID</th><th>Source file</th></tr>
+            <tr><td>Hardware capabilities (initial probe)</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/job-logs.txt</code></td></tr>
+            <tr><td>Hardware capabilities (with warm-up)</td><td><code>&lt;JOB_ID&gt;</code></td><td>Same test</td></tr>
+            <tr><td>First successful parse</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/sample-parse-output.md</code></td></tr>
+            <tr><td>CPU single-document run</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/job-logs.txt</code></td></tr>
+            <tr><td>VLM backend</td><td><code>&lt;JOB_ID&gt;</code></td><td>Same test</td></tr>
+            <tr><td>DCU batch throughput</td><td><code>&lt;JOB_ID&gt;</code></td><td>Same test</td></tr>
+            <tr><td>CPU batch throughput</td><td><code>&lt;JOB_ID&gt;</code></td><td>Same test</td></tr>
+            <tr><td>Hygon Triton</td><td><code>&lt;JOB_ID&gt;</code></td><td>Same test</td></tr>
+            <tr><td>vLLM kernel</td><td><code>&lt;JOB_ID&gt;</code></td><td>Same test</td></tr>
+            <tr><td>Service pool v1</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/loadtest.log</code></td></tr>
+            <tr><td>Service pool v2</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/loadtest2.log</code>、<code>data/soak.log</code></td></tr>
+            <tr><td>Environment recovery after drift</td><td><code>&lt;JOB_ID&gt;</code></td><td>Redacted module, loader, and configuration paths; error-chain records</td></tr>
+            <tr><td>Full revalidation on 2026-09-27</td><td><code>&lt;JOB_ID&gt;</code></td><td>14-page pipeline logs and inventory of Markdown/JSON/image artifacts</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <div class="foot">First edition: 2026-08-13 · Environment-recovery validation: 2026-09-27 · Data from redacted test records · Public report edition</div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // mobile sidebar toggle
+  var btn = document.getElementById('menuBtn');
+  var sidebar = document.getElementById('sidebar');
+  if (btn) {
+    btn.addEventListener('click', function(){ sidebar.classList.toggle('open'); });
+    sidebar.addEventListener('click', function(e){
+      if (e.target.tagName === 'A') sidebar.classList.remove('open');
+    });
+  }
+
+  // scrollspy
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  function onScroll(){
+    var pos = window.scrollY + 120;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].offsetTop <= pos) current = sections[i];
+    }
+    links.forEach(function(a){ a.classList.remove('active'); });
+    if (current) {
+      var id = '#' + current.id;
+      var match = links.find(function(a){ return a.getAttribute('href') === id; });
+      if (match) match.classList.add('active');
+    }
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+
+</body>
+</html>

@@ -185,11 +185,11 @@
   <header class="report-banner">
     <div class="kicker">ENGINEERING REPORT / UPDATED 2026-08-17</div>
     <h1>Hashcat HIP Adaptation and Cross-Platform Validation on Hygon DCU</h1>
-    <p class="subtitle">covers DTK 25.04.2–26.04, gfx936 and gfx906/Z100: from ABI positioning, code adaptation and build troubleshooting, to HIP/OpenCL comparison, multi-algorithm performance and continuous load verification.</p>
+    <p class="subtitle">Validation across DTK 25.04.2–26.04 and gfx936 / gfx906-Z100, covering ABI analysis, code changes, build troubleshooting, HIP/OpenCL comparison, multi-algorithm performance, and sustained-load behavior.</p>
     <div class="meta">
       <span>Project directory:<code>/path/to/hashcat</code></span>
-      <span>Test environment: two sets of DCU computing nodes (region, cluster and node names have been desensitized)</span>
-      <span>Hashcat：v7.1.2</span>
+      <span>Test environment: two DCU node groups (location, cluster, and node names redacted)</span>
+      <span>Hashcat: v7.1.2</span>
       <span>Author: opensource_community</span>
     </div>
   </header>
@@ -199,7 +199,7 @@
     <a href="#summary">Summary</a>
     <a href="#environment">Environment</a>
     <a href="#problem">Compatibility Analysis</a>
-    <a href="#changes">Code modification</a>
+    <a href="#changes">Code changes</a>
     <a href="#debug">Debugging process</a>
     <a href="#build">Compilation process</a>
     <a href="#portability">Cross-version verification</a>
@@ -211,70 +211,70 @@
 
   <section id="summary">
     <h2>1. Executive Summary</h2>
-    <p>hashcat v7.1.2 already contains HIP backend, but its built-in HIP ABI and Hygon DTK's <code>libgalaxyhip.so</code> , so the device initialization process cannot be completed. This work first completed the root cause location and adaptation on gfx936 + DTK 25.04.2, and then migrated the same solution to gfx906/Z100 + DTK 26.04, forming a complete evidence chain from ABI detection, conditional compilation, runtime verification to cross-version regression.</p>
+    <p>Hashcat v7.1.2 includes a HIP backend, but its built-in HIP ABI is incompatible with Hygon DTK's <code>libgalaxyhip.so</code>, preventing device initialization. This work identified and fixed the compatibility issue on gfx936 with DTK 25.04.2, then applied the same adaptation to gfx906/Z100 with DTK 26.04. The resulting evidence covers ABI analysis, conditional compilation, runtime checks, and cross-version regression.</p>
 
     <div class="summary-grid">
-      <div class="card"><span class="label">Verification Platform</span><span class="metric">2 sets</span><span class="small">gfx936 / gfx906</span></div>
+      <div class="card"><span class="label">Validation platforms</span><span class="metric">2 sets</span><span class="small">gfx936 / gfx906</span></div>
       <div class="card"><span class="label">HIP SHA2-256</span><span class="metric">5.914 GH/s</span><span class="small">45 seconds continuous load</span></div>
       <div class="card"><span class="label">OpenCL SHA2-256</span><span class="metric">5.913 GH/s</span><span class="small">45 seconds continuous load</span></div>
-      <div class="card"><span class="label">DTK ABI</span><span class="metric">consistent</span><span class="small">25.04.2 / 26.04</span></div>
+      <div class="card"><span class="label">DTK ABI</span><span class="metric">aligned</span><span class="small">25.04.2 / 26.04</span></div>
     </div>
 
-    <h3>Cross-version verification environment</h3>
+    <h3>1.1 Cross-version validation environments</h3>
     <div class="two-col">
       <div class="card">
-        <h4>Baseline Platform A</h4>
+        <h4>Platform A · baseline</h4>
         <ul>
           <li>DTK <code>25.04.2</code> / HIP <code>6.3.25422</code></li>
-          <li>BW / <code>gfx936</code> / 80 MCU</li>
-          <li>Video memory <code>65520 MB</code>, core frequency <code>1500 MHz</code></li>
-          <li>has HIP and OpenCL, which can be compared with the backend of the same card</li>
+          <li>BW / <code>gfx936</code> / 80 MCUs</li>
+          <li>VRAM: <code>65,520 MB</code>; core clock: <code>1500 MHz</code></li>
+          <li>Supports both HIP and OpenCL, enabling a same-device backend comparison</li>
         </ul>
       </div>
       <div class="card">
-        <h4>Migration Platform B</h4>
+        <h4>Platform B · migration</h4>
         <ul>
           <li>DTK <code>26.04</code> / HIP <code>6.3.26113</code></li>
-          <li>Z100 (device output <code>Device 66a1</code>）/ <code>gfx906</code> / 64 MCU</li>
-          <li>Video memory <code>16368 MB</code>, core frequency <code>1700 MHz</code></li>
+          <li>Z100 (device output <code>Device 66a1</code>) / <code>gfx906</code> / 64 MCUs</li>
+          <li>VRAM: <code>16,368 MB</code>; core clock: <code>1700 MHz</code></li>
           <li>Validates HIP only; OpenCL runtime is not available in this computing environment</li>
         </ul>
       </div>
     </div>
 
     <div class="callout">
-      <strong>Core conclusion:</strong>The same DTK HIP adaptation can complete device enumeration, HIPRTC compilation, benchmark and normal exit on two generations of DCUs and two DTK versions. The SHA2-256 throughput difference between HIP and OpenCL in the gfx936 environment is less than 0.01%; the gfx906/Z100 environment completed 10 algorithms and 60 seconds stability verification. The two types of data answer different questions and do not make unequal back-end comparisons.     </div>
+      <strong>Core conclusion:</strong> The same DTK HIP adaptation supports device enumeration, HIPRTC compilation, benchmarking, and normal process exit on two DCU generations and two DTK versions. On gfx936, SHA2-256 throughput differs by less than 0.01% between HIP and OpenCL. On gfx906/Z100, HIP passed checks across 10 algorithms and a 60-second stability run. These results address different questions; they are not a same-device backend comparison.     </div>
   </section>
 
   <section id="environment">
     <h2>2. Test environment and artifacts</h2>
     <div class="two-col">
       <div class="card">
-        <h3>Software environment</h3>
+        <h3>2.1 Software environment</h3>
         <ul>
-          <li>Hashcat：<code>v7.1.2</code></li>
-          <li>DTK：<code>25.04.2</code></li>
-          <li>HIP：<code>6.3.25422</code></li>
-          <li>OpenCL：<code>OpenCL 2.1s C-3000-APP (3452.0)</code></li>
-          <li>Core:<code>5.10.134-17.1.3.sga8.x86_64</code></li>
+          <li>Hashcat: <code>v7.1.2</code></li>
+          <li>DTK: <code>25.04.2</code></li>
+          <li>HIP: <code>6.3.25422</code></li>
+          <li>OpenCL: <code>OpenCL 2.1s C-3000-APP (3452.0)</code></li>
+          <li>Kernel: <code>5.10.134-17.1.3.sga8.x86_64</code></li>
           <li>System: Sugon OS 8.9</li>
         </ul>
       </div>
       <div class="card">
-        <h3>Hardware environment</h3>
+        <h3>2.2 Hardware environment</h3>
         <ul>
-      <li>test node:<code>&lt;compute-node&gt;</code>(name desensitized)</li>
-          <li>DCU name:<code>BW</code></li>
-          <li>ISA：<code>gfx936:sramecc+:xnack-</code></li>
-          <li>Device type:<code>HCU</code></li>
-          <li>Computing unit:<code>80</code></li>
-          <li>Video memory:<code>65520 MB</code></li>
-          <li>Core frequency:<code>1500 MHz</code></li>
+      <li>Test node: <code>&lt;compute-node&gt;</code> (name redacted)</li>
+          <li>DCU name: <code>BW</code></li>
+          <li>ISA: <code>gfx936:sramecc+:xnack-</code></li>
+          <li>Device type: <code>HCU</code></li>
+          <li>Compute units: <code>80</code></li>
+          <li>VRAM: <code>65520 MB</code></li>
+          <li>Core clock: <code>1500 MHz</code></li>
         </ul>
       </div>
     </div>
 
-    <h3>Build artifacts</h3>
+    <h3>2.3 Build artifacts</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Purpose</th><th>path</th><th>Size</th><th>SHA-256</th></tr></thead>
@@ -290,53 +290,53 @@
 
   <section id="problem">
     <h2>3. Compatibility behavior and root-cause analysis</h2>
-    <h3>3.1 The difference between login node and computing node</h3>
-    <p>The login node is not provided <code>/dev/kfd</code>, so this environment is only suitable for checking HIP symbols in the binary and does not have device operation verification conditions. After entering the allocated DCU computing node,<code>rocminfo</code>、<code>hy-smi</code> and OpenCL can recognize the device normally.</p>
+    <h3>3.1 Login node and compute node behavior</h3>
+    <p>The login node does not expose <code>/dev/kfd</code>, so it can be used to inspect HIP symbols in the binary but not to verify device execution. On an allocated DCU compute node, <code>rocminfo</code>, <code>hy-smi</code>, and OpenCL detect the device as expected.</p>
     <pre><code>rocminfo:
   Name:           gfx936
   Marketing Name: BW
   Device Type:    HCU
   Compute Unit:   80</code></pre>
 
-    <h3>3.2 HIP initialization phenomenon before adaptation</h3>
+    <h3>3.2 HIP initialization before adaptation</h3>
     <pre><code>./hashcat -II --backend-ignore-cuda --backend-ignore-opencl
 
 hashcat (v7.1.2) starting in backend information mode
 hipDeviceGetAttribute(): invalid argument
 No devices found/left.</code></pre>
-    <p>OpenCL can recognize <code>BW</code> device, based on this, basic factors such as hardware, task allocation, driver and device permissions can be excluded, and the analysis scope can be converged to the hashcat HIP host-side API compatibility layer.</p>
+    <p>OpenCL detects the <code>BW</code> device. This confirms that the hardware, job allocation, driver, and device permissions are working, narrowing the investigation to Hashcat's host-side HIP API compatibility layer.</p>
 
-    <h3>3.3 ABI Difference</h3>
-    <p>hashcat In order to maintain dynamic loading capabilities, <code>include/ext_hip.h</code> instead of directly relying on the system HIP header file during compilation. hashcat v7.1.2 built-in definitions from updated ROCm ABI; <code>hip_runtime_defines.h</code> uses a different legacy layout.</p>
+    <h3>3.3 HIP ABI mismatch</h3>
+    <p>To preserve runtime loading, Hashcat declares the HIP interfaces it needs in <code>include/ext_hip.h</code> instead of depending on the system HIP headers at build time. Hashcat 7.1.2's bundled declarations follow a newer ROCm ABI, while DTK 25.04.2's <code>hip_runtime_defines.h</code> uses a different, older layout.</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th>DTK Properties</th><th>DTK 25.04.2 Value</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td><code>hipDeviceAttributeMaxThreadsPerBlock</code></td><td class="num">18</td><td>Maximum thread block</td></tr>
-          <tr><td><code>hipDeviceAttributeMaxSharedMemoryPerBlock</code></td><td class="num">25</td><td>shared memory</td></tr>
-          <tr><td><code>hipDeviceAttributeTotalConstantMemory</code></td><td class="num">26</td><td>constant memory</td></tr>
-          <tr><td><code>hipDeviceAttributeWarpSize</code></td><td class="num">27</td><td>Wave/Warp Width</td></tr>
-          <tr><td><code>hipDeviceAttributeClockRate</code></td><td class="num">29</td><td>Device Clock</td></tr>
-          <tr><td><code>hipDeviceAttributeMultiprocessorCount</code></td><td class="num">32</td><td>Number of calculation units</td></tr>
-          <tr><td><code>hipDeviceAttributeComputeCapabilityMajor/Minor</code></td><td class="num">36 / 37</td><td>Computing power</td></tr>
-          <tr><td><code>hipDeviceAttributePciBusId/PciDeviceId</code></td><td class="num">39 / 40</td><td>PCI address</td></tr>
-          <tr><td><code>hipDeviceAttributeIntegrated</code></td><td class="num">42</td><td>Unified memory judgment</td></tr>
+          <tr><td><code>hipDeviceAttributeMaxThreadsPerBlock</code></td><td class="num">18</td><td>Maximum threads per block</td></tr>
+          <tr><td><code>hipDeviceAttributeMaxSharedMemoryPerBlock</code></td><td class="num">25</td><td>Shared memory per block</td></tr>
+          <tr><td><code>hipDeviceAttributeTotalConstantMemory</code></td><td class="num">26</td><td>Total constant memory</td></tr>
+          <tr><td><code>hipDeviceAttributeWarpSize</code></td><td class="num">27</td><td>Wavefront width</td></tr>
+          <tr><td><code>hipDeviceAttributeClockRate</code></td><td class="num">29</td><td>Device clock rate</td></tr>
+          <tr><td><code>hipDeviceAttributeMultiprocessorCount</code></td><td class="num">32</td><td>Compute-unit count</td></tr>
+          <tr><td><code>hipDeviceAttributeComputeCapabilityMajor/Minor</code></td><td class="num">36 / 37</td><td>Compute capability</td></tr>
+          <tr><td><code>hipDeviceAttributePciBusId/PciDeviceId</code></td><td class="num">39 / 40</td><td>PCI bus and device IDs</td></tr>
+          <tr><td><code>hipDeviceAttributeIntegrated</code></td><td class="num">42</td><td>Integrated-device flag</td></tr>
           <tr><td><code>hipDeviceAttributeKernelExecTimeout</code></td><td class="num">79</td><td>Kernel timeout attribute</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Auxiliary detection program also confirms DTK's <code>sizeof(hipDeviceProp_t) = 792</code>, key field offsets include:<code>totalGlobalMem=256</code>、<code>regsPerBlock=272</code>、<code>warpSize=276</code>、<code>clockRate=308</code>、<code>major=328</code>、<code>multiProcessorCount=336</code>、<code>gcnArchName=396</code>. This is significantly different from the original definition of hashcat.</p>
+    <p>A separate probe confirms that DTK reports <code>sizeof(hipDeviceProp_t) = 792</code>. Key field offsets are <code>totalGlobalMem=256</code>, <code>regsPerBlock=272</code>, <code>warpSize=276</code>, <code>clockRate=308</code>, <code>major=328</code>, <code>multiProcessorCount=336</code>, and <code>gcnArchName=396</code>. These offsets differ substantially from Hashcat's bundled structure definition.</p>
   </section>
 
   <section id="changes">
     <h2>4. Code changes</h2>
-    <p>follows the principle of "the default build behavior remains unchanged and DTK adaptation is explicitly enabled". The changes focus on the build entry, HIP type definition, device attribute initialization, dynamic loading and adaptation documentation.</p>
+    <p>The adaptation is opt-in, so the default build remains unchanged. Changes are limited to the build switch, HIP type definitions, device-attribute initialization, dynamic-library lifetime, and adaptation notes.</p>
 
     <div class="timeline">
       <div class="step">
         <div class="step-title">Step 1: Add independent build switch</div>
         <div class="file">src/Makefile</div>
-        <p>New <code>DTK_HIP ?= 0</code>. Only execute <code>make DTK_HIP=1</code> only when <code>HC_HIP_DTK</code>, normal builds still use the original ROCm ABI.</p>
+        <p>Add <code>DTK_HIP ?= 0</code>. Build with <code>make DTK_HIP=1</code> only when <code>HC_HIP_DTK</code> is enabled; otherwise, the default ROCm ABI remains unchanged.</p>
         <pre><code>DTK_HIP ?= 0
 
 ifeq ($(DTK_HIP),1)
@@ -347,19 +347,19 @@ endif</code></pre>
       <div class="step">
         <div class="step-title">Step 2: Align DTK Device Property Enumeration</div>
         <div class="file">include/ext_hip.h</div>
-        <p>at <code>HC_HIP_DTK</code> The DTK attribute number actually used by hashcat is explicitly defined under the conditional branch. The original full enumeration remains at <code>#else</code> branch, does not affect the default ROCm build.</p>
+        <p>Under the <code>HC_HIP_DTK</code> conditional, define the DTK attribute IDs used by Hashcat explicitly. Keep the original full enumeration in the <code>#else</code> branch so the default ROCm build is unaffected.</p>
       </div>
 
       <div class="step">
         <div class="step-title">Step 3: Align the 792-byte device attribute structure</div>
         <div class="file">include/ext_hip.h</div>
-        <p>Rebuild <code>hipDeviceProp_t</code>, guaranteed <code>hipGetDeviceProperties()</code> is consistent with the hashcat reading method, especially <code>regsPerBlock</code>、<code>gcnArchName</code> and other fields.</p>
+        <p>Define a DTK-compatible <code>hipDeviceProp_t</code> layout so that values written by <code>hipGetDeviceProperties()</code> match the offsets Hashcat reads, especially for <code>regsPerBlock</code> and <code>gcnArchName</code>.</p>
       </div>
 
       <div class="step">
         <div class="step-title">Step 4: Compatible with missing register attributes</div>
         <div class="file">src/backend.c</div>
-        <p>DTK old version structure does not have <code>regsPerMultiprocessor</code> field, and the runtime query for attribute number 69 returns <code>hipErrorInvalidValue</code>. The DTK branch uses <code>prop.regsPerBlock</code> as conservative compatible value.</p>
+        <p>The older DTK structure has no <code>regsPerMultiprocessor</code> field, and querying attribute 69 returns <code>hipErrorInvalidValue</code>. The DTK branch therefore uses <code>prop.regsPerBlock</code> as a conservative fallback.</p>
         <pre><code>#if defined (HC_HIP_DTK)
 device_param-&gt;regsPerMultiprocessor = prop.regsPerBlock;
 #else
@@ -370,20 +370,20 @@ device_param-&gt;regsPerMultiprocessor = prop.regsPerMultiprocessor;
       <div class="step">
       <div class="step-title">Step 5: Complete the diagnostic log</div>
         <div class="file">src/ext_hip.c</div>
-      <p>The diagnostic log outputs the device number and attribute number at the same time, which facilitates locating the runtime status to specific ABI items; and corrects <code>hipGetDeviceProperties</code> .</p>
+      <p>The diagnostic log now reports both the device ID and attribute ID, making it easier to map runtime results to specific ABI fields. The patch also corrects the <code>hipGetDeviceProperties</code> call.</p>
         <pre><code>hipDeviceGetAttribute(dev=0, attrib=69): invalid argument</code></pre>
       </div>
 
       <div class="step">
-      <div class="step-title">Step 6: Adjust the dynamic library to exit the life cycle</div>
+      <div class="step-title">Step 6: Keep HIP libraries loaded until process exit</div>
         <div class="file">src/ext_hip.c / src/ext_hiprtc.c</div>
-        <p>DTK's HIP/HIPRTC DSO registers a C++ exit callback. hashcat advance <code>dlclose()</code> , libstdc++ still calls these callbacks during the process exit phase, causing a jump to the unloaded address. The DTK build therefore does not close these two DSOs early, leaving them to the operating system for recycling when the process terminates.</p>
+      <p>DTK's HIP/HIPRTC shared libraries register C++ shutdown callbacks. If Hashcat calls <code>dlclose()</code> early, libstdc++ may invoke a callback during process shutdown after its library has been unloaded, jumping to an invalid address. The DTK build therefore keeps both libraries loaded until process exit and lets the operating system reclaim them.</p>
       </div>
 
       <div class="step">
         <div class="step-title">Step 7: Save product and adaptation documentation</div>
         <div class="file">.gitignore / docs/dtk-hip-adaptation.md</div>
-      <p>build product is not included in version control, and construction, verification and version boundary instructions are supplemented; the OpenCL baseline version is saved separately for regression verification and performance comparison.</p>
+      <p>The generated binary is not checked into version control. The report documents the build, validation, and version constraints; the OpenCL baseline binary is kept separately for regression tests and performance comparisons.</p>
       </div>
     </div>
   </section>
@@ -393,18 +393,18 @@ device_param-&gt;regsPerMultiprocessor = prop.regsPerMultiprocessor;
     <ol>
       <li><strong>Confirmed binary contains HIP:</strong>Checked <code>hipInit</code>、<code>hipDeviceGetAttribute</code>、<code>hiprtcCompileProgram</code> , and <code>--backend-ignore-hip</code> parameters.</li>
       <li><strong>Eliminate misjudgment of no-card nodes:</strong>The login node is missing <code>/dev/kfd</code>; After switching to the assigned computing node, the DCU and driver are normal.</li>
-      <li><strong>Create an OpenCL baseline:</strong>can identify BW through OpenCL and complete the MD5 benchmark, proving that the hardware and hashcat core functions normally.</li>
+      <li><strong>Establish an OpenCL baseline:</strong>OpenCL detects the BW device and completes the MD5 benchmark, confirming that the hardware and Hashcat core are functioning.</li>
       <li><strong>Enhanced logging post-lock enumeration:</strong>First failed attribute changes from opaque error to <code>attrib=69</code>, and then use the DTK header file to compile the detection program to check the value and structure offset item by item.</li>
-      <li><strong>First ABI fix:</strong>After synchronizing property enumeration with struct, device enumeration advances to register properties; runtime confirmation property 69 is not supported by DTK.</li>
-      <li><strong>register compatible processing:</strong>Auxiliary program display <code>prop.regsPerBlock=196608</code>, while attribute 69 returns an error, so this value is adopted as conservatively compatible data.</li>
-      <li><strong>HIP device enumeration successful:</strong>hashcat can display HIP 6.3.25422, BW, 80 MCU, 65520 MB and PCI addresses.</li>
+      <li><strong>First ABI fix:</strong>After aligning the property enum and structure layout, device enumeration advanced to the register-property query. Runtime testing confirmed that DTK does not support attribute 69.</li>
+      <li><strong>Register-property fallback:</strong> A probe reported <code>prop.regsPerBlock=196608</code>, while attribute 69 returned an error. The adaptation uses this value as a conservative fallback.</li>
+      <li><strong>HIP device enumeration passed:</strong>Hashcat reports HIP 6.3.25422, BW, 80 MCUs, 65,520 MB, and the PCI address.</li>
       <li><strong>HIPRTC Verification:</strong>MD5 and NTLM benchmark succeeded, proving that <code>gfx936</code> .</li>
       <li><strong>found exit phase SIGSEGV:</strong>The calculation result has been output, but the exit code is 139. Use GDB to locate <code>atexit_thread.cc:75</code>, the top of the stack is the unsigned unloaded address.</li>
       <li><strong>Fix DSO lifecycle:</strong>DTK branch retains HIP/HIPRTC DSO until the process exits, and then the benchmark exit code returns to 0.</li>
-      <li><strong>Correctness verification:</strong>Actual MD5 dictionary attack passes self-test, and recovers <code>e11c594e6a2f4eb499cceadfca988595:13LEXON</code>。</li>
+      <li><strong>Correctness verification:</strong> An actual MD5 dictionary attack passed the self-test and recovered <code>e11c594e6a2f4eb499cceadfca988595:13LEXON</code>.</li>
     </ol>
 
-    <h3>GDB key traceback</h3>
+    <h3>5.1 Key GDB backtrace</h3>
     <pre><code>Thread 1 "hashcat-hip-dtk" received signal SIGSEGV
 0x000015552f2620e0 in ?? ()
 #0  0x000015552f2620e0 in ?? ()
@@ -412,19 +412,19 @@ device_param-&gt;regsPerMultiprocessor = prop.regsPerMultiprocessor;
     at libstdc++-v3/libsupc++/atexit_thread.cc:75
 #2  __run_exit_handlers () from /lib64/libc.so.6
 #3  exit () from /lib64/libc.so.6</code></pre>
-    <p>This traceback is consistent with "the dynamic library has been unloaded, but the function address is still retained when exiting the processor". After modifying the DSO life cycle, the same test exited normally, verifying the judgment.</p>
+    <p>The traceback indicates that the dynamic library had been unloaded while a function pointer was still retained during processor shutdown. After correcting the DSO lifetime, the same test exited normally, confirming this diagnosis.</p>
   </section>
 
   <section id="build">
     <h2>6. Git and compilation process</h2>
-    <h3>6.1 Git file creation</h3>
+    <h3>6.1 Initialize the Git baseline</h3>
     <p>To ensure that the adaptation process is traceable, the source code baseline can be established first, and then the DTK HIP adaptation changes can be recorded in an independent branch. The following commands show a reference flow.</p>
     <pre><code>cd /path/to/hashcat
 git init -b dtk-hip-adaptation
 git add -A
 git commit -m "baseline: import hashcat 7.1.2 source tree"
 
-# 完成修改与验证后
+# After making and verifying the changes
 git add .gitignore include/ext_hip.h src/Makefile \
   src/backend.c src/ext_hip.c src/ext_hiprtc.c \
   docs/dtk-hip-adaptation.md
@@ -433,47 +433,47 @@ git commit -m "feat: adapt HIP backend for DTK 25.04.2"</code></pre>
       <table>
         <thead><tr><th>Submit</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>基线提交标识已脱敏</code></td><td>Hashcat v7.1.2 source tree baseline</td></tr>
-          <tr><td><code>提交标识已脱敏</code></td><td>DTK 25.04.2 HIP backend adaptation</td></tr>
+          <tr><td>Baseline commit ID redacted</td><td>Hashcat v7.1.2 source tree baseline</td></tr>
+          <tr><td>Adaptation commit ID redacted</td><td>DTK 25.04.2 HIP backend adaptation</td></tr>
         </tbody>
       </table>
     </div>
 
     <h3>6.2 Compilation steps</h3>
     <div class="callout warning">
-      <strong>Build Notes:</strong>The object file name of the current Makefile does not contain preprocessing macro information. In normal build with <code>DTK_HIP=1</code> When switching between builds, <code>make clean</code>to avoid reusing object files with different ABI configurations.     </div>
+      <strong>Build note:</strong> Object-file names do not encode preprocessor definitions. Run <code>make clean</code> before switching between the default build and <code>DTK_HIP=1</code> to avoid reusing objects compiled against a different ABI.    </div>
     <pre><code>cd /path/to/hashcat
 
-# 保留原始二进制
+# Preserve the original binary
 cp -p hashcat hashcat-opencl-original
 
-# 清理并构建 DTK 专用版本
+# Clean and build the DTK-specific version
 make clean
 make DTK_HIP=1 ENABLE_LTO=0
 mv hashcat hashcat-hip-dtk
 
-# 基本检查
+# Basic checks
 ./hashcat-hip-dtk --version
 sha256sum hashcat-hip-dtk hashcat-opencl-original</code></pre>
-    <p><code>ENABLE_LTO=0</code> is used to reduce link complexity during adaptation debugging and maintain build predictability. Core adapted by <code>DTK_HIP=1</code> enabled.</p>
+    <p><code>ENABLE_LTO=0</code> reduces link complexity during adaptation debugging and keeps builds predictable. The DTK-specific code is enabled with <code>DTK_HIP=1</code>.</p>
 
-    <h3>6.3 DTK 26.04 Differences in environment construction and scheduling</h3>
-    <p>migration platform is mutually exclusive with the newer GCC module, and the system GCC 4.8.5 lacks the AVX512F built-in functions required by the bridges module. Actual use of DTK comes with <code>dcc</code>(Clang 17) compiles source files, system GCC completes final archive linking; bridges are not built and do not affect the core hashing functionality covered by this report.</p>
-    <div class="pitfall"><div class="pitfall-title">Compiler and Archives</div><p><code>dcc</code> directly handles the final <code>.a</code> will be misidentified as the source file when archiving. Should remain <code>make DTK_HIP=1 ENABLE_LTO=0</code> and confirming that the final linker can handle the archive.</p></div>
-    <div class="pitfall"><div class="pitfall-title">Macro definition location</div><p>DTK attribute override macro must be placed after the enumeration definition, otherwise preprocessing will replace the enumeration member names with numbers and cause compilation failure. The bit fields or unsigned fields in the DTK struct that is not read by hashcat can be occupied by the same size type, but the total size and key offset must be checked with a probing program.</p></div>
-    <div class="pitfall"><div class="pitfall-title">Compute node file visibility</div><p>The temporary directory of the login node is not necessarily visible to the compute node. Binary,<code>OpenCL/</code>、<code>modules/</code> and <code>hashcat.hcstat2</code> is deployed to the shared project directory; this article writes the specific user directory, partition name and node name as placeholders.</p></div>
-    <div class="pitfall"><div class="pitfall-title">Batch and interactive jobs</div><p>Batch jobs in this environment were failing with a site-specific signal, while interactive jobs with the same resource request were running normally. The phenomenon is closer to a scheduling policy or script path problem and cannot be attributed to hashcat; when reproducing, please use the partition and resource parameters specified in the site documentation.</p></div>
+    <h3>6.3 DTK 26.04 toolchain and scheduling notes</h3>
+    <p>On the migration platform, the newer GCC module conflicts with the system toolchain. System GCC 4.8.5 also lacks the AVX512F intrinsics required by the bridges module. The tested build uses DTK's <code>dcc</code> (Clang 17) for source files and system GCC for final archive linking. The bridges module is not built; it is outside the core hashing functionality evaluated here.</p>
+    <div class="pitfall"><div class="pitfall-title">Compiler and static archives</div><p>If <code>dcc</code> is asked to create the final <code>.a</code> archive directly, it may treat the archive as a source file. Use <code>make DTK_HIP=1 ENABLE_LTO=0</code> and verify that the final linker can consume the archive.</p></div>
+    <div class="pitfall"><div class="pitfall-title">Where to define attribute overrides</div><p>Place DTK attribute-override macros after the enum declaration. Defining them earlier replaces enum member names during preprocessing and causes compilation errors. In the DTK structure, fields Hashcat never reads can be represented by same-sized placeholders, but verify the total structure size and every relevant offset with a probe program.</p></div>
+    <div class="pitfall"><div class="pitfall-title">File visibility on compute nodes</div><p>A login node's temporary directory may not be mounted on compute nodes. Place the binary, <code>OpenCL/</code>, <code>modules/</code>, and <code>hashcat.hcstat2</code> in a shared project directory. User paths, partition names, and node names are represented by placeholders in this report.</p></div>
+    <div class="pitfall"><div class="pitfall-title">Batch and interactive jobs</div><p>In this environment, batch jobs failed with a site-specific signal while interactive jobs using the same resources ran normally. This points to a scheduling-policy or job-script issue; the evidence does not implicate Hashcat. For reproduction, use the partition and resource settings in the site's documentation.</p></div>
 
-    <h3>6.4 Verify</h3>
+    <h3>6.4 Verification commands</h3>
     <pre><code>ssh &lt;compute-node&gt;
 cd /path/to/hashcat
 
-# 只启用 HIP
+# Enable HIP only
 ./hashcat-hip-dtk -II \
   --backend-ignore-cuda \
   --backend-ignore-opencl
 
-# 只启用 OpenCL
+# Enable OpenCL only
 ./hashcat-opencl-original -II \
   --backend-ignore-cuda \
   --backend-ignore-hip</code></pre>
@@ -481,7 +481,7 @@ cd /path/to/hashcat
 
   <section id="portability">
     <h2>7. Cross-version ABI and platform migration verification</h2>
-    <p>recompiles the ABI detection program in the DTK 26.04 header environment and compares it item by item with the records of 25.04.2. The 12 actually used device attribute enumerations are exactly the same:<code>18</code>、<code>25</code>、<code>26</code>、<code>27</code>、<code>29</code>、<code>32</code>、<code>36</code>、<code>37</code>、<code>39</code>、<code>40</code>、<code>42</code>、<code>79</code>。</p>
+    <p>The ABI probe was rebuilt against the DTK 26.04 headers and compared item by item with the DTK 25.04.2 results. All 12 device-attribute enum values used by this adaptation match: <code>18</code>, <code>25</code>, <code>26</code>, <code>27</code>, <code>29</code>, <code>32</code>, <code>36</code>, <code>37</code>, <code>39</code>, <code>40</code>, <code>42</code>, and <code>79</code>.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>ABI check item</th><th>DTK 25.04.2</th><th>DTK 26.04</th><th>Result</th></tr></thead>
       <tbody>
@@ -491,11 +491,11 @@ cd /path/to/hashcat
         <tr><td><code>gcnArchName</code></td><td class="num">396</td><td class="num">396</td><td class="status-ok">consistent</td></tr>
       </tbody>
     </table></div>
-    <div class="callout"><strong>Migration Conclusion:</strong>25.04.2 can be used as-is for 26.04; however, this is a measured compatibility conclusion and should not be interpreted as an ABI guarantee for future DTK versions. Enumeration, size and field offset detection will still need to be re-run with each upgrade.</div>
+    <div class="callout"><strong>Migration conclusion:</strong> The DTK 25.04.2 adaptation also works on 26.04 in the tested environment. This is an observed compatibility result, not a guarantee for future DTK releases; recheck enum values, structure size, and field offsets after each upgrade.</div>
   </section>
 
   <section id="validation">
-    <h2>8. Function and correctness verification</h2>
+    <h2>8. Functional and correctness verification</h2>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Verification item</th><th>Command/Mode</th><th>Result</th></tr></thead>
@@ -505,7 +505,7 @@ cd /path/to/hashcat
           <tr><td>MD5 benchmark</td><td><code>-b -m 0</code></td><td class="status-ok">39342.9 MH/s</td></tr>
           <tr><td>NTLM benchmark</td><td><code>-b -m 1000</code></td><td class="status-ok">63283.5 MH/s</td></tr>
           <tr><td>Self-test</td><td>MD5 dictionary actual attack</td><td class="status-ok">Passed</td></tr>
-          <tr><td>crack result</td><td><code>example0.hash + example.dict</code></td><td class="status-ok">restore 13LEXON</td></tr>
+          <tr><td>Recovered hash</td><td><code>example0.hash + example.dict</code></td><td class="status-ok">Recovered <code>13LEXON</code></td></tr>
           <tr><td>Resource release and exit</td><td>after benchmarking</td><td class="status-ok">Exit code 0</td></tr>
         </tbody>
       </table>
@@ -519,7 +519,7 @@ Recovered:
 e11c594e6a2f4eb499cceadfca988595:13LEXON</code></pre>
     <p class="small">The final status code for this dictionary test is 1: the input contains 6494 hashes, 1 of which is restored when the small dictionary is exhausted. Both self-test and target recovery were successful, so this status code reflects task completion conditions rather than a HIP backend exception.</p>
 
-    <h3>gfx906/Z100 device verification</h3>
+    <h3>8.1 gfx906/Z100 device verification</h3>
     <pre><code>HIP.Version.: 6.3.26113
 
 Backend Device ID #01
@@ -532,13 +532,13 @@ Backend Device ID #01
   Memory.Unified.: 0
   Local.Memory...: 64 KB
   PCI.Addr.BDFe..: &lt;redacted&gt;</code></pre>
-    <p>This platform completes device enumeration, HIPRTC kernel compilation, attribute reading, multi-algorithm benchmark and exit code inspection, all of which passed. Environmental fingerprints such as PCI addresses are desensitized.</p>
+    <p>Device enumeration, HIPRTC kernel compilation, attribute queries, multi-algorithm benchmarking, and exit-code checks all passed. Environment-specific identifiers, including PCI addresses, are redacted.</p>
   </section>
 
   <section id="performance">
     <h2>9. Performance verification and comparison</h2>
-    <h3>9.1 gfx936 same card backend test method</h3>
-    <p>In order to avoid short benchmark hiding the difference between thermal stability and continuous scheduling, the 8-bit full character set brute force attack of SHA2-256 is used, and the key space is <code>95^8 = 6,634,204,312,890,625</code>. Using hard-to-hit target hashes to keep the DCU fully loaded, each backend runs for about 45 seconds and passes <code>hy-smi</code> samples power consumption, temperature and utilization every 2 seconds.</p>
+    <h3>9.1 Same-card backend comparison on gfx936</h3>
+    <p>To avoid short runs masking differences in sustained performance, both backends ran the same SHA2-256 brute-force workload over the full printable 8-bit character set, with a key space of <code>95^8 = 6,634,204,312,890,625</code>. Unlikely target hashes kept the DCU fully loaded. Each run lasted about 45 seconds, while <code>hy-smi</code> sampled power, temperature, and utilization every two seconds.</p>
     <pre><code># HIP
 ./hashcat-hip-dtk -m 1400 -a 3 \
   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
@@ -546,7 +546,7 @@ Backend Device ID #01
   --status --status-timer 5 --potfile-disable --restore-disable \
   --backend-ignore-cuda --backend-ignore-opencl
 
-# OpenCL：攻击参数相同，只切换后端和二进制
+# OpenCL: same attack parameters; only the backend and binary change
 ./hashcat-opencl-original -m 1400 -a 3 \
   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
   '?a?a?a?a?a?a?a?a' -O -w 3 --runtime 45 \
@@ -556,27 +556,27 @@ Backend Device ID #01
     <h3>9.2 gfx936 core results</h3>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>indicator</th><th>HIP</th><th>OpenCL</th><th>Interpretation</th></tr></thead>
+        <thead><tr><th>Metric</th><th>HIP</th><th>OpenCL</th><th>Interpretation</th></tr></thead>
         <tbody>
-          <tr><td>Average speed (10 state samples)</td><td class="num">5913.79 MH/s</td><td class="num">5913.48 MH/s</td><td>HIP approximately +0.005%, no actual difference</td></tr>
+          <tr><td>Mean throughput (10 samples)</td><td class="num">5913.79 MH/s</td><td class="num">5913.48 MH/s</td><td>HIP is about 0.005% faster; the difference is negligible</td></tr>
           <tr><td>Final stable speed</td><td class="num">5914.3 MH/s</td><td class="num">5913.8 MH/s</td><td>The difference is less than 0.01%</td></tr>
-          <tr><td>Speed range</td><td class="num">5911.5–5914.3</td><td class="num">5910.4–5914.0</td><td>The fluctuations are very small</td></tr>
-          <tr><td>Average power consumption at full load</td><td class="num">368.8 W</td><td class="num">369.7 W</td><td>difference 0.9 W, within sampling fluctuation</td></tr>
-          <tr><td>Full load power consumption range</td><td class="num">365–369 W</td><td class="num">367–370 W</td><td>is basically the same as</td></tr>
-          <tr><td>average temperature</td><td class="num">61.0°C</td><td class="num">61.1°C</td><td>is basically the same as</td></tr>
+          <tr><td>Speed range</td><td class="num">5911.5–5914.3</td><td class="num">5910.4–5914.0</td><td>Variation was minimal</td></tr>
+          <tr><td>Average power consumption at full load</td><td class="num">368.8 W</td><td class="num">369.7 W</td><td>A 0.9 W difference, within sampling variation</td></tr>
+          <tr><td>Full-load power range</td><td class="num">365–369 W</td><td class="num">367–370 W</td><td>Comparable within sampling variation</td></tr>
+          <tr><td>Average temperature</td><td class="num">61.0°C</td><td class="num">61.1°C</td><td>Comparable within sampling variation</td></tr>
           <tr><td>Maximum temperature</td><td class="num">61°C</td><td class="num">62°C</td><td>No significant difference</td></tr>
-          <tr><td>Average utilization</td><td class="num">100%</td><td class="num">100%</td><td>has reached full load</td></tr>
-          <tr><td>Host memory</td><td class="num">8173 MB</td><td class="num">6132 MB</td><td>HIP multi-use approx. 2041 MB</td></tr>
-          <tr><td>Running end status</td><td>Runtime expires</td><td>Runtime expires</td><td>all stopped as expected</td></tr>
+          <tr><td>Average utilization</td><td class="num">100%</td><td class="num">100%</td><td>Both runs sustained full utilization</td></tr>
+          <tr><td>Host memory</td><td class="num">8173 MB</td><td class="num">6132 MB</td><td>HIP used about 2,041 MB more host memory</td></tr>
+          <tr><td>End condition</td><td>Runtime limit reached</td><td>Runtime limit reached</td><td>Both runs stopped as expected</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3>Throughput comparison</h3>
+    <h3>9.2.1 Throughput comparison</h3>
     <div class="card">
       <div class="bar-row"><strong>HIP</strong><div class="bar-track"><div class="bar hip"></div></div><span class="bar-label">5913.79 MH/s</span></div>
       <div class="bar-row"><strong>OpenCL</strong><div class="bar-track"><div class="bar opencl"></div></div><span class="bar-label">5913.48 MH/s</span></div>
-      <p class="small">bars normalized to 5914.1 MH/s. The two are indistinguishable to the naked eye, consistent with the conclusion that the numerical difference is less than 0.01%.</p>
+      <p class="small">Bars are normalized to 5,914.1 MH/s. The two are indistinguishable to the naked eye, consistent with the conclusion that the numerical difference is less than 0.01%.</p>
     </div>
 
     <h3>9.3 Automatic tuning and resource differences</h3>
@@ -595,11 +595,11 @@ Backend Device ID #01
     </div>
     <p>The two backends selected different workgroups and acceleration combinations, but the final throughput was consistent, indicating that both paths can fully utilize the DCU. HIP's significantly higher host memory footprint was the clearest resource difference in this test.</p>
 
-    <h3>Comparability analysis of cumulative progress indicators</h3>
-    <p>is <code>266,757,734,400</code>, OpenCL is <code>270,092,206,080</code>. OpenCL appears to be ~1.25% higher, but its final state falls at ~46 seconds, compared to ~45 seconds for HIP; initialization, state refresh, and runtime stop bounds are not exactly the same either. Therefore, the report uses 10 continuous speed samples of hashcat as the main comparison basis, and does not draw performance conclusions based on cumulative progress.</p>
+    <h3>9.4 Comparing cumulative work counters</h3>
+    <p>HIP completed <code>266,757,734,400</code> operations and OpenCL completed <code>270,092,206,080</code>. Although the OpenCL total is about 1.25% higher, its final status sample occurred at roughly 46 seconds, versus 45 seconds for HIP; initialization, status refresh, and stop times were not identical. The comparison therefore uses Hashcat's ten continuous throughput samples and draws no performance conclusion from cumulative work totals.</p>
 
     <h3>9.5 gfx906/Z100 multi-algorithm HIP benchmark</h3>
-    <p>migration platform, so this set of data is used to verify algorithm coverage and platform stability, and does not make inferential comparisons with the platform's OpenCL backend.</p>
+    <p>This migration platform provides HIP but not OpenCL. These results verify algorithm coverage and platform stability; they do not support a comparison with OpenCL on this device.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Algorithm</th><th>Mode</th><th>gfx906/Z100 HIP</th><th>Scheduling parameters</th></tr></thead>
       <tbody>
@@ -615,9 +615,9 @@ Backend Device ID #01
         <tr><td>DPAPI masterkey</td><td class="num">15300</td><td class="num">81172 H/s</td><td>22 / 250 / 512 / 1</td></tr>
       </tbody>
     </table></div>
-    <p class="small">scheduling parameters are Accel / Loops / Threads / Vector width.</p>
+    <p class="small">Scheduling parameters are listed as Accel / Loops / Threads / Vector width.</p>
 
-    <h3>9.6 Continuous load and cross-device observation</h3>
+    <h3>9.6 Sustained load and cross-device comparison</h3>
     <div class="table-wrap"><table>
       <thead><tr><th>algorithm</th><th>10 seconds</th><th>60 seconds</th><th>Difference</th></tr></thead>
       <tbody>
@@ -626,7 +626,7 @@ Backend Device ID #01
       </tbody>
     </table></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Algorithm</th><th>gfx906/Z100</th><th>gfx936/BW</th><th>former/later</th></tr></thead>
+      <thead><tr><th>Algorithm</th><th>gfx906/Z100</th><th>gfx936/BW</th><th>Z100 / BW throughput</th></tr></thead>
       <tbody>
         <tr><td>MD5</td><td class="num">26.82 GH/s</td><td class="num">39.34 GH/s</td><td class="num">68%</td></tr>
         <tr><td>NTLM</td><td class="num">43.05 GH/s</td><td class="num">63.28 GH/s</td><td class="num">68%</td></tr>
@@ -639,45 +639,45 @@ Backend Device ID #01
   <section id="conclusion">
     <h2>10. Conclusions, recommendations and known limitations</h2>
     <div class="three-col">
-      <div class="card"><h3>Availability</h3><p>HIP device enumeration, HIPRTC, kernel loading, actual cracking and normal exit have all passed, and the minimum adaptation goal has been completed.</p></div>
-      <div class="card"><h3>Performance</h3><p>In this SHA2-256 test, HIP and OpenCL are both about 5.914 GH/s, and the difference is less than 0.01%; the current data does not reflect significant performance differences.</p></div>
-      <div class="card"><h3>Cross-version</h3><p>DTK 25.04.2 and 26.04 are exactly the same, and the same adaptation has been reused on gfx936 and gfx906; you still need to re-detect after upgrading.</p></div>
+      <div class="card"><h3>10.1 Availability</h3><p>HIP device enumeration, HIPRTC compilation, kernel loading, a real cracking run, and normal process exit all passed. The minimum adaptation objective is met.</p></div>
+      <div class="card"><h3>10.2 Performance</h3><p>In the SHA2-256 test, both HIP and OpenCL achieved about 5.914 GH/s, with a throughput difference below 0.01%. These measurements show no meaningful performance difference.</p></div>
+      <div class="card"><h3>10.3 DTK version coverage</h3><p>The tested ABI values match between DTK 25.04.2 and 26.04, and the adaptation runs on both gfx936 and gfx906. Recheck the ABI after each DTK upgrade.</p></div>
     </div>
 
-    <h3>Known limitations</h3>
+    <h3>10.4 Known limitations</h3>
     <ul>
-      <li>Adaptation verified <strong>DTK 25.04.2 / HIP 6.3.25422</strong> and <strong>DTK 26.04 / HIP 6.3.26113</strong>; Future versions must still recheck the enumeration value, structure size and field offset.</li>
+      <li>The adaptation was verified with <strong>DTK 25.04.2 / HIP 6.3.25422</strong> and <strong>DTK 26.04 / HIP 6.3.26113</strong>. Recheck enum values, structure size, and field offsets with future versions.</li>
       <li>gfx936 covers actual attacks and HIP/OpenCL comparison; gfx906 covers 10 algorithms, but lacks OpenCL comparison with the same card.</li>
       <li><code>regsPerMultiprocessor</code> uses conservative compatibility values; the current algorithm works fine but may affect the tuning upper limit of some cores.</li>
-      <li>DTK build intentionally not advanced <code>dlclose</code> HIP/HIPRTC DSO. This does not cause leaks outside of the process lifetime, but differs from standard hashcat's offload behavior.</li>
-      <li>45–60 second test is suitable for relatively stable throughput and is not equivalent to long-term reliability testing of hours or days.</li>
+      <li>The DTK build intentionally keeps the HIP/HIPRTC shared libraries loaded instead of calling <code>dlclose</code>. The operating system reclaims them when the process exits; this differs from standard Hashcat library-unloading behavior.</li>
+      <li>Runs of 45–60 seconds provide a stable throughput comparison but do not replace reliability testing over hours or days.</li>
       <li>The old GCC migration environment does not build the bridges module, and batch jobs are also affected by the site scheduling policy; neither should be extrapolated to hashcat core limitations.</li>
     </ul>
 
-    <h3>Follow-up suggestions</h3>
+    <h3>10.5 Further work</h3>
     <ol>
-      <li>Extended testing based on common workloads:<code>-m 1000</code>、<code>-m 10900</code>、<code>-m 22000</code>、<code>-m 3200</code>。</li>
-      <li>performs 1–4 hours of stability testing on HIP and OpenCL, monitoring temperature, power consumption, driver logs, and error counts.</li>
-      <li>adds automated detection or compile-time assertions to DTK ABI to prevent silent use of incorrect layout after DTK upgrade.</li>
-      <li>If the goal is to gain performance improvements, further analysis of HIPRTC compilation parameters, register occupancy, wavefront behavior and dedicated tuning should be done instead of just switching backends.</li>
+      <li>Extend testing to common workloads: <code>-m 1000</code>, <code>-m 10900</code>, <code>-m 22000</code>, and <code>-m 3200</code>.</li>
+      <li>Run HIP and OpenCL stability tests for one to four hours while monitoring temperature, power, driver logs, and error counts.</li>
+      <li>Add runtime probes or compile-time assertions for the DTK ABI to catch layout changes after upgrades.</li>
+      <li>To pursue further speedups, investigate HIPRTC compilation parameters, register occupancy, wavefront behavior, and workload-specific tuning.</li>
     </ol>
   </section>
 
   <section id="appendix">
     <h2>11. Appendix: Reproduction and Audit Commands</h2>
-    <h3>View code changes</h3>
+    <h3>11.1 View code changes</h3>
     <pre><code>cd /path/to/hashcat
 git status
 git log --oneline --decorate -5
 git show --stat &lt;adaptation-commit&gt;
 git show &lt;adaptation-commit&gt;</code></pre>
 
-    <h3>Rebuild</h3>
+    <h3>11.2 Rebuild</h3>
     <pre><code>make clean
 make DTK_HIP=1 ENABLE_LTO=0
 mv hashcat hashcat-hip-dtk</code></pre>
 
-    <h3>Basic verification</h3>
+    <h3>11.3 Basic verification</h3>
     <pre><code>ssh &lt;compute-node&gt;
 cd /path/to/hashcat
 
@@ -685,7 +685,7 @@ cd /path/to/hashcat
 ./hashcat-hip-dtk -b -m 0 --backend-ignore-cuda --backend-ignore-opencl --runtime 10
 ./hashcat-hip-dtk -b -m 1000 --backend-ignore-cuda --backend-ignore-opencl --runtime 10</code></pre>
 
-    <h3>Key file index</h3>
+    <h3>11.4 Key file index</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>file</th><th>Function</th></tr></thead>
@@ -704,7 +704,7 @@ cd /path/to/hashcat
   <footer>
     <p>Author:<strong>opensource_community</strong></p>
     <p>Note: The test results are only applicable to the software version, hardware environment, parameter configuration and workload listed in the article, and do not constitute a performance commitment for other environments.</p>
-    <p>Data sources: local version control records, hashcat output from two sets of desensitized computing environments, rocminfo, hy-smi, ABI probes and GDB tracebacks. First version: 2026-08-01; Fusion update: 2026-08-17.</p>
+    <p>Sources: local version-control records; Hashcat output from two redacted compute environments; rocminfo and hy-smi output; ABI probes; and GDB traces. First edition: 2026-08-01; consolidated update: 2026-08-17.</p>
   </footer>
 </main>
 </body>

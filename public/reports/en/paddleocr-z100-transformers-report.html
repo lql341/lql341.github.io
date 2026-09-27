@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PaddleOCR on Hygon Z100: Compatibility, Performance, and Production Reproduction</title>
+  <title>PaddleOCR on Hygon Z100: Compatibility, Performance, and Production Deployment</title>
 <meta name="keywords" content="PaddleOCR, Hygon DCU, Z100, Transformers, OCR, compatibility, performance">
   <style>
     :root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#61708a;--line:#dce4ef;--blue:#2563eb;--green:#087f5b;--amber:#a16207;--red:#b42318;--code:#172033}
@@ -24,7 +24,7 @@
 <div class="wrap">
   <header class="hero report-banner">
     <h1>PaddleOCR on Hygon Z100</h1>
-    <p>Compatibility, performance, same-document comparison and production-level reproduction solution</p>
+    <p>Compatibility and performance results, a same-document comparison, and a reproducible deployment procedure</p>
     <p>Redacted public edition · 2026-09-27 · Kunshan Z100 / gfx906 · Transformers/PyTorch backend</p>
     <div class="badges">
       <span class="badge">PaddleOCR 3.7.0</span><span class="badge">PaddleX 3.7.2</span>
@@ -34,9 +34,9 @@
   </header>
 
   <nav>
-    <a href="#s1">1 Conclusion</a><a href="#s2">2 Environment</a><a href="#s3">3 Routes</a><a href="#s4">4 Compatibility</a>
-    <a href="#s5">5 Performance</a><a href="#s6">6 Comparison with the same document</a><a href="#s7">7 Quality Boundary</a>
-    <a href="#s8">8 Production deployment</a><a href="#s9">9 Recurrences</a><a href="#s10">10 Acceptance</a><a href="#s11">11 Limitations</a>
+    <a href="#s1">1 Conclusion</a><a href="#s2">2 Environment</a><a href="#s3">3 Backend selection</a><a href="#s4">4 Compatibility</a>
+    <a href="#s5">5 Performance</a><a href="#s6">6 Same-document comparison</a><a href="#s7">7 Accuracy limits</a>
+    <a href="#s8">8 Deployment</a><a href="#s9">9 Reproduction</a><a href="#s10">10 Acceptance</a><a href="#s11">11 Limitations</a>
   </nav>
 
   <section id="s1"><h2>1. Final conclusion</h2>
@@ -45,28 +45,28 @@
       <div class="metric"><b class="ok">Passed</b><span>Device enumeration: 1 × Device 66a1 / gfx906</span></div>
       <div class="metric"><b class="ok">0.2546 s</b><span>Single image stable end-to-end OCR (v2.1 test image)</span></div>
       <div class="metric"><b class="ok">0.49 pages/s</b><span>23 pages Mooncake PDF, steady state OCR</span></div>
-      <div class="metric"><b class="ok">0</b><span>End-to-end exit code</span></div>
+      <div class="metric"><b class="ok">0</b><span>End-to-end failures</span></div>
     </div>
-    <div class="note">Applicable positioning: PaddleOCR is a high-throughput text detection/recognition engine; MinerU is a document parsing pipeline. The two should not directly determine the substitution relationship based only on the "number of recognized characters".</div>
+    <div class="note">PaddleOCR is a high-throughput text detection and recognition engine; MinerU is a document-parsing pipeline. Character counts alone are not a meaningful basis for deciding whether one can replace the other.</div>
   </section>
 
-  <section id="s2"><h2>Test environment and software configuration</h2>
-    <table><tr><th>Level</th><th>Verification value</th><th>Remarks</th></tr>
-      <tr><td>Hardware</td><td>Hygon Z100 / gfx906 / Device 66a1</td><td>Job Application 1 DCU</td></tr>
-      <tr><td>System</td><td>CentOS 7.6 / System glibc 2.17</td><td>Bypasses wheel ABI restriction through user mode glibc 2.28</td></tr>
-      <tr><td>tool chain</td><td>GCC 12.2 + DTK 26.04</td><td>DTK provides HIP/math library, GCC provides new version of libstdc++</td></tr>
-      <tr><td>Python</td><td>3.10.14</td><td>Read-only reuse existing Python basic interpreter</td></tr>
-      <tr><td>Torch</td><td>2.7.1+das.opt1.dtk2604 / HIP 6.3.26093</td><td>Hygon adapted version, cannot be replaced by PyPI universal Torch</td></tr>
-      <tr><td>Transformers</td><td>5.17.0 / Hub 1.5.0 / Tokenizers 0.23.1</td><td>Standalone PaddleOCR directory version</td></tr>
-      <tr><td>Application</td><td>PaddleOCR 3.7.0 / PaddleX 3.7.2</td><td>independent package tree, unchanged MinerU venv</td></tr>
+  <section id="s2"><h2>2. Test environment and software configuration</h2>
+    <table><tr><th>Layer</th><th>Configuration</th><th>Notes</th></tr>
+      <tr><td>Hardware</td><td>Hygon Z100 / gfx906 / Device 66a1</td><td>One DCU requested for the job</td></tr>
+      <tr><td>Operating system</td><td>CentOS 7.6 / system glibc 2.17</td><td>User-space glibc 2.28 handles the wheel's ABI requirements</td></tr>
+      <tr><td>Toolchain</td><td>GCC 12.2 + DTK 26.04</td><td>DTK supplies HIP and math libraries; GCC supplies a newer libstdc++</td></tr>
+      <tr><td>Python</td><td>3.10.14</td><td>Reuses the existing base interpreter without modifying it</td></tr>
+      <tr><td>PyTorch</td><td>2.7.1+das.opt1.dtk2604 / HIP 6.3.26093</td><td>Hygon-adapted build; a generic PyPI PyTorch wheel is not a substitute</td></tr>
+      <tr><td>Transformers</td><td>5.17.0 / Hub 1.5.0 / Tokenizers 0.23.1</td><td>Versions installed in the separate PaddleOCR environment</td></tr>
+      <tr><td>Application</td><td>PaddleOCR 3.7.0 / PaddleX 3.7.2</td><td>Separate package tree; MinerU's virtual environment is unchanged</td></tr>
     </table>
   </section>
 
-  <section id="s3"><h2>Inference backend selection</h2>
+  <section id="s3"><h2>3. Inference backend selection</h2>
     <div class="cols">
-      <p>Kunshan module mainly stays at Python 3.7/Torch 1.10; PaddleOCR 3.7/PaddleX 3.7 uses Python 3.8 syntax and modern Transformers API. Direct force installation to Python 3.7 will trigger positional parameter syntax, walrus expressions and typing/importlib API errors.</p>
-      <p>MinerU reports have verified more suitable user-mode closures: Python 3.10, Torch 2.7.1, DTK 26.04, user-mode glibc 2.28. In this article, without modifying MinerU, we only read-reuse its Torch/runtime library and install PaddleOCR/PaddleX in a separate directory.</p>
-      <p>computing node has no external network, so the model is downloaded from BOS to the new cache at the login node; the computing node only sets <code>HF_HUB_OFFLINE=1</code>、<code>TRANSFORMERS_OFFLINE=1</code>to avoid runtime DNS timeouts.</p>
+      <p>The available Kunshan modules are limited mainly to Python 3.7 and PyTorch 1.10. PaddleOCR 3.7 and PaddleX 3.7 require Python 3.8 syntax and a modern Transformers API, so installing them directly into Python 3.7 fails on syntax and typing/importlib APIs.</p>
+      <p>The MinerU work established a more suitable user-space runtime: Python 3.10, PyTorch 2.7.1, DTK 26.04, and glibc 2.28. This test reuses its PyTorch and runtime libraries read-only, leaves MinerU unchanged, and installs PaddleOCR/PaddleX in a separate directory.</p>
+      <p>Compute nodes have no external network access. The model is therefore downloaded from BOS to a new cache on the login node. On compute nodes, <code>HF_HUB_OFFLINE=1</code> and <code>TRANSFORMERS_OFFLINE=1</code> prevent runtime DNS timeouts.</p>
     </div>
   </section>
 
@@ -74,75 +74,75 @@
     <table><tr><th>Probe</th><th>Result</th></tr>
       <tr><td><code>torch.cuda.is_available()</code></td><td class="ok">True</td></tr>
       <tr><td>Device name / architecture</td><td class="ok">Device 66a1 / gfx906:sramecc-:xnack-</td></tr>
-      <tr><td>GPU matrix multiplication</td><td class="ok">cuda:0</td></tr>
+      <tr><td>GPU matrix multiplication</td><td class="ok">Completed and synchronized on cuda:0</td></tr>
       <tr><td>PaddleOCR/PaddleX import</td><td class="ok">3.7.0 / 3.7.2</td></tr>
-      <tr><td>PP-OCRv5 mobile det</td><td class="ok">Model loading and detection frame output successful</td></tr>
-      <tr><td>PP-OCRv5 mobile rec</td><td class="ok">model loading, 16 lines of text recognition successful</td></tr>
+      <tr><td>PP-OCRv5 mobile det</td><td class="ok">Model loaded; detection boxes returned</td></tr>
+      <tr><td>PP-OCRv5 mobile rec</td><td class="ok">Model loaded; recognized 16 text lines</td></tr>
       <tr><td>Full OCR</td><td class="ok"><code>PADDLEOCR_TRANSFORMERS_E2E_OK</code>, exit code 0</td></tr>
     </table>
-    <div class="note"><strong>Architecture boundary:</strong>gfx906 does not have a matching HIPBLASLt Tensile kernel; Flash Attention is not available, and Transformers fall back to Torch native math attention. The function is passed, but the performance is not the optimal upper limit of the hardware.</div>
+    <div class="note"><strong>Architecture limitation:</strong>gfx906 has no matching HIPBLASLt Tensile kernel, and FlashAttention is unavailable, so Transformers falls back to PyTorch's native math attention. Functional tests pass, but this is not the hardware's maximum achievable performance.</div>
   </section>
 
-  <section id="s5"><h2>PaddleOCR performance test results</h2>
-    <h3>5.1 Single picture stable state</h3>
-    <table><tr><th>indicator</th><th>Actual measurement value</th></tr>
-      <tr><td>model cold loading</td><td>67.6–80.1 s</td></tr>
-      <tr><td>first warmup</td><td>About 14–21.5 s</td></tr>
-      <tr><td>Average of 5 unique inputs</td><td>0.2546 s/photo</td></tr>
+  <section id="s5"><h2>5. Performance results</h2>
+    <h3>5.1 Single-image steady state</h3>
+    <table><tr><th>Metric</th><th>Measured value</th></tr>
+      <tr><td>Cold model load</td><td>67.6–80.1 s</td></tr>
+      <tr><td>Initial warm-up</td><td>Approximately 14–21.5 s</td></tr>
+      <tr><td>Mean over five unique inputs</td><td>0.2546 s/image</td></tr>
       <tr><td>P50 / P95</td><td>0.2430 / 0.3013 s</td></tr>
-      <tr><td>Steady-state throughput</td><td>About 3.93 pictures/s</td></tr>
-      <tr><td>Number of lines recognized each time</td><td>16</td></tr>
-      <tr><td>Inference stage memory</td><td>0.212 GB allocated / 0.281 GB reserved</td></tr>
+      <tr><td>Steady-state throughput</td><td>Approximately 3.93 images/s</td></tr>
+      <tr><td>Recognized lines per image</td><td>16</td></tr>
+      <tr><td>GPU memory during inference</td><td>0.212 GB allocated / 0.281 GB reserved</td></tr>
     </table>
-    <h3>Mooncake-v3 23 page PDF test</h3>
-    <table><tr><th>Stage</th><th>Actual measurement value</th></tr>
+    <h3>23-page Mooncake-v3 PDF</h3>
+    <table><tr><th>Stage</th><th>Measured value</th></tr>
       <tr><td>PDF rendering (pypdfium2, scale=2.0)</td><td>0.7254 s</td></tr>
-      <tr><td>model loading</td><td>80.0806 s</td></tr>
+      <tr><td>Model load</td><td>80.0806 s</td></tr>
       <tr><td>OCR warmup</td><td>21.5097 s</td></tr>
-      <tr><td>23 pages of steady state OCR</td><td>46.9364 s</td></tr>
-      <tr><td>Steady state average</td><td>2.0404 s/page</td></tr>
+      <tr><td>Steady-state OCR for 23 pages</td><td>46.9364 s</td></tr>
+      <tr><td>Steady-state mean</td><td>2.0404 s/page</td></tr>
       <tr><td>P50 / P95</td><td>1.9419 / 3.0614 s/page</td></tr>
       <tr><td>Steady-state throughput</td><td>0.49 pages/s</td></tr>
-      <tr><td>Cold start including warmup total time taken</td><td>About 149.3 s</td></tr>
+      <tr><td>Cold start, including warm-up</td><td>Approximately 149.3 s</td></tr>
     </table>
   </section>
 
-  <section id="s6"><h2>Same-document comparison with MinerU</h2>
-    <p>input is the same <code>Mooncake-v3.pdf</code>, 23 pages, about 0.58 MB.
-    MinerU numbers come from corresponding build reports; PaddleOCR measurements come from a direct retest of the same PDF for this report.</p>
+  <section id="s6"><h2>6. Same-document comparison with MinerU</h2>
+    <p>Both systems processed the same 23-page, approximately 0.58 MB file, <code>Mooncake-v3.pdf</code>.
+    MinerU figures are taken from its corresponding build report; PaddleOCR was measured again on that PDF for this report.</p>
     <table><tr><th>Dimensions</th><th>MinerU pipeline</th><th>PaddleOCR Transformers</th></tr>
       <tr><td>Cold start</td><td>146.8 s</td><td>About 149.3 s</td></tr>
-      <tr><td>stable state</td><td>90.5 s / 23 pages</td><td>46.94 s / 23 pages</td></tr>
-      <tr><td>Stable single page</td><td>3.93 s/page</td><td>2.04 s/page</td></tr>
-      <tr><td>Number of text characters</td><td>81,072 Markdown characters</td><td>81,550 OCR characters</td></tr>
-      <tr><td>Structure</td><td>title, table, picture, formula, middle.json, layout PDF</td><td>text box, text, confidence</td></tr>
-      <tr><td>formula/table</td><td>17 inline formulas, 3 tables</td><td>does not provide structured recovery</td></tr>
-      <tr><td>Picture</td><td>23 citations / 26 files</td><td>is not responsible for image extraction</td></tr>
+      <tr><td>Steady-state runtime</td><td>90.5 s / 23 pages</td><td>46.94 s / 23 pages</td></tr>
+      <tr><td>Mean per page</td><td>3.93 s/page</td><td>2.04 s/page</td></tr>
+      <tr><td>Text characters</td><td>81,072 Markdown characters</td><td>81,550 OCR characters</td></tr>
+      <tr><td>Output structure</td><td>Headings, tables, images, formulas, middle.json, and layout PDF</td><td>Text boxes, text, and confidence scores</td></tr>
+      <tr><td>Formulas and tables</td><td>17 inline formulas and 3 tables</td><td>No structured reconstruction</td></tr>
+      <tr><td>Images</td><td>23 references / 26 files</td><td>No image extraction</td></tr>
     </table>
-    <div class="note"><strong>Conclusion:</strong>pure OCR steady-state PaddleOCR is about 1.9 times faster; but MinerU is a document parsing pipeline, responsible for layout, tables, formulas and pictures. A similar number of characters does not mean that the accuracy is the same, nor does it mean that PaddleOCR can replace MinerU.</div>
+    <div class="note"><strong>Conclusion:</strong>PaddleOCR's steady-state OCR was about 1.9× faster. MinerU, however, is a document-parsing pipeline that also handles layout, tables, formulas, and images. Similar character counts do not establish equivalent accuracy, and they do not make PaddleOCR a substitute for MinerU.</div>
   </section>
 
-  <section id="s7"><h2>7. Quality and accuracy boundary</h2>
-    <p>There is no manually labeled character-by-character ground truth this time, so the difference in the number of characters is not used as accuracy. The average PaddleOCR confidence level is 0.9636, but the same output spot check can still see:</p>
+  <section id="s7"><h2>7. Quality and accuracy limits</h2>
+    <p>No character-level ground truth was prepared for this test, so character-count differences are not treated as accuracy measurements. PaddleOCR's mean confidence was 0.9636, yet spot checks of the same output still found errors such as:</p>
     <pre><code>Mooncacke
 diversifi ed
 work- loads
 2O24</code></pre>
-    <p>MinerU report. For papers, contracts, forms and PDF to Markdown scenarios, MinerU's structural quality is more important; for batch plain text recognition, local re-recognition and low-latency OCR, PaddleOCR is more suitable.</p>
+    <p>The MinerU report separately verifies heading hierarchy, author information, table values, formulas, and extracted images. For papers, contracts, forms, and PDF-to-Markdown workflows, structured output matters more; PaddleOCR is a better fit for batch plain-text recognition, targeted re-recognition, and low-latency OCR.</p>
   </section>
 
-  <section id="s8"><h2>Deployment Plan</h2>
-    <h3>8.1 unified launcher</h3>
-    <p>system glibc 2.17 cannot directly host the new Torch wheel. The production process must pass the user mode glibc 2.28 loader, and the closure includes GCC 12.2, DTK 26.04,<code>dcc/gcvm</code> and <code>rocm_smi</code>。</p>
+  <section id="s8"><h2>8. Deployment plan</h2>
+    <h3>8.1 Launcher</h3>
+    <p>The system glibc 2.17 cannot load the newer Torch wheel directly. Production must run through the user-space glibc 2.28 loader, with GCC 12.2, DTK 26.04, <code>dcc/gcvm</code>, and <code>rocm_smi</code> in its runtime environment.</p>
     <pre><code>&lt;PADDLEOCR_ROOT&gt;/bin/dcu-python your_worker.py</code></pre>
-    <p>Do not call bare <code>python</code>. Don't let Python's spawn child process go back to naked <code>sys.executable</code>; <code>sitecustomize.py</code> has been set <code>multiprocessing.set_executable()</code>。</p>
+    <p>Do not invoke the system <code>python</code> directly. Spawned child processes must not fall back to the unwrapped <code>sys.executable</code>; the environment's <code>sitecustomize.py</code> sets <code>multiprocessing.set_executable()</code>.</p>
     <h3>8.2 Resident worker</h3>
     <ul>
       <li>Each DCU starts a resident PaddleOCR worker.</li>
-      <li>model is only loaded once and will receive requests in a stable state.</li>
-      <li>The queue layer limits the concurrency of the same worker to avoid model thread safety and video memory contention.</li>
-      <li>worker health checks must include device enumeration, model loading, single image inference, and exit codes.</li>
-      <li>All models are fixed to the local cache, the production process sets offline variables, and implicit downloading of the request path is prohibited.</li>
+      <li>Load the model once and serve requests only after warm-up.</li>
+      <li>Limit concurrent requests to each worker to avoid thread-safety issues and GPU-memory contention.</li>
+      <li>Worker health checks should cover device enumeration, model loading, single-image inference, and process exit status.</li>
+      <li>Pin models in the local cache and set offline variables in production so requests never trigger implicit downloads.</li>
     </ul>
     <h3>8.3 Production acceptance</h3>
     <pre><code>torch.cuda.device_count() == 1
@@ -153,12 +153,12 @@ summary.json exists and chars/lines &gt; 0</code></pre>
   </section>
 
   <section id="s9"><h2>9. Reproduction entry points</h2>
-    <p>This report is provided with the catalog:</p>
-    <table><tr><th>file</th><th>Purpose</th></tr>
+    <p>The report package includes the following files:</p>
+    <table><tr><th>File</th><th>Purpose</th></tr>
       <tr><td><code>paddleocr_z100_launcher.sh</code></td><td>User mode glibc 2.28 + GCC/DTK loader template</td></tr>
-      <tr><td><code>paddleocr_z100_benchmark.py</code></td><td>PDF rendering, model loading, warmup, page-by-page OCR, video memory and text statistics</td></tr>
-      <tr><td><code>paddleocr_z100.slurm</code></td><td>Single card Z100 Slurm job template</td></tr>
-      <tr><td><code>README.md</code></td><td>installation, model cache, offline operation and production suggestions</td></tr>
+      <tr><td><code>paddleocr_z100_benchmark.py</code></td><td>PDF rendering, model loading, warm-up, page-level OCR, GPU-memory use, and text statistics</td></tr>
+      <tr><td><code>paddleocr_z100.slurm</code></td><td>Single-card Z100 Slurm job template</td></tr>
+      <tr><td><code>README.md</code></td><td>Installation, model caching, offline operation, and deployment guidance</td></tr>
     </table>
     <pre><code>module purge
 module load compiler/gcc/12.2.0 compiler/dtk/26.04
@@ -171,26 +171,26 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
   &lt;INPUT_PDF&gt; &lt;OUTPUT_DIR&gt;</code></pre>
   </section>
 
-  <section id="s10"><h2>Test results and acceptance</h2>
+  <section id="s10"><h2>10. Test results and acceptance</h2>
     <table><tr><th>Acceptance item</th><th>Result</th></tr>
-      <tr><td>Independent directory</td><td class="ok">passed; unmodified MinerU venv</td></tr>
-      <tr><td>model offline cache</td><td class="ok">PP-OCRv5 mobile det/rec safetensors</td></tr>
+      <tr><td>Independent environment</td><td class="ok">Passed; MinerU venv unchanged</td></tr>
+      <tr><td>Offline model cache</td><td class="ok">PP-OCRv5 mobile detection/recognition safetensors</td></tr>
       <tr><td>Real Z100</td><td class="ok">1 device 66a1 / gfx906</td></tr>
-      <tr><td>End-to-end OCR</td><td class="ok">16 lines of test pattern text; exit code 0</td></tr>
-      <tr><td>Same document 23 pages</td><td class="ok">23 pages completed; 1,513 lines, 81,550 characters</td></tr>
-      <tr><td>Performance Statistics</td><td class="ok">summary.json has generated</td></tr>
+      <tr><td>End-to-end OCR</td><td class="ok">16 test lines recognized; exit code 0</td></tr>
+      <tr><td>23-page document</td><td class="ok">Completed; 1,513 lines and 81,550 characters</td></tr>
+      <tr><td>Performance statistics</td><td class="ok">summary.json generated</td></tr>
     </table>
-    <p class="small">report does not include accounts, hosts, nodes, job numbers, real absolute directories and internal service addresses. During actual reproduction, the deployer fills in the placeholders in the local launcher and Slurm templates.</p>
+    <p class="small">The public report omits account, host, node, and job identifiers, as well as real absolute paths and internal service addresses. Replace the placeholders in the local launcher and Slurm templates when reproducing the test.</p>
   </section>
 
   <section id="s11"><h2>11. Known limitations and follow-up suggestions</h2>
     <div class="cols">
-      <p><strong>Accuracy:</strong>currently has no official OCR ground truth. Character-level, row-level or field-level evaluation of business data sets should be supplemented before production goes online.</p>
-      <p><strong>Performance:</strong>The current attention/BLAS path of gfx906 has an architecture rollback; you need to re-benchmark after upgrading DTK or Torch.</p>
-      <p><strong>Model:</strong>This article fixes PP-OCRv5 mobile det/rec. The default path of PP-OCRv6 requires additional downloading of the model, and the computing node cannot temporarily access the external network.</p>
-      <p><strong>Concurrency:</strong>currently only tests a single card and a single worker. Doka production recommends one process per card, and first conduct 1/2/4 card throughput and stability tests.</p>
-      <p><strong>Document analysis:</strong>If the requirements include tables, formulas, pictures and Markdown structures, it is more reasonable to continue using MinerU; PaddleOCR as an OCR sub-service.</p>
-      <p><strong>Environmental drift:</strong>If any of the loader, model cache, module, Torch, and Transformers is moved or upgraded, §9 must be re-executed to reproduce.</p>
+      <p><strong>Accuracy:</strong>No OCR ground truth is available yet. Before production use, evaluate representative data at the character, line, or field level.</p>
+      <p><strong>Performance:</strong>The attention and BLAS paths on gfx906 fall back to less optimized implementations. Rebenchmark after upgrading DTK or Torch.</p>
+      <p><strong>Model:</strong>This test uses PP-OCRv5 mobile detection and recognition. The default PP-OCRv6 path requires additional model downloads, while compute nodes currently have no external network access.</p>
+      <p><strong>Concurrency:</strong>Only one card and one worker were tested. A production deployment should use one process per card and first validate throughput and stability with 1, 2, and 4 cards.</p>
+      <p><strong>Document parsing:</strong>For workflows that require tables, formulas, images, and Markdown structure, continue using MinerU and use PaddleOCR as an OCR component where appropriate.</p>
+      <p><strong>Environment drift:</strong>If the loader, model cache, modules, Torch, or Transformers are moved or upgraded, repeat the reproduction steps in §9.</p>
     </div>
   </section>
 </div>

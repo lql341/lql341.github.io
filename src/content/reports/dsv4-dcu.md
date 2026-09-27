@@ -1,13 +1,13 @@
 ---
 title: vLLM 0.27.x 移植成功：DeepSeek V4 Flash FP4 海光 DCU
-titleEn: vLLM 0.27.x Ported to Hygon DCU for DeepSeek V4 Flash FP4
+titleEn: Porting vLLM 0.27.x for DeepSeek V4 Flash FP4 on Hygon DCU gfx936
 summary: vLLM 0.27.x 经 gfx936/DTK 定向适配后，使用真实 FP4 权重完成 TP=4/8 端到端推理；完整记录根因、补丁时间线、验证证据、性能与 batch 边界。
 date: 2026-08-26
 tags: [DeepSeek, DCU, vLLM, FP4]
 tagsZh: [DeepSeek, DCU, vLLM, FP4]
 href: /reports/dsv4-dcu-report.html
 hrefEn: /reports/en/dsv4-dcu-report.html
-summaryEn: Documents the vLLM 0.27.x port for DeepSeek V4 Flash FP4 on gfx936, including the root cause, patch history, validation evidence, performance, and batch limits.
+summaryEn: A technical account of the vLLM 0.27.x port for DeepSeek V4 Flash FP4 on gfx936, covering the root cause, patch history, validation evidence, performance, and batch-processing limits.
 metricLabelEn: port validated on gfx936 · TP=4/8
 featured: true
 homeOrder: 4

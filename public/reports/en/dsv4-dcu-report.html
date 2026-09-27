@@ -150,112 +150,112 @@
   <div class="layout">
     <aside>
       <h2>Report Catalog</h2>
-      <ul><li><a href="#deepseek-v4-flash-fp4-在海光-dcu-gfx936-上的-vllm-移植与调试报告">vLLM 0.27.x ported successfully: DeepSeek V4 Flash FP4 full report</a></li>
-<li><a href="#0-后续优化进展">0. 2026-08-24 to 08-26 Subsequent optimization progress</a></li>
+      <ul><li><a href="#deepseek-v4-flash-fp4-在海光-dcu-gfx936-上的-vllm-移植与调试报告">Porting vLLM 0.27.x for DeepSeek V4 Flash FP4 on Hygon DCU gfx936</a></li>
+<li><a href="#0-后续优化进展">0. Supplementary verification (2026-08-24 to 2026-08-26)</a></li>
 <li><a href="#1-执行摘要">1. Executive Summary</a></li>
 <li><a href="#2-目标范围与成功标准">2. Goals, Scope and Success Criteria</a></li>
 <li><a href="#21-核心目标">2.1 Core Objectives</a></li>
-<li><a href="#22-本轮明确不接受的伪完成">2.2 "Fake completion" that is clearly not accepted in this round</a></li>
+<li><a href="#22-本轮明确不接受的伪完成">2.2 Outcomes that do not constitute completion</a></li>
 <li><a href="#23-最终成功标准">2.3 Final Success Criteria</a></li>
-<li><a href="#3-软硬件环境">3. Software and hardware environment</a></li>
+<li><a href="#3-软硬件环境">3. Hardware and software environment</a></li>
 <li><a href="#31-计算资源">3.1 Computing resources</a></li>
 <li><a href="#32-软件栈">3.2 Software Stack</a></li>
-<li><a href="#33-模型与量化配置">3.3 Model and quantitative configuration</a></li>
+<li><a href="#33-模型与量化配置">3.3 Model and quantization configuration</a></li>
 <li><a href="#34-最终关键环境变量">3.4 Final key environment variables</a></li>
-<li><a href="#4-技术路径概览">4. Overview of technology path</a></li>
-<li><a href="#5-测试探针设计">5. Test probe design</a></li>
-<li><a href="#6-完整作业时间线">6. Complete work timeline</a></li>
+<li><a href="#4-技术路径概览">4. Implementation approach</a></li>
+<li><a href="#5-测试探针设计">5. Diagnostic methods and test probes</a></li>
+<li><a href="#6-完整作业时间线">6. Validation timeline</a></li>
 <li><a href="#61-汇总表">6.1 Summary table</a></li>
-<li><a href="#62-J01首次-triton-lowering-阻塞">6.2 J01: First Triton lowering blocking</a></li>
-<li><a href="#63-phasephasesoftmax-api-兼容">6.3 J02, J03, J04, J05: softmax API compatible</a></li>
-<li><a href="#64-J06首次-engine-ready首次真实硬件错误">6.4 J06: First Engine Ready, first real hardware error</a></li>
-<li><a href="#65-phasephase硬崩溃消失但输出退化">6.5 J07, J08: Hard crash disappears, but output degrades</a></li>
-<li><a href="#66-phaseswiglu-fallback-修复">6.6 J09: SwiGLU fallback fix</a></li>
-<li><a href="#67-phasechat-template-修复定位到-decode">6.7 J11: chat template repair, locate decode</a></li>
-<li><a href="#68-J12排除简单切换-bf16auto-kv-cache">6.8 J12: Exclude simple switch BF16/auto KV cache</a></li>
-<li><a href="#69-J13重复性确认">6.9 J13: Repeatability confirmation</a></li>
-<li><a href="#610-J14诊断探针第一次未命中真实-decode">6.10 J14: Diagnostic probe first miss true decode</a></li>
-<li><a href="#611-J15首次捕获根因数值证据">6.11 J15: Numerical evidence of root factors captured for the first time</a></li>
+<li><a href="#62-J01首次-triton-lowering-阻塞">6.2 J01: Triton lowering blocks engine startup</a></li>
+<li><a href="#63-phasephasesoftmax-api-兼容">6.3 J02–J05: Resolve softmax API incompatibility</a></li>
+<li><a href="#64-J06首次-engine-ready首次真实硬件错误">6.4 J06: Engine startup succeeds; first device-side error</a></li>
+<li><a href="#65-phasephase硬崩溃消失但输出退化">6.5 J07–J08: Crashes resolved, but output remains incorrect</a></li>
+<li><a href="#66-phaseswiglu-fallback-修复">6.6 J09: Add a SwiGLU fallback</a></li>
+<li><a href="#67-phasechat-template-修复定位到-decode">6.7 J11: Fix the chat template and isolate the decode issue</a></li>
+<li><a href="#68-J12排除简单切换-bf16auto-kv-cache">6.8 J12: Test BF16 and automatic KV-cache settings</a></li>
+<li><a href="#69-J13重复性确认">6.9 J13: Confirm repeatability</a></li>
+<li><a href="#610-J14诊断探针第一次未命中真实-decode">6.10 J14: Initial diagnostic probe misses the failing decode</a></li>
+<li><a href="#611-J15首次捕获根因数值证据">6.11 J15: Capture numerical evidence for the root cause</a></li>
 <li><a href="#612-J16第一次-stride-修复为什么不够">6.12 J16: Why the first stride fix is not enough</a></li>
 <li><a href="#613-J17物理布局修复成功">6.13 J17: Physical layout repair successful</a></li>
 <li><a href="#7-最终根因逻辑-shape-与物理-cache-layout-不一致">7. The final root cause: The logical shape is inconsistent with the physical cache layout</a></li>
 <li><a href="#71-表面上的逻辑张量">7.1 Logical tensor on the surface</a></li>
 <li><a href="#72-c-writer-的真实地址">7.2 The real address of C++ writer</a></li>
-<li><a href="#73-旧-reader-的两个错误">Two errors in 7.3 old reader</a></li>
-<li><a href="#74-最终-reader">7.4 final reader</a></li>
-<li><a href="#75-为什么最终-scale-合理">7.5 Why the final scale is reasonable</a></li>
-<li><a href="#8-被证伪或仅部分成立的假设">8. Hypotheses that are falsified or only partially true</a></li>
-<li><a href="#81-fp4-moe-本身坏了">8.1 “FP4 MoE itself is broken”</a></li>
-<li><a href="#82-tokenizer-或-chat-template-是唯一根因">8.2 “Tokenizer or chat template is the only root cause”</a></li>
+<li><a href="#73-旧-reader-的两个错误">7.3 Two errors in the original reader</a></li>
+<li><a href="#74-最终-reader">7.4 Final reader</a></li>
+<li><a href="#75-为什么最终-scale-合理">7.5 Basis for the final scale</a></li>
+<li><a href="#8-被证伪或仅部分成立的假设">8. Hypotheses tested and their limits</a></li>
+<li><a href="#81-fp4-moe-本身坏了">8.1 Hypothesis: the FP4 MoE implementation is faulty</a></li>
+<li><a href="#82-tokenizer-或-chat-template-是唯一根因">8.2 Hypothesis: the tokenizer or chat template is the sole cause</a></li>
 <li><a href="#83-kv-cache-改成-autobf16-就能绕开">8.3 “You can bypass it by changing the KV cache to auto/BF16”</a></li>
 <li><a href="#84-只去掉-contiguous-就能修好">8.4 “Just remove the contiguous and it will be fixed”</a></li>
-<li><a href="#85-首-token-正常说明整个模型数值正确">8.5 “If the first token is normal, it means that the entire model value is correct”</a></li>
-<li><a href="#86-slurm-completed-就代表模型正确">8.6 “Slurm COMPLETED means the model is correct”</a></li>
-<li><a href="#9-已实施的关键修改">9. Key modifications implemented</a></li>
-<li><a href="#91-gfx936-兼容-shim">9.1 gfx936 compatible shim</a></li>
-<li><a href="#92-fp8-主干软件反量化">9.2 FP8 backbone software inverse quantization</a></li>
+<li><a href="#85-首-token-正常说明整个模型数值正确">8.5 Hypothesis: a correct first token proves overall numerical correctness</a></li>
+<li><a href="#86-slurm-completed-就代表模型正确">8.6 Hypothesis: a COMPLETED Slurm job proves model correctness</a></li>
+<li><a href="#9-已实施的关键修改">9. Implemented changes</a></li>
+<li><a href="#91-gfx936-兼容-shim">9.1 gfx936 compatibility shim</a></li>
+<li><a href="#92-fp8-主干软件反量化">9.2 Software dequantization for the FP8 backbone</a></li>
 <li><a href="#93-mxfp4-moe-emulation">9.3 MXFP4 MoE emulation</a></li>
-<li><a href="#94-swiglu-参数一致性">9.4 SwiGLU parameter consistency</a></li>
-<li><a href="#95-禁用-gfx936-skinny-gemm">9.5 disable gfx936 skinny GEMM</a></li>
+<li><a href="#94-swiglu-参数一致性">9.4 SwiGLU parameter alignment</a></li>
+<li><a href="#95-禁用-gfx936-skinny-gemm">9.5 Disable gfx936 skinny GEMM</a></li>
 <li><a href="#96-sparse-mla-decode-fallback">9.6 Sparse MLA decode fallback</a></li>
-<li><a href="#10-最终验证详情">10. Final verification details</a></li>
+<li><a href="#10-最终验证详情">10. Verification results</a></li>
 <li><a href="#101-engine-初始化">10.1 Engine initialization</a></li>
-<li><a href="#102-kv-cache-数值">10.2 KV cache value</a></li>
-<li><a href="#103-attention-数值">10.3 Attention value</a></li>
+<li><a href="#102-kv-cache-数值">10.2 KV-cache values</a></li>
+<li><a href="#103-attention-数值">10.3 Attention values</a></li>
 <li><a href="#104-输出质量">10.4 Output quality</a></li>
 <li><a href="#105-资源">10.5 Resources</a></li>
 <li><a href="#11-日志噪声与真实错误判定">11. Log noise and true error determination</a></li>
-<li><a href="#111-usage-report-json-错误">11.1 Usage report JSON error</a></li>
-<li><a href="#112-rocm-shutdown-中的-libcudart-assertion">libcudart assertion</a></li>
-<li><a href="#113-first-blocker-的读取规则">11.3 Reading rules for FIRST BLOCKER</a></li>
+<li><a href="#111-usage-report-json-错误">11.1 Usage-report JSON error</a></li>
+<li><a href="#112-rocm-shutdown-中的-libcudart-assertion">11.2 libcudart assertion during ROCm shutdown</a></li>
+<li><a href="#113-first-blocker-的读取规则">11.3 How to read FIRST BLOCKER</a></li>
 <li><a href="#12-复现实验">12. Reproduction experiment</a></li>
-<li><a href="#121-slurm-资源">12.1 Slurm Resource</a></li>
+<li><a href="#121-slurm-资源">12.1 Slurm resources</a></li>
 <li><a href="#122-环境">12.2 Environment</a></li>
 <li><a href="#123-vllm-参数">12.3 vLLM parameters</a></li>
-<li><a href="#124-结果检查">12.4 Result Check</a></li>
-<li><a href="#13-当前代码与辅助文件">13. Current code and auxiliary files</a></li>
-<li><a href="#14-当前结论的边界">14. Boundaries of the current conclusion</a></li>
+<li><a href="#124-结果检查">12.4 Result checks</a></li>
+<li><a href="#13-当前代码与辅助文件">13. Code version and supporting files</a></li>
+<li><a href="#14-当前结论的边界">14. Findings and scope</a></li>
 <li><a href="#141-已经证明">14.1 Proven</a></li>
 <li><a href="#142-尚未证明">14.2 Not yet proven</a></li>
 <li><a href="#15-后续工作建议">15. Suggestions for follow-up work</a></li>
-<li><a href="#151-第一优先级固化回归测试">15.1 First priority: solidification regression testing</a></li>
-<li><a href="#152-第二优先级将诊断变为测试断言">15.2 Second priority: turning diagnostics into test assertions</a></li>
-<li><a href="#153-第三优先级精度对拍">15.3 The third priority: precision shooting</a></li>
-<li><a href="#154-第四优先级性能">15.4 Priority 4: Performance</a></li>
-<li><a href="#155-第五优先级清理调试代码">15.5 Fifth priority: Clean up debugging code</a></li>
+<li><a href="#151-第一优先级固化回归测试">15.1 Priority 1: Make regression tests permanent</a></li>
+<li><a href="#152-第二优先级将诊断变为测试断言">15.2 Priority 2: Turn diagnostics into test assertions</a></li>
+<li><a href="#153-第三优先级精度对拍">15.3 Priority 3: Compare numerical accuracy</a></li>
+<li><a href="#154-第四优先级性能">15.4 Priority 4: Performance optimization</a></li>
+<li><a href="#155-第五优先级清理调试代码">15.5 Priority 5: Remove temporary debugging code</a></li>
 <li><a href="#16-关键工程经验">16. Key engineering experience</a></li>
-<li><a href="#161-shape-不等于物理-layout">16.1 shape is not equal to physical layout</a></li>
-<li><a href="#162-调试-prefilldecode-必须分别埋点">16.2 Debugging prefill/decode must be buried separately</a></li>
-<li><a href="#163-第一枚-token-正常是重要线索">16.3 The first token is normal and is an important clue</a></li>
+<li><a href="#161-shape-不等于物理-layout">16.1 Tensor shape does not determine physical layout</a></li>
+<li><a href="#162-调试-prefilldecode-必须分别埋点">16.2 Instrument prefill and decode separately</a></li>
+<li><a href="#163-第一枚-token-正常是重要线索">16.3 A correct first token is a useful diagnostic clue</a></li>
 <li><a href="#164-数值诊断要形成层级链">16.4 Numerical diagnosis should form a hierarchical chain</a></li>
 <li><a href="#165-负结果也必须记录">16.5 Negative results must also be recorded</a></li>
-<li><a href="#17-最终结论">17. Final Conclusion</a></li></ul>
+<li><a href="#17-最终结论">17. Conclusion</a></li></ul>
     </aside>
     <main>
       <header class="report-banner">
         <div class="meta">Complete technical report · Baseline record 2026-08-21 · Latest results updated to 2026-08-26 · Redacted public edition</div>
-        <h1 id="deepseek-v4-flash-fp4-在海光-dcu-gfx936-上的-vllm-移植与调试报告">vLLM 0.27.x Port for DeepSeek V4 Flash FP4 on Hygon DCU</h1>
+<h1 id="deepseek-v4-flash-fp4-在海光-dcu-gfx936-上的-vllm-移植与调试报告">Porting and Debugging vLLM 0.27.x for DeepSeek V4 Flash FP4 on Hygon DCU gfx936</h1>
       </header>
-<blockquote><strong>2026-08-26 Core results:</strong>vLLM <code>0.27.x</code> has been successfully ported to Hygon DCU gfx936. After DTK directional adaptation, V1 Engine uses real DeepSeek V4 Flash FP4 weights to complete TP=4/8 end-to-end inference; the entire mixed-precision link of Sparse MLA, MXFP4 MoE and continuous decode has run through. Currently, it has moved from "functional migration" to the stability and performance engineering stage.</blockquote>
-<h2 id="0-后续优化进展">Supplementary verification results (2026-08-24 to 08-26)</h2>
-<h3>0.1 From functional run-through to stable performance baseline</h3>
+<blockquote><strong>2026-08-26 Core results:</strong>vLLM <code>0.27.x</code> has been successfully ported to Hygon DCU gfx936. Following targeted DTK adaptations, the V1 Engine completed end-to-end inference with the actual DeepSeek V4 Flash FP4 weights at TP=4 and TP=8. The mixed-precision path—including Sparse MLA, MXFP4 MoE, and continuous decoding—runs end to end. Work has moved from basic functional porting to stability and performance engineering.</blockquote>
+<h2 id="0-后续优化进展">0. Supplementary verification results (2026-08-24 to 08-26)</h2>
+<h3>0.1 From functional validation to a stable performance baseline</h3>
 <ul>
-<li>vLLM V1 Engine have been verified; 4 cards can fully load the model.</li>
+<li>The vLLM V1 Engine has been verified; four cards can load the full model.</li>
 <li>Sparse MLA has been pushed from PyTorch reference to gfx936 Triton manual OCP E4M3 decode.</li>
-<li>Full 256 byte decoding reaches <code>max_abs=0</code>、<code>bad_count=0</code>; the real cache single-layer cosine is <code>0.99999750</code>, relative to PyTorch reference about <code>3.30×</code>。</li>
-<li>M=1 MoE routing Q1 reaches <code>max_abs=0</code>、<code>cosine=1</code>、<code>bit_equal=True</code>, has entered stable configuration.</li>
+<li>Full 256-byte decoding reaches <code>max_abs=0</code> and <code>bad_count=0</code>. The measured single-layer cosine similarity against the real cache is <code>0.99999750</code>, about <code>3.30×</code> the PyTorch reference value.</li>
+<li>For M=1, MoE routing Q1 reaches <code>max_abs=0</code>, <code>cosine=1</code>, and <code>bit_equal=True</code>; it is part of the stable configuration.</li>
 </ul>
 <h3>0.2 Performance and profile</h3>
 <div class="table-wrap"><table><thead><tr><th>Configuration</th><th>results</th><th>Conclusion</th></tr></thead><tbody>
 <tr><td>TP=4, single request, fixed 32 tokens</td><td>About <code>0.99 tok/s</code></td><td>Current recommended baseline</td></tr>
 <tr><td>TP=8, single request, fixed 32 tokens</td><td>About <code>0.68–0.81 tok/s</code></td><td>Communication overhead offsets additional computing resources</td></tr>
-<tr><td>TP=4, batch=8 historical survey</td><td>About <code>2.5 aggregate tok/s</code></td><td>failed to pass the correctness and is not listed as official performance</td></tr>
+<tr><td>TP=4, batch=8 historical measurement</td><td>About <code>2.5 aggregate tok/s</code></td><td>Failed correctness checks; excluded from official performance results</td></tr>
 </tbody></table></div>
-<p>clean profile shows that about 30% of steady-state GPU time is located in shared MoE forward, TP communication accounts for about 14%, and a large amount of <code>to / copy / sum / add / zeros / repeat_interleave</code> Small operation. After routing Q1 is turned off, the fixed generation time increases from approximately 67.9s to 101.3s, so Q1 must be retained. shared-expert auxiliary stream end-to-end regression, abandoned.</p>
-<h3>0.3 batch correctness boundary</h3>
-<p>batch=1–7 does not have BOS type structural failure; batch=8 can cause non-deterministic BOS, template degradation or NaN after long decode. The problem still exists under PyTorch Sparse reader, MXFP4 M=1...9 beat passed, and NaN has appeared before the sampler. Therefore, the current main direction is asynchronous stream, workspace reuse or kernel race, rather than simply attributing the problem to Triton reader or M=8 GEMM.</p>
-<p>Newly added Q1 cast-elision and grouped batch MoE paths remain closed by default. You must pass the real weight operator value, end-to-end correctness and fixed throughput A/B in order before entering the recommended configuration. The most recent throughput scan failed to be executed due to an exception in the scheduling account, and no new performance conclusions were produced.</p>
-<h3>0.4 current stable switch</h3>
+<p>The clean profile attributes about 30% of steady-state GPU time to the shared MoE forward pass and about 14% to tensor-parallel communication. Many smaller operations (<code>to</code>, <code>copy</code>, <code>sum</code>, <code>add</code>, <code>zeros</code>, and <code>repeat_interleave</code>) also contribute. Disabling routing Q1 increased fixed-generation time from about 67.9 s to 101.3 s, so Q1 must remain enabled. The shared-expert auxiliary-stream change regressed end-to-end performance and was abandoned.</p>
+<h3>0.3 Batch correctness limits</h3>
+<p>Batch sizes 1–7 do not show the structural BOS failure. At batch size 8, long decoding can produce a nondeterministic BOS token, degraded output, or NaNs. The issue also occurs with the PyTorch Sparse reader; MXFP4 tests for M=1–9 pass bitwise, and NaNs have been observed before the sampler. The leading areas to investigate are asynchronous streams, workspace reuse, and kernel races—not simply the Triton reader or M=8 GEMM.</p>
+<p>The new Q1 cast-elision and grouped-batch MoE paths remain disabled by default. Before either is recommended, it must pass checks against real operator outputs, end-to-end correctness, and a fixed-workload throughput A/B comparison. The latest throughput scan could not run because of a scheduling-account error, so it produced no new performance evidence.</p>
+<h3>0.4 Stable configuration</h3>
 <pre><code class="language-bash">DSV4_USE_TRITON_SPARSE=1
 DSV4_MOE_ROUTING_Q1=1
 DSV4_FP8_WEIGHT_CACHE=0
@@ -266,35 +266,35 @@ DSV4_MOE_Q1_PREPARE=0
 VLLM_ROCM_USE_SKINNY_GEMM=0
 DSV4_MOE_BACKEND=emulation</code></pre>
 <hr>
-<blockquote>Baseline report date: 2026-08-21; Latest update: 2026-08-26  <br> Final status: End-to-end reasoning has been passed, and continuous decoding outputs coherent text  <br> Baseline verification phase:<code>J17</code>，<code>COMPLETED / ExitCode 0:0</code>  <br> Target platform: a domestic computing platform, 8 × Hygon DCU gfx936, DTK 26.04  <br> Inference framework: vLLM <code>0.27.2.dev0+g6e448d0ea.d20260819</code>  <br> Model: DeepSeek-V4-Flash-0731  </blockquote>
+<blockquote>Baseline report date: 2026-08-21; latest update: 2026-08-26<br>Final status: End-to-end inference passed, with coherent output during continuous decoding<br>Baseline verification job: <code>J17</code> — <code>COMPLETED / ExitCode 0:0</code><br>Target platform: eight Hygon DCU gfx936 cards; DTK 26.04<br>Inference framework: vLLM <code>0.27.2.dev0+g6e448d0ea.d20260819</code><br>Model: DeepSeek-V4-Flash-0731</blockquote>
 <hr>
 <h2 id="1-执行摘要">1. Executive Summary</h2>
-<p>The core goal of this round of work is not to "let the model complete weight loading", but to allow the FP4 model of DeepSeek V4 Flash to complete real end-to-end inference via vLLM on Hygon DCU gfx936:</p>
+<p>The goal was not merely to load the model weights, but to run DeepSeek V4 Flash FP4 end to end through vLLM on Hygon DCU gfx936:</p>
 <ol>
-<li>8-card Tensor Parallel initialization successful;</li>
-<li>fully loads the model weights of about 155 GiB and 48 shards;</li>
-<li>FP4 MoE expert weight uses MXFP4 emulation path;</li>
-<li>FP8 backbone weights using software inverse quantization on gfx936;</li>
-<li>DeepSeek V4 Sparse MLA Use <code>fp8_ds_mla</code> KV cache；</li>
-<li>can continuously execute decode after prefill;</li>
-<li>is semantically coherent with the text;</li>
-<li>Slurm workload ended gracefully with real exit code 0.</li>
+<li>Initialize tensor parallelism across eight cards;</li>
+<li>Load approximately 155 GiB of model weights across 48 shards;</li>
+<li>Run FP4 MoE expert weights through the MXFP4 emulation path;</li>
+<li>Dequantize FP8 backbone weights in software on gfx936;</li>
+<li>Use the <code>fp8_ds_mla</code> KV cache for DeepSeek V4 Sparse MLA;</li>
+<li>Continue decoding after prefill;</li>
+<li>Produce semantically coherent text;</li>
+<li>Complete the Slurm workload with an actual exit code of 0.</li>
 </ol>
-<p>Final successful output:</p>
+<p>Output from the successful run:</p>
 <pre><code class="language-text">TOKEN_IDS: [223, 30594, 9790, 303, 70037, 12203, 10706, 804, 1175,
             10539, 637, 53897, 96240, 2996, 84998, 666, 3118, 637,
             58368, 621, 666, phase, 53091, 4374, 1465, 223, 1959,
             17585, 42108, 303, 56463, 10162]
 
 TOKEN_DECODE:
-[&#x27; &#x27;, &#x27;你好&#x27;, &#x27;呀&#x27;, &#x27;，&#x27;, &#x27;很高兴&#x27;, &#x27;在这里&#x27;, &#x27;遇到&#x27;, &#x27;你&#x27;, &#x27;！&#x27;,
+[&#x27; &#x27;, &#x27;你好&#x27;, &#x27;呀&#x27;, &#x27; ,&#x27;, &#x27;很高兴&#x27;, &#x27;在这里&#x27;, &#x27;遇到&#x27;, &#x27;你&#x27;, &#x27;！&#x27;,
  &#x27;让我&#x27;, &#x27;来&#x27;, &#x27;做个&#x27;, &#x27;自我介绍&#x27;, &#x27;吧&#x27;, &#x27;～\n\n&#x27;, &#x27;**&#x27;, &#x27;初&#x27;, &#x27;来&#x27;,
  &#x27;乍&#x27;, &#x27;到&#x27;, &#x27;**&#x27;, &#x27;：&#x27;, &#x27;Deep&#x27;, &#x27;Se&#x27;, &#x27;ek&#x27;, &#x27; &#x27;, &#x27;这个&#x27;, &#x27;版本&#x27;,
- &#x27;的我&#x27;, &#x27;，&#x27;, &#x27;确实是&#x27;, &#x27;有点&#x27;]
+ &#x27;的我&#x27;, &#x27; ,&#x27;, &#x27;确实是&#x27;, &#x27;有点&#x27;]
 
 OUTPUT_REPR:
-&#x27; 你好呀，很高兴在这里遇到你！让我来做个自我介绍吧～\n\n
- **初来乍到**：DeepSeek 这个版本的我，确实是有点&#x27;
+&#x27; 你好呀 ,很高兴在这里遇到你！让我来做个自我介绍吧～\n\n
+ **初来乍到**：DeepSeek 这个版本的我 ,确实是有点&#x27;
 
 DSV4_VERDICT: COHERENT</code></pre>
 <p>Final job status:</p>
@@ -302,21 +302,21 @@ DSV4_VERDICT: COHERENT</code></pre>
 J17|COMPLETED|0:0|00:05:15|
 J17.batch|COMPLETED|0:0|00:05:15|65899600K
 J17.extern|COMPLETED|0:0|00:05:15|0</code></pre>
-<p>is not the FP4 MoE numerical formula, chat template, skinny GEMM or tokenizer, but the PyTorch decode fallback of gfx936 Sparse MLA misunderstanding <code>fp8_ds_mla</code> KV cache.</p>
+<p>The root cause was not the FP4 MoE numerical format, chat template, skinny GEMM, or tokenizer. It was the gfx936 Sparse MLA PyTorch decode fallback misreading the <code>fp8_ds_mla</code> KV cache.</p>
 <p>KV cache is:</p>
 <pre><code class="language-text">[num_blocks, block_size, 584]</code></pre>
 <p>But each block is not 64 independent 584-byte tokens arranged in sequence in physical memory, but:</p>
 <pre><code class="language-text">[64 × 576-byte token data][64 × 8-byte UE8M0 scales]</code></pre>
-<p>The old reader reads according to "each token continuously occupies 584 bytes", so:</p>
+<p>The original reader incorrectly assumed that each token occupied 584 contiguous bytes. As a result, it:</p>
 <ul>
 <li>treats the data of other tokens as scale;</li>
-<li>interprets the error byte as RoPE according to BF16;</li>
-<li>produces NaN and is about <code>1e37</code> ;</li>
+<li>interpreted scale bytes as BF16 RoPE values;</li>
+<li>produced NaNs and values near <code>1e37</code>;</li>
 <li>attention logits and softmax probabilities become NaN;</li>
 <li>The first token is generated by prefill and may appear normal;</li>
-<li>The second token begins to enter the damaged decode state, and finally continues to select token 0, which is BOS.</li>
+<li>The second token enters a corrupted decode state, after which generation repeatedly selects token 0 (BOS).</li>
 </ul>
-<p>After fix, reader and C++ writer use completely symmetric address calculation:</p>
+<p>After the fix, the reader and C++ writer use matching address calculations:</p>
 <pre><code class="language-text">data  = block_base + token_pos * 576
 scale = block_base + block_size * 576 + token_pos * 8</code></pre>
 <p>Verification shows:</p>
@@ -325,9 +325,9 @@ NoPE finite = True
 RoPE finite = True
 attention logits finite = True
 attention probs finite = True</code></pre>
-<p>thus forms a complete evidence closed loop from physical address, quantification scale, K cache value, attention logits, token sequence to final natural language output.</p>
+<p>Together, these checks form a complete evidence chain from physical addresses and quantization scales through KV-cache values, attention logits, and token IDs to the final natural-language output.</p>
 <hr>
-<h2 id="2-目标范围与成功标准">Verification goals, scope and criteria</h2>
+<h2 id="2-目标范围与成功标准">2. Goals, scope, and success criteria</h2>
 <h3 id="21-核心目标">2.1 Core Objectives</h3>
 <p>The core goal has always been:</p>
 <blockquote>runs through DeepSeek V4 Flash FP4 inference through vLLM on Hygon DCU gfx936.</blockquote>
@@ -335,22 +335,22 @@ attention probs finite = True</code></pre>
 <ul>
 <li>MXFP4 expert weight;</li>
 <li>FP8 E4M3 backbone weight;</li>
-<li>UE8M0 scale；</li>
+<li>UE8M0 scale;</li>
 <li>BF16 activation, RoPE and some intermediate states.</li>
 </ul>
 <p>Therefore, the real goal is to run through the mixed precision execution chain rather than verifying an FP4 GEMM alone.</p>
-<h3 id="22-本轮明确不接受的伪完成">2.2 "Fake completion" that is clearly not accepted in this round</h3>
-<p>The following states are not considered run-through:</p>
+<h3 id="22-本轮明确不接受的伪完成">2.2 Outcomes that do not constitute completion</h3>
+<p>The following states do not count as a successful end-to-end run:</p>
 <ul>
 <li>can only import vLLM;</li>
-<li>Only <code>DeepseekV4ForCausalLM</code>；</li>
+<li>Only <code>DeepseekV4ForCausalLM</code>;</li>
 <li>can only read model config;</li>
 <li>can only load all weights;</li>
-<li>Show only <code>ENGINE_READY</code>；</li>
+<li>Show only <code>ENGINE_READY</code>;</li>
 <li>only generates the first token;</li>
 <li>output is empty;</li>
 <li>continuously generates BOS, repeated tokens or garbled characters;</li>
-<li>Python fails but Slurm shows <code>COMPLETED</code>；</li>
+<li>Python fails but Slurm shows <code>COMPLETED</code>;</li>
 <li>only verifies BF16 and does not execute the FP4 expert path.</li>
 </ul>
 <h3 id="23-最终成功标准">2.3 Final success criteria</h3>
@@ -369,12 +369,12 @@ attention probs finite = True</code></pre>
 <li>[x] generates 32 non-degraded tokens;</li>
 <li>[x] The output text is semantically coherent;</li>
 <li>[x] Workload exit code is 0;</li>
-<li>[x] Slurm main job and batch step are both <code>COMPLETED</code>。</li>
+<li>[x] Slurm main job and batch step are both <code>COMPLETED</code>.</li>
 </ul>
 <hr>
-<h2 id="3-软硬件环境">3. Software and hardware environment</h2>
+<h2 id="3-软硬件环境">3. Hardware and software environment</h2>
 <h3 id="31-计算资源">3.1 Computing resources</h3>
-<p>Actual measurement environment:</p>
+<p>Measured environment:</p>
 <div class="table-wrap"><table><thead><tr>
 <th>Project</th>
 <th>value</th>
@@ -392,7 +392,7 @@ attention probs finite = True</code></pre>
 <td>8</td>
 </tr>
 <tr>
-<td>Video memory per card (torch report)</td>
+<td>GPU memory per card (as reported by PyTorch)</td>
 <td>Approximately 68.7 GB decimal, which is approximately 63.98 GiB</td>
 </tr>
 <tr>
@@ -427,7 +427,7 @@ attention probs finite = True</code></pre>
 </tr>
 <tr>
 <td>Python</td>
-<td>3.12，vLLM venv</td>
+<td>3.12 ,vLLM venv</td>
 </tr>
 <tr>
 <td>vLLM</td>
@@ -450,7 +450,7 @@ attention probs finite = True</code></pre>
 <td><code>&lt;TEST_WORKSPACE&gt;</code></td>
 </tr>
 </tbody></table></div>
-<h3 id="33-模型与量化配置">3.3 Model and quantitative configuration</h3>
+<h3 id="33-模型与量化配置">3.3 Model and quantization configuration</h3>
 <p>Read from the running log:</p>
 <pre><code class="language-text">quant_config:
 {
@@ -465,7 +465,7 @@ attention probs finite = True</code></pre>
 Using &#x27;EMULATION&#x27; Mxfp4 MoE backend.
 Using DeepSeek&#x27;s fp8_ds_mla KV cache format.
 Using FP8 indexer cache for Lightning Indexer.</code></pre>
-<h3 id="34-最终关键环境变量">Running environment variable</h3>
+<h3 id="34-最终关键环境变量">3.4 Runtime environment variables</h3>
 <pre><code class="language-bash">export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export TORCHINDUCTOR_USE_STATIC_CUDA_LAUNCHER=0
 export DSV4_SHIM_DEBUG=1
@@ -482,17 +482,17 @@ export VLLM_ROCM_USE_SKINNY_GEMM=0</code></pre>
 <p>Also used during debugging:</p>
 <pre><code class="language-bash">export DSV4_SPARSE_DEBUG=1</code></pre>
 <hr>
-<h2 id="4-技术路径概览">implementation path</h2>
+<h2 id="4-技术路径概览">4. Implementation approach</h2>
 <p>The end-to-end execution chain can be simplified to:</p>
-<pre><code class="language-text">模型 config / tokenizer
+<pre><code class="language-text">Model config / tokenizer
         │
         ▼
-FP8 主干权重 ──软件反量化──► BF16 GEMM
+FP8 backbone weights ──software dequantization──► BF16 GEMM
         │
         ├──► Q / KV / indexer / compressor
         │
         ▼
-FP4 MoE expert ──MXFP4 emulation──► MoE 输出
+FP4 MoE expert ──MXFP4 emulation──► MoE output
         │
         ▼
 DeepSeek V4 Sparse MLA
@@ -507,17 +507,17 @@ DeepSeek V4 Sparse MLA
                 │
                 ▼
         LM head → next token</code></pre>
-<p>has passed through four types of obstructions this round:</p>
+<p>The investigation uncovered four independent compatibility and correctness issues:</p>
 <ol>
 <li>Triton / DAS Triton API and lowering compatibility issues;</li>
-<li>gfx936 skinny GEMM device assertion；</li>
+<li>A device-side assertion in gfx936 skinny GEMM;</li>
 <li>Input format misjudgment caused by prompt/chat template;</li>
 <li>The physical layout of the Sparse MLA KV cache reader is wrong.</li>
 </ol>
 <p>Category 4 is the final root cause of "the first token is normal, and subsequent tokens are all BOS".</p>
 <hr>
-<h2 id="5-测试探针设计">Diagnostic methods and test probes</h2>
-<p>The main probe prints according to stages:</p>
+<h2 id="5-测试探针设计">5. Diagnostic methods and test probes</h2>
+<p>The diagnostic probe reports progress by stage:</p>
 <pre><code class="language-text">### STAGE: env
 ### STAGE: config
 ### STAGE: vllm import + registry
@@ -530,23 +530,23 @@ DeepSeek V4 Sparse MLA
 </tr></thead><tbody>
 <tr>
 <td>env</td>
-<td>Can the torch see 8 gfx936 pictures? Is the video memory correct?</td>
+<td>Can PyTorch detect all eight gfx936 devices, and are their memory sizes reported correctly?</td>
 </tr>
 <tr>
 <td>config</td>
-<td>Can the model architecture, number of layers, expert, and quantitative configuration be read?</td>
+<td>Can the model architecture, layer count, expert configuration, and quantization settings be read correctly?</td>
 </tr>
 <tr>
 <td>registry</td>
-<td>vLLM Whether to register DeepSeek V4</td>
+<td>Is DeepSeek V4 registered with vLLM?</td>
 </tr>
 <tr>
 <td>engine init</td>
-<td>Whether the weight, TP, MoE, KV cache, and warmup are all completed</td>
+<td>Did weight loading, tensor parallelism, MoE setup, KV-cache allocation, and warm-up complete?</td>
 </tr>
 <tr>
 <td>generate</td>
-<td>prefill and continuous decode generate the correct token</td>
+<td>Do prefill and continuous decoding produce valid tokens?</td>
 </tr>
 </tbody></table></div>
 <p>Print during generation:</p>
@@ -563,7 +563,7 @@ echo &quot;PY_EXIT=$rc&quot;
 exit &quot;$rc&quot;</code></pre>
 <p>So the Slurm status, Python verdict and raw logs in the report can be cross-validated.</p>
 <hr>
-<h2 id="6-完整作业时间线">Experimental process and work records</h2>
+<h2 id="6-完整作业时间线">6. Validation timeline and job records</h2>
 <h3 id="61-汇总表">6.1 Summary table</h3>
 <div class="table-wrap"><table><thead><tr>
 <th>Job</th>
@@ -612,7 +612,7 @@ exit &quot;$rc&quot;</code></pre>
 <td>FAILED 1</td>
 <td>06:43</td>
 <td>generate</td>
-<td><code>ENGINE_READY</code>；skinny GEMM device assertion</td>
+<td><code>ENGINE_READY</code>;skinny GEMM device assertion</td>
 </tr>
 <tr>
 <td>J07</td>
@@ -689,75 +689,75 @@ exit &quot;$rc&quot;</code></pre>
 <td>COMPLETED 0</td>
 <td>05:15</td>
 <td>end-to-end</td>
-<td>The physical layout is repaired successfully and the output is consistent</td>
+<td>The physical layout was corrected, and the output is consistent</td>
 </tr>
 </tbody></table></div>
-<p>Description:</p>
+<p>Interpretation:</p>
 <ul>
-<li><code>FAILED 2</code> Most of them indicate that the probe actively judges the degraded output as a failure, and it is not a hardware crash.</li>
-<li><code>J08</code> show <code>COMPLETED 0</code>, but the output is obviously wrong, exposing an early determiner flaw.</li>
-<li>Common <code>libcudart is not loaded</code> is ROCm environment cleanup noise and is not the first error causing the build to fail.</li>
+<li><code>FAILED 2</code> usually means the probe correctly classified degraded output as a failure; it does not indicate a hardware crash.</li>
+<li><code>J08</code> returned <code>COMPLETED 0</code> despite clearly incorrect output, exposing a flaw in the probe's early success check.</li>
+<li>The recurring <code>libcudart is not loaded</code> message is ROCm cleanup noise, not the first error that caused the run to fail.</li>
 </ul>
-<h3 id="62-J01首次-triton-lowering-阻塞">6.2 J01: First Triton lowering blocking</h3>
+<h3 id="62-J01首次-triton-lowering-阻塞">6.2 J01: Triton lowering blocks engine startup</h3>
 <pre><code class="language-text">RuntimeError: PassManager::run failed
 RuntimeError: Engine core initialization failed.</code></pre>
-<p>Description of this stage:</p>
+<p>At this stage:</p>
 <ul>
-<li>model, torch and worker have been started;</li>
-<li>The failure occurred in compilation/Lowering, not in missing model files;</li>
-<li>must be replaced piece by piece for gfx936/DAS Triton unsupported implementations.</li>
+<li>The model, PyTorch, and worker have started.</li>
+<li>The failure is in compilation/lowering, not in model-file availability.</li>
+<li>Unsupported Triton implementations on gfx936/DAS must be replaced individually.</li>
 </ul>
-<h3 id="63-phasephasesoftmax-api-兼容">6.3 J02, J03, J04, J05: softmax API compatible with</h3>
+<h3 id="63-phasephasesoftmax-api-兼容">6.3 J02–J05: Resolve softmax API incompatibility</h3>
 <p>Stable reproduction of multi-round operations:</p>
 <pre><code class="language-text">triton.compiler.errors.CompilationError
 TypeError(&quot;softmax() got an unexpected keyword argument &#x27;dim&#x27;&quot;)</code></pre>
 <p>This is the difference between the upstream code and the current DAS Triton API. At this stage, by adjusting fallback and avoiding incompatible Triton paths, the failure position is gradually advanced to the real engine warmup.</p>
-<p>Important experience: Don’t surround yourself with <code>tt.dot_scaled</code> or a single Triton syntax infinite stack patch; for gfx936 non-lowerable paths, a verifiable PyTorch/BF16 reference fallback should be built.</p>
-<h3 id="64-J06首次-engine-ready首次真实硬件错误">6.4 J06: First Engine Ready, first real hardware error</h3>
+<p><strong>Engineering lesson:</strong> Avoid repeatedly patching isolated Triton syntax such as <code>tt.dot_scaled</code>. For operations that cannot be lowered on gfx936, provide a testable PyTorch/BF16 reference fallback.</p>
+<h3 id="64-J06首次-engine-ready首次真实硬件错误">6.4 J06: Engine startup succeeds; first device-side error</h3>
 <p>Key developments:</p>
 <pre><code class="language-text">Model loading took 19.99 GiB memory and 205.150379 seconds
 GPU KV cache size: 85,259 tokens
 ENGINE_READY in 335.4s</code></pre>
-<p>First real generate error:</p>
+<p>The first device-side error during generation:</p>
 <pre><code class="language-text">csrc/rocm/skinny_gemms.hip:580
 wvSplitK_hf_sml_
 Device-side assertion `false&#x27; failed.</code></pre>
 <p>This is a true device-side error followed by a VMFault.</p>
-<p>Handling:</p>
+<p>Workaround:</p>
 <pre><code class="language-bash">export VLLM_ROCM_USE_SKINNY_GEMM=0</code></pre>
-<p>After disabled:</p>
+<p>With this setting:</p>
 <ul>
 <li>device assertion disappears;</li>
 <li>VMFault disappears;</li>
-<li>generate can return completely;</li>
-<li>The problem progressed from "hardware crash" to "numeric degradation".</li>
+<li>generation completes;</li>
+<li>the failure changes from a hardware crash to incorrect numerical output.</li>
 </ul>
-<h3 id="65-phasephase硬崩溃消失但输出退化">6.5 J07, J08: Hard crash disappears, but output degrades</h3>
-<p><code>J08</code>：</p>
+<h3 id="65-phasephase硬崩溃消失但输出退化">6.5 J07–J08: Crashes resolved, but output remains incorrect</h3>
+<p><code>J08</code>:</p>
 <pre><code class="language-text">TOKEN_IDS: [32, 0, 0, ..., 0]
 TOKEN_DECODE:
 [&#x27;&gt;&#x27;, &#x27;&lt;｜begin▁of▁sentence｜&gt;&#x27;, ...]
 OUTPUT_REPR: &#x27;&gt;&#x27;</code></pre>
-<p>Early probe error print:</p>
+<p>The probe initially reported:</p>
 <pre><code class="language-text">DSV4_VERDICT: COHERENT</code></pre>
-<p>The reason is that the determiner only checks:</p>
+<p>The probe's success check only tested whether:</p>
 <ul>
-<li>Whether the text is empty;</li>
-<li>Whether there are obvious repetitions of a few characters.</li>
+<li>the output was empty; or</li>
+<li>a few characters were repeated conspicuously.</li>
 </ul>
-<p>Because <code>OUTPUT_REPR</code> There is only one <code>&gt;</code>, it does not meet the conditions of "sufficient length and few character types", forming a false green light.</p>
-<p>The judgment standard is changed to simultaneous viewing:</p>
+<p>Because <code>OUTPUT_REPR</code> contained only one <code>&gt;</code>, it passed the weak “nonempty and not repetitive” check, producing a false positive.</p>
+<p>The acceptance check was strengthened to inspect all of the following:</p>
 <ul>
-<li>token IDs；</li>
-<li>single token decode;</li>
-<li>finish reason；</li>
-<li>Manually check text;</li>
-<li>Whether the continuous token is BOS.</li>
+<li>token IDs;</li>
+<li>the decoded text for each token;</li>
+<li>the generation finish reason;</li>
+<li>the generated text itself;</li>
+<li>whether BOS repeats in subsequent tokens.</li>
 </ul>
-<h3 id="66-phaseswiglu-fallback-修复">6.6 J09: SwiGLU fallback fix</h3>
-<p>found the original implementation of gfx936 emulation fallback:</p>
+<h3 id="66-phaseswiglu-fallback-修复">6.6 J09: Add a SwiGLU fallback</h3>
+<p>The original gfx936 emulation fallback was:</p>
 <pre><code class="language-python">act = F.silu(gate * 1.702) * up</code></pre>
-<p>is inconsistent with model configuration and vLLM reference. Corrected to:</p>
+<p>This did not match the model configuration or the vLLM reference. It was changed to:</p>
 <pre><code class="language-python">gate = torch.clamp(gate, max=gemm1_limit)
 up = torch.clamp(up, min=-gemm1_limit, max=gemm1_limit)
 act = F.silu(gate * gemm1_alpha) * up</code></pre>
@@ -768,38 +768,38 @@ gemm1_limit = 10.0</code></pre>
 <pre><code class="language-text">TOKEN_IDS: [0, 0, ..., 0]</code></pre>
 <p>Conclusion:</p>
 <ul>
-<li>SwiGLU fix required for model formula consistency;</li>
-<li>But it’s not the only cause of continuous BOS;</li>
-<li>The focus of subsequent troubleshooting shifts to the prefill/decode boundary.</li>
+<li>The SwiGLU fix is required to match the model's activation formula.</li>
+<li>It does not, by itself, resolve the repeated-BOS output.</li>
+<li>Further investigation therefore focused on the prefill/decode boundary.</li>
 </ul>
-<h3 id="67-phasechat-template-修复定位到-decode">6.7 J11: chat template repair, locate decode</h3>
-<p>naked prompt:</p>
-<pre><code class="language-python">llm.generate([&quot;你好，请介绍一下你自己。&quot;])</code></pre>
-<p>is not guaranteed to comply with DeepSeek V4's custom conversation templates. After changing to chat API:</p>
+<h3 id="67-phasechat-template-修复定位到-decode">6.7 J11: Fix the chat template and isolate the decode issue</h3>
+<p>A plain prompt:</p>
+<pre><code class="language-python">llm.generate([&quot;你好 ,请介绍一下你自己 .&quot;])</code></pre>
+<p>does not necessarily follow DeepSeek V4's custom conversation template. After switching to the chat API:</p>
 <pre><code class="language-text">TOKEN_IDS: [30594, 0, 0, ..., 0]
 TOKEN_DECODE:
 [&#x27;你好&#x27;, &#x27;&lt;｜begin▁of▁sentence｜&gt;&#x27;, ...]
 OUTPUT_REPR: &#x27;你好&#x27;</code></pre>
 <p>This is very critical boundary evidence:</p>
 <ul>
-<li>prefill can be correctly "Hello";</li>
-<li>The second token begins to turn into BOS;</li>
-<li>tokenizer and chat template do affect the first token;</li>
-<li>However, there are still independent numerical errors in continuous decode.</li>
+<li>prefill can produce the expected first token (the expected localized greeting);</li>
+<li>the second token is already replaced by BOS;</li>
+<li>the tokenizer and chat template affect the first token;</li>
+<li>independent numerical errors remain during continuous decoding.</li>
 </ul>
-<h3 id="68-J12排除简单切换-bf16auto-kv-cache">6.8 J12: Exclude simple switch BF16/auto KV cache</h3>
-<p>Try:</p>
+<h3 id="68-J12排除简单切换-bf16auto-kv-cache">6.8 J12: Test BF16 and automatic KV-cache settings</h3>
+<p>The automatic KV-cache setting was tested:</p>
 <pre><code class="language-text">DSV4_KV_CACHE_DTYPE=auto</code></pre>
-<p>engine initialization explicitly refused:</p>
+<p>Engine initialization rejected it explicitly:</p>
 <pre><code class="language-text">AssertionError:
 DeepseekV4 fp8_ds_mla layout only supports fp8 kv-cache, got auto</code></pre>
-<p>This shows that the current DeepSeek V4 ROCm sparse MLA implementation is identical to <code>fp8_ds_mla</code> layout binding. Cannot be set by simple setting <code>auto</code> To circumvent the problem, the reading and writing of this layout must be correctly implemented.</p>
-<h3 id="69-J13重复性确认">6.9 J13: Repeatability confirmation</h3>
+<p>The current DeepSeek V4 ROCm Sparse MLA implementation is bound to the <code>fp8_ds_mla</code> layout. Setting the cache type to <code>auto</code> cannot bypass this constraint; the layout's read and write paths must be implemented correctly.</p>
+<h3 id="69-J13重复性确认">6.9 J13: Confirm repeatability</h3>
 <pre><code class="language-text">ENGINE_READY in 93.2s
 TOKEN_IDS: [57297, 0, 0, ..., 0]
 TOKEN_DECODE:
 [&#x27; Modified&#x27;, BOS, BOS, ...]</code></pre>
-<p>The first token will change with the running status:</p>
+<p>The first generated token varied between runs:</p>
 <ul>
 <li><code>&gt;</code></li>
 <li><code>你好</code></li>
@@ -811,7 +811,7 @@ TOKEN_DECODE:
 <p>But the common pattern is always:</p>
 <pre><code class="language-text">[prefill token, BOS, BOS, BOS, ...]</code></pre>
 <p>Therefore the problem cannot be interpreted as a fixed tokenizer mapping; the failure occurs in the decode calculation chain.</p>
-<h3 id="610-J14诊断探针第一次未命中真实-decode">J14: Diagnostic probe did not capture target decode</h3>
+<h3 id="610-J14诊断探针第一次未命中真实-decode">6.10 J14: Initial diagnostic probe misses the failing decode</h3>
 <p>First diagnostic output:</p>
 <pre><code class="language-text">q shape = (8, 8, 512)
 main_indptr = [0, 0, ..., 0]</code></pre>
@@ -822,9 +822,9 @@ main_indptr = [0, 0, ..., 0]</code></pre>
     and num_queries &lt;= 2
     and not getattr(fn, &quot;DSV4_DIAG_ONCE&quot;, False)
 )</code></pre>
-<p> <code>num_queries=1</code>, warmup's <code>num_queries=8</code>。</p>
-<h3 id="611-J15首次捕获根因数值证据">6.11 J15: Numerical evidence of root factors captured for the first time</h3>
-<p>real decode metadata:</p>
+<p> <code>num_queries=1</code>, warmup's <code>num_queries=8</code>.</p>
+<h3 id="611-J15首次捕获根因数值证据">6.11 J15: Numerical evidence identifying the root cause</h3>
+<p>Metadata from the failing decode:</p>
 <pre><code class="language-text">q shape          = (1, 8, 512)
 main_cache shape = (35644, 64, 584)
 main_cache stride= (1002240, 584, 1)
@@ -838,7 +838,7 @@ qfinite          = True</code></pre>
 <li>The number of indexes is 11, which is consistent with the prompt context length;</li>
 <li>query itself is not a source of NaN.</li>
 </ul>
-<p>but the cache after decoding:</p>
+<p>After decoding, however, the cache contained:</p>
 <pre><code class="language-text">scale_bytes:
 [87, 245, 226, 232, 107, 107, 156, 110]
 
@@ -847,33 +847,33 @@ nope_max    = nan
 
 rope_finite = True
 rope_max    = 1.0135363467859984e+37</code></pre>
-<p>attention：</p>
+<p>Attention diagnostics:</p>
 <pre><code class="language-text">logits_finite = False
 logits_min    = nan
 logits_max    = nan
 probs_finite  = False
 probs_max     = nan</code></pre>
-<p>The first complete presentation of the causal chain:</p>
+<p>The complete failure chain is:</p>
 <pre><code class="language-text">Q finite
-  → cache decode 错误
+  → cache decode error
   → NoPE NaN / RoPE 1e37
   → attention logits NaN
   → softmax NaN
-  → hidden state 污染
-  → LM head 退化
+  → hidden-state corruption
+  → LM-head degradation
   → token 0 / BOS</code></pre>
-<h3 id="612-J16第一次-stride-修复为什么不够">J16: Scope of stride repair</h3>
-<p>The first version was repaired and removed:</p>
+<h3 id="612-J16第一次-stride-修复为什么不够">6.12 J16: Why the first stride fix was insufficient</h3>
+<p>The initial fix made the cache contiguous:</p>
 <pre><code class="language-python">cache.view(torch.uint8).contiguous()</code></pre>
-<p>Instead keep the original cache view, trying to use:</p>
+<p>That change was removed. The next attempt kept the original cache view and read it with:</p>
 <pre><code class="language-python">raw[block, pos]</code></pre>
-<p>The result is still:</p>
+<p>The result remained incorrect:</p>
 <pre><code class="language-text">scale_bytes = [88, 245, 226, 232, ...]
 nope_finite = False
 rope_max    ≈ 1e37</code></pre>
-<p>This proves that the problem is not just <code>.contiguous()</code> lost <code>stride(0)</code>。</p>
-<p>After further comparison with the C++ writer, it was found that the logic <code>stride(1)=584</code> itself cannot be used to locate single tokens. The physical layout is block-packed, not token-interleaved.</p>
-<h3 id="613-J17物理布局修复成功">6.13 J17: Physical layout repair successful</h3>
+<p>This showed that the issue was not simply a lost <code>stride(0)</code> caused by <code>.contiguous()</code>.</p>
+<p>Comparison with the C++ writer showed that <code>stride(1)=584</code> cannot be used by itself to locate individual tokens. The physical cache is block-packed rather than token-interleaved.</p>
+<h3 id="613-J17物理布局修复成功">6.13 J17: Correct the physical cache layout</h3>
 <p>Final diagnosis:</p>
 <pre><code class="language-text">scale_bytes:
 [118, 119, 119, 119, 118, 119, 118, 0]
@@ -883,7 +883,7 @@ nope_max    = 1.875
 
 rope_finite = True
 rope_max    = 5.75 ~ 5.78125</code></pre>
-<p>The attention of different TP ranks is normal, for example:</p>
+<p>Attention values were valid across tensor-parallel ranks. For example:</p>
 <pre><code class="language-text">TP0:
 logits_finite = True
 logits_min    = -2.2683308124542236
@@ -906,8 +906,8 @@ probs_finite  = True
 probs_max     =  0.9574916362phase</code></pre>
 <p>The final token no longer degrades and forms coherent Chinese.</p>
 <hr>
-<h2 id="7-最终根因逻辑-shape-与物理-cache-layout-不一致">Root cause analysis of KV cache layout problems</h2>
-<h3 id="71-表面上的逻辑张量">7.1 Logical tensor on the surface</h3>
+<h2 id="7-最终根因逻辑-shape-与物理-cache-layout-不一致">7. Root cause: logical shape and physical KV-cache layout diverge</h2>
+<h3 id="71-表面上的逻辑张量">7.1 Logical tensor representation</h3>
 <p>The backend declares that each token occupies 584 bytes:</p>
 <pre><code class="language-text">448 byte FP8 NoPE
 128 byte BF16 RoPE
@@ -919,7 +919,7 @@ probs_max     =  0.9574916362phase</code></pre>
 data = token[:576]
 scale = token[576:584]</code></pre>
 <p>But this explanation is wrong.</p>
-<h3 id="72-c-writer-的真实地址">7.2 The real address of C++ writer</h3>
+<h3 id="72-c-writer-的真实地址">7.2 Addresses written by the C++ writer</h3>
 <p>writer uses:</p>
 <pre><code class="language-cpp">block_base =
     k_cache + block_idx * kv_block_stride;
@@ -958,17 +958,17 @@ block_size          = 64</code></pre>
 = 37,376 byte</code></pre>
 <p>while running observed:</p>
 <pre><code class="language-text">main_cache.stride() = (1002240, 584, 1)</code></pre>
-<p><code>stride(0)</code> is determined by the allocator/shared cache layout, which is much larger than the valid data of a single block. The reader must retain the real block stride; it cannot first <code>.contiguous()</code>。</p>
-<h3 id="73-旧-reader-的两个错误">Two errors in 7.3 old reader</h3>
+<p><code>stride(0)</code> is determined by the allocator/shared cache layout, which is much larger than the valid data of a single block. The reader must retain the real block stride; it cannot first <code>.contiguous()</code>.</p>
+<h3 id="73-旧-reader-的两个错误">7.3 Two errors in the original reader</h3>
 <p>Old code:</p>
 <pre><code class="language-python">cache_u8 = cache.view(torch.uint8).contiguous()
 raw = cache_u8.reshape(cache.shape[0], block_size, -1)
 token = raw[block, pos]
 data = token[:, :576]
 scale_bytes = token[:, 576:584]</code></pre>
-<p>Error 1:<code>.contiguous()</code> destroys physics <code>stride(0)</code>。</p>
+<p>Error 1:<code>.contiguous()</code> destroys physics <code>stride(0)</code>.</p>
 <p>Error 2: Even if stride is retained,<code>token[:, 576:584]</code> still assumes that scale follows the data of each token; the actual scale is concentrated at the end of the block.</p>
-<h3 id="74-最终-reader">7.4 final reader</h3>
+<h3 id="74-最终-reader">7.4 Final reader</h3>
 <p>The final implementation first constructs a byte view that retains block stride:</p>
 <pre><code class="language-python">raw = cache_u8.as_strided(
     (cache.shape[0], block_size * 584),
@@ -989,17 +989,17 @@ data = raw[block[:, None], data_offsets]</code></pre>
 scale_bytes = raw[block[:, None], scale_offsets]</code></pre>
 <p>UE8M0 decoding:</p>
 <pre><code class="language-python">k_scales = torch.exp2(scale_bytes.float() - 127.0)</code></pre>
-<p>FP8 NoPE：</p>
+<p>FP8 NoPE:</p>
 <pre><code class="language-python">k_nope = data[:, :448].contiguous().view(fp8_dtype).float()
 k_nope *= k_scales[:, :7].repeat_interleave(64, dim=1)</code></pre>
-<p>BF16 RoPE：</p>
+<p>BF16 RoPE:</p>
 <pre><code class="language-python">k_rope = (
     data[:, 448:576]
     .contiguous()
     .view(torch.bfloat16)
     .float()
 )</code></pre>
-<h3 id="75-为什么最终-scale-合理">Basis for determining scale parameters</h3>
+<h3 id="75-为什么最终-scale-合理">7.5 Basis for the final scale</h3>
 <p>Final scale bytes:</p>
 <pre><code class="language-text">[118, 119, 119, 119, 118, 119, 118, 0]</code></pre>
 <p>correspond to 7 64-element groups of 448 NoPE elements.</p>
@@ -1009,8 +1009,8 @@ encoded 119 → scale = 2^(119 - 127) = 2^-8</code></pre>
 <p>is padding, the value is 0, and does not participate in the dequantization of the 7 actual groups.</p>
 <p>This is exactly the same as the writer’s 7 UE8M0 scale + 1 byte pad design.</p>
 <hr>
-<h2 id="8-被证伪或仅部分成立的假设">Hypothesis testing and scope of application</h2>
-<h3 id="81-fp4-moe-本身坏了">FP4 MoE Implementation Exception Assumption</h3>
+<h2 id="8-被证伪或仅部分成立的假设">8. Hypotheses tested and their limits</h2>
+<h3 id="81-fp4-moe-本身坏了">8.1 Hypothesis: the FP4 MoE implementation is faulty</h3>
 <p>The evidence does not support this.</p>
 <ul>
 <li>FP4 backend normal initialization;</li>
@@ -1019,32 +1019,32 @@ encoded 119 → scale = 2^(119 - 127) = 2^-8</code></pre>
 <li>Therefore the final root cause of consecutive BOS is not in the FP4 expert main path.</li>
 </ul>
 <p>But the SwiGLU parameter fix should still be retained as it fixes model formula consistency.</p>
-<h3 id="82-tokenizer-或-chat-template-是唯一根因">tokenizer and chat template root hypothesis</h3>
+<h3 id="82-tokenizer-或-chat-template-是唯一根因">8.2 Hypothesis: the tokenizer or chat template is the sole cause</h3>
 <p>is only partially true.</p>
 <ul>
 <li>chat template After repair, the first token changed from a meaningless symbol to "Hello";</li>
 <li>But after the second token it is still all BOS;</li>
 <li>Therefore, template explains the input format problem and cannot explain decode numerical degradation.</li>
 </ul>
-<h3 id="83-kv-cache-改成-autobf16-就能绕开">Impact of KV cache configuration</h3>
+<h3 id="83-kv-cache-改成-autobf16-就能绕开">8.3 Hypothesis: switching the KV cache to auto/BF16 avoids the issue</h3>
 <p>is not established.</p>
 <p>Current DeepSeek V4 ROCm Sparse MLA layout mandatory requirement:</p>
 <pre><code class="language-text">fp8_ds_mla</code></pre>
 <p><code>auto</code> was explicitly rejected in engine init.</p>
-<h3 id="84-只去掉-contiguous-就能修好">Impact of contiguous operations</h3>
+<h3 id="84-只去掉-contiguous-就能修好">8.4 Hypothesis: removing <code>contiguous()</code> is sufficient</h3>
 <p>is not established.</p>
 <p><code>.contiguous()</code> does lose block stride, but the logical token stride also cannot represent the physical layout. Must also be fixed:</p>
 <ol>
-<li>block stride；</li>
+<li>block stride ;</li>
 <li>data/scale partition address.</li>
 </ol>
-<h3 id="85-首-token-正常说明整个模型数值正确">First token result and overall numerical accuracy</h3>
+<h3 id="85-首-token-正常说明整个模型数值正确">8.5 Hypothesis: a correct first token proves overall numerical correctness</h3>
 <p>is not established.</p>
-<p>The first generated token comes from prefill. Single token decode is entered only when the next token is requested. This fault happens to be at the state transition of prefill → decode.</p>
+<p>The first generated token is produced during prefill; single-token decoding begins only when the next token is requested. The fault occurs at the prefill-to-decode transition.</p>
 <p>Therefore end-to-end testing requires at least:</p>
 <pre><code class="language-text">max_tokens &gt;= 2</code></pre>
 <p>A safer bet would be 16 or 32.</p>
-<h3 id="86-slurm-completed-就代表模型正确">Slurm job status and model correctness</h3>
+<h3 id="86-slurm-completed-就代表模型正确">8.6 Hypothesis: a COMPLETED Slurm job proves model correctness</h3>
 <p>is not established.</p>
 <p><code>J08</code> is a typical counterexample:</p>
 <pre><code class="language-text">State = COMPLETED
@@ -1052,38 +1052,38 @@ ExitCode = 0
 TOKEN_IDS = [32, 0, 0, ...]</code></pre>
 <p>framework does not throw an exception, which does not mean that the value is correct. Compatibility report must also be checked:</p>
 <ul>
-<li>scheduler state；</li>
-<li>workload exit code；</li>
-<li>raw traceback；</li>
-<li>token IDs；</li>
+<li>scheduler state ;</li>
+<li>workload exit code ;</li>
+<li>raw traceback ;</li>
+<li>token IDs ;</li>
 <li>output text;</li>
 <li>intermediate numerical finite state.</li>
 </ul>
 <hr>
-<h2 id="9-已实施的关键修改">Implementation modification</h2>
-<h3 id="91-gfx936-兼容-shim">9.1 gfx936 compatible shim</h3>
+<h2 id="9-已实施的关键修改">9. Implemented changes</h2>
+<h3 id="91-gfx936-兼容-shim">9.1 gfx936 compatibility shim</h3>
 <p><code>sitecustomize.py</code> is automatically applied after worker spawn to make up for the current Triton/vLLM API differences and avoid premature import of Triton at startup.</p>
 <p>include:</p>
 <ul>
-<li>Triton language API placeholder/backport；</li>
-<li><code>reduce_or</code>；</li>
-<li>JITFunction metadata；</li>
+<li>Triton language API placeholder/backport ;</li>
+<li><code>reduce_or</code> ;</li>
+<li>JITFunction metadata ;</li>
 <li>HCU compiler arch default value;</li>
-<li>knobs runtime hooks；</li>
+<li>knobs runtime hooks ;</li>
 <li>vLLM FP8 linear software inverse quantization.</li>
 </ul>
 <p>These are the infrastructure that the engine can use to start and complete weight loading.</p>
-<h3 id="92-fp8-主干软件反量化">9.2 FP8 backbone software inverse quantization</h3>
+<h3 id="92-fp8-主干软件反量化">9.2 Software dequantization for the FP8 backbone</h3>
 <p>gfx936 does not support native FP8 as expected by vLLM <code>_scaled_mm</code> path, so FP8 linear uses BF16 software inverse quantization fallback.</p>
 <p>This path sacrifices performance but establishes a baseline for correctness.</p>
 <h3 id="93-mxfp4-moe-emulation">9.3 MXFP4 MoE emulation</h3>
 <pre><code class="language-text">DSV4_MOE_BACKEND=emulation</code></pre>
 <p>weights remain in FP4 checkpoint format and are dequantized and calculated on demand by the emulation expert path. This path is used to first prove that the model functions correctly.</p>
-<h3 id="94-swiglu-参数一致性">9.4 SwiGLU parameter consistency</h3>
+<h3 id="94-swiglu-参数一致性">9.4 SwiGLU parameter alignment</h3>
 <p>Fixed the error <code>1.702</code> formula with the one consistent with the model configuration:</p>
 <pre><code class="language-text">alpha = 1.0
 limit = 10.0</code></pre>
-<h3 id="95-禁用-gfx936-skinny-gemm">9.5 disable gfx936 skinny GEMM</h3>
+<h3 id="95-禁用-gfx936-skinny-gemm">9.5 Disable gfx936 skinny GEMM</h3>
 <pre><code class="language-bash">VLLM_ROCM_USE_SKINNY_GEMM=0</code></pre>
 <p>Avoid <code>wvSplitK_hf_sml_</code> .</p>
 <h3 id="96-sparse-mla-decode-fallback">9.6 Sparse MLA decode fallback</h3>
@@ -1092,60 +1092,60 @@ limit = 10.0</code></pre>
 <pre><code class="language-text">vllm/v1/attention/ops/rocm_aiter_mla_sparse.py</code></pre>
 <p>The repair content is <code>fp8_ds_mla</code> block-packed cache.</p>
 <hr>
-<h2 id="10-最终验证详情">10. Final verification details</h2>
+<h2 id="10-最终验证详情">10. Verification results</h2>
 <h3 id="101-engine-初始化">10.1 Engine initialization</h3>
 <pre><code class="language-text">ENGINE_READY in 228.9s</code></pre>
-<p>Previously, under different nodes, cache states and JIT states, the initialization time fluctuated between about 93 seconds and 338 seconds. Therefore, a single engine ready time cannot be directly used as a conclusion on stable performance.</p>
-<h3 id="102-kv-cache-数值">10.2 KV cache value</h3>
-<p>All 8 TP workers get consistent scale bytes:</p>
+<p>Across different nodes, cache conditions, and JIT states, initialization previously ranged from about 93 to 338 seconds. A single engine-ready measurement therefore cannot establish steady-state performance.</p>
+<h3 id="102-kv-cache-数值">10.2 KV-cache values</h3>
+<p>All eight tensor-parallel workers reported the same scale bytes:</p>
 <pre><code class="language-text">[118, 119, 119, 119, 118, 119, 118, 0]</code></pre>
 <p>and:</p>
 <pre><code class="language-text">NoPE finite = True
 NoPE abs max = 1.875
 RoPE finite = True
 RoPE abs max ≈ 5.75–5.78125</code></pre>
-<h3 id="103-attention-数值">10.3 Attention value</h3>
-<p>All TP rank:</p>
+<h3 id="103-attention-数值">10.3 Attention values</h3>
+<p>Across all tensor-parallel ranks:</p>
 <pre><code class="language-text">logits_finite = True
 probs_finite  = True</code></pre>
-<p>logits and the maximum softmax probability are not exactly the same. This is a normal manifestation of each rank holding different head shards.</p>
+<p>Logits and maximum softmax probabilities differ slightly across ranks, as expected because each rank holds different attention-head shards.</p>
 <h3 id="104-输出质量">10.4 Output quality</h3>
-<p>32 tokens do not contain consecutive BOS, Chinese semantics are coherent, and the format contains natural punctuation and Markdown:</p>
-<pre><code class="language-text">你好呀，很高兴在这里遇到你！让我来做个自我介绍吧～
+<p>The 32-token response contains no repeated BOS tokens. Its Chinese text is coherent and includes natural punctuation and Markdown formatting:</p>
+<pre><code class="language-text">你好呀 ,很高兴在这里遇到你！让我来做个自我介绍吧～
 
-**初来乍到**：DeepSeek 这个版本的我，确实是有点</code></pre>
+**初来乍到**：DeepSeek 这个版本的我 ,确实是有点</code></pre>
 <h3 id="105-资源">10.5 Resources</h3>
 <pre><code class="language-text">MaxRSS = 65899600K</code></pre>
-<p>This is the CPU RSS of the batch step. The history log on the GPU side shows:</p>
+<p>This is the batch step's CPU resident memory. The GPU-side log reports:</p>
 <pre><code class="language-text">Model loading took approximately 19.99 GiB per worker/device
 GPU KV cache size approximately 85K tokens</code></pre>
-<p>These numbers are affected by node, JIT, allocator and cache configuration and are only used for this round of functional verification records.</p>
+<p>These values depend on the node, JIT state, allocator, and cache configuration. They document this functional-validation run and should not be treated as general performance figures.</p>
 <hr>
-<h2 id="11-日志噪声与真实错误判定">Log analysis and error determination</h2>
-<h3 id="111-usage-report-json-错误">11.1 Usage report JSON error</h3>
-<p>Multiple rounds of logs appear:</p>
+<h2 id="11-日志噪声与真实错误判定">11. Log analysis: distinguish noise from actionable errors</h2>
+<h3 id="111-usage-report-json-错误">11.1 Usage-report JSON error</h3>
+<p>The following message appeared in several logs:</p>
 <pre><code class="language-text">Exception in thread Thread-1 (_report_usage_worker)
 json.decoder.JSONDecodeError</code></pre>
-<p>It occurs in the usage-report background thread and is not the first block of engine or model calculations. Similar noise can also occur in the final successful operation.</p>
-<h3 id="112-rocm-shutdown-中的-libcudart-assertion">libcudart assertion</h3>
-<p>It is common for failed jobs to exit the cleanup phase:</p>
+<p>The warning originates in the usage-report background thread, not in engine startup or model computation. Similar noise also appears in runs that complete successfully.</p>
+<h3 id="112-rocm-shutdown-中的-libcudart-assertion">11.2 libcudart assertion during ROCm shutdown</h3>
+<p>Failed jobs commonly emit this message during cleanup:</p>
 <pre><code class="language-text">AssertionError:
 libcudart is not loaded in the current process,
 try setting VLLM_CUDART_SO_PATH</code></pre>
 <p>This is a ROCm compatibility issue with the vLLM shutdown path trying to import the CUDA allocator. It appears after generating results and probe verdicts, and should not be misjudged as the root cause of this inference failure.</p>
-<h3 id="113-first-blocker-的读取规则">11.3 Reading rules for FIRST BLOCKER</h3>
-<p>should be judged in the following order:</p>
+<h3 id="113-first-blocker-的读取规则">11.3 How to read FIRST BLOCKER</h3>
+<p>Identify the first blocker in this order:</p>
 <ol>
 <li>Find the earliest workload traceback in the raw log;</li>
 <li>Confirm whether it occurs in the main execution path;</li>
-<li>distinguishes background threads, shutdown and main inference;</li>
-<li>Compare <code>ENGINE_READY</code>、<code>TOKEN_IDS</code>、verdict；</li>
+<li>distinguish background-thread and shutdown messages from errors in the main inference path;</li>
+<li>compare <code>ENGINE_READY</code>, <code>TOKEN_IDS</code>, and the probe verdict;</li>
 <li>Finally check the Slurm state and exit code.</li>
 </ol>
 <hr>
 <h2 id="12-复现实验">12. Reproduction experiment</h2>
-<h3 id="121-slurm-资源">12.1 Slurm Resource</h3>
-<pre><code class="language-bash">#SBATCH -p 内部 DCU 分区
+<h3 id="121-slurm-资源">12.1 Slurm resources</h3>
+<pre><code class="language-bash">#SBATCH -p &lt;DCU_PARTITION&gt;
 #SBATCH --gres=dcu:8
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=240gb
@@ -1180,7 +1180,7 @@ $PYTHONPATH</code></pre>
     [[
         {
             &quot;role&quot;: &quot;user&quot;,
-            &quot;content&quot;: &quot;你好，请介绍一下你自己。&quot;,
+            &quot;content&quot;: &quot;你好 ,请介绍一下你自己 .&quot;,
         }
     ]],
     SamplingParams(
@@ -1189,7 +1189,7 @@ $PYTHONPATH</code></pre>
         ignore_eos=True,
     ),
 )</code></pre>
-<h3 id="124-结果检查">12.4 Result Check</h3>
+<h3 id="124-结果检查">12.4 Result checks</h3>
 <p>Must check:</p>
 <pre><code class="language-text">ENGINE_READY
 TOKEN_IDS
@@ -1200,7 +1200,7 @@ PY_EXIT
 sacct State / ExitCode</code></pre>
 <p>should not just grep <code>OUTPUT:</code>because special tokens such as BOS may be omitted from the final text by the tokenizer.</p>
 <hr>
-<h2 id="13-当前代码与辅助文件">Code version and auxiliary files</h2>
+<h2 id="13-当前代码与辅助文件">13. Code version and supporting files</h2>
 <p>Local warehouse:</p>
 <div class="table-wrap"><table><thead><tr>
 <th>file</th>
@@ -1240,7 +1240,7 @@ sacct State / ExitCode</code></pre>
   vllm/v1/attention/ops/rocm_aiter_mla_sparse.py</code></pre>
 <p>The remote end retains pre-repair backup and diagnostic scripts for easy comparison.</p>
 <hr>
-<h2 id="14-当前结论的边界">Conclusion and scope of application</h2>
+<h2 id="14-当前结论的边界">14. Findings and scope</h2>
 <h3 id="141-已经证明">14.1 Proven</h3>
 <ul>
 <li>DeepSeek V4 Flash checkpoint can be fully loaded on a single node 8 × gfx936;</li>
@@ -1263,7 +1263,7 @@ sacct State / ExitCode</code></pre>
 <li>EOS normal stop behavior;</li>
 <li>temperature/top-p non-greedy sampling;</li>
 <li>long-term service stability;</li>
-<li>Video memory fragmentation and repeated requests for recycling;</li>
+<li>GPU memory fragmentation and repeated allocation/reclamation requests;</li>
 <li>The systematic error of mathematical accuracy relative to the official CUDA/BF16 reference;</li>
 <li>production throughput and P50/P95 latency;</li>
 <li>End-to-end performance after replacing emulation with native gfx936 FP4 kernel.</li>
@@ -1271,8 +1271,8 @@ sacct State / ExitCode</code></pre>
 <p>Therefore the current expression should be:</p>
 <blockquote>FP4 functional link and continuous decode have been run through and have a correctness baseline; production-level stability, accuracy and performance acceptance still require subsequent testing.</blockquote>
 <hr>
-<h2 id="15-后续工作建议">Follow-up work</h2>
-<h3 id="151-第一优先级固化回归测试">15.1 First priority: solidification regression testing</h3>
+<h2 id="15-后续工作建议">15. Recommended follow-up work</h2>
+<h3 id="151-第一优先级固化回归测试">15.1 Priority 1: Make regression tests permanent</h3>
 <p>Adds at least the following regressions:</p>
 <ol>
 <li>single request, 32 tokens, Chinese chat;</li>
@@ -1292,39 +1292,39 @@ all special tokens
 finite checks
 Slurm exit code
 VMFault/device assertion</code></pre>
-<h3 id="152-第二优先级将诊断变为测试断言">15.2 Second priority: turning diagnostics into test assertions</h3>
+<h3 id="152-第二优先级将诊断变为测试断言">15.2 Priority 2: Turn diagnostics into test assertions</h3>
 <p>Upgrade one-time printing to optional assertion:</p>
 <pre><code class="language-python">assert torch.isfinite(k_nope).all()
 assert torch.isfinite(k_rope).all()
 assert torch.isfinite(logits).all()
 assert torch.isfinite(probs).all()</code></pre>
 <p>Only in <code>DSV4_SPARSE_VALIDATE=1</code> is used to avoid loss of production performance.</p>
-<h3 id="153-第三优先级精度对拍">15.3 The third priority: precision shooting</h3>
+<h3 id="153-第三优先级精度对拍">15.3 Priority 3: Compare numerical accuracy</h3>
 <p>Recommended layering:</p>
 <ol>
-<li>cache writer/reader round-trip；</li>
+<li>cache writer/reader round-trip ;</li>
 <li>single token attention output;</li>
 <li>single layer hidden state cosine;</li>
 <li>Hidden state of each layer;</li>
-<li>next-token logits top-k；</li>
-<li>greedy token sequence；</li>
+<li>next-token logits top-k ;</li>
+<li>greedy token sequence ;</li>
 <li>small data set perplexity.</li>
 </ol>
 <p>The reference baseline can be:</p>
 <ul>
 <li>CUDA official/upstream implementation;</li>
-<li>BF16 cache/reference attention；</li>
+<li>BF16 cache/reference attention ;</li>
 <li>CPU small size reference.</li>
 </ul>
-<h3 id="154-第四优先级性能">15.4 Priority 4: Performance</h3>
+<h3 id="154-第四优先级性能">15.4 Priority 4: Performance optimization</h3>
 <p>The current PyTorch decode fallback will produce:</p>
 <ul>
 <li>Advanced Index;</li>
 <li>temporary tensor;</li>
-<li>FP8→FP32；</li>
+<li>FP8→FP32 ;</li>
 <li>Python query loop;</li>
 <li>multiple kernel launches;</li>
-<li>host sync type <code>.item()</code>。</li>
+<li>host sync type <code>.item()</code>.</li>
 </ul>
 <p>It is suitable as a correctness reference, not suitable as a final high-performance implementation.</p>
 <p>The next step should be to port the correct physical address formula to:</p>
@@ -1333,7 +1333,7 @@ assert torch.isfinite(probs).all()</code></pre>
 <li>HIP/C++ dedicated decode kernel.</li>
 </ul>
 <p>must retain this round of reference implementation as an oracle before optimization.</p>
-<h3 id="155-第五优先级清理调试代码">15.5 Fifth priority: Clean up debugging code</h3>
+<h3 id="155-第五优先级清理调试代码">15.5 Priority 5: Remove temporary debugging code</h3>
 <p>Before production:</p>
 <ul>
 <li>will <code>DSV4_SPARSE_DEBUG</code> Leave as default off;</li>
@@ -1344,29 +1344,29 @@ assert torch.isfinite(probs).all()</code></pre>
 <li>will <code>VLLM_ROCM_USE_SKINNY_GEMM=0</code> becomes the gfx936 platform default or explicit capability gate.</li>
 </ul>
 <hr>
-<h2 id="16-关键工程经验">Engineering experience summary</h2>
-<h3 id="161-shape-不等于物理-layout">16.1 shape is not equal to physical layout</h3>
+<h2 id="16-关键工程经验">16. Engineering lessons</h2>
+<h3 id="161-shape-不等于物理-layout">16.1 Tensor shape does not determine physical layout</h3>
 <p>Quantized caches often use logical shapes that "conveniently express capacity", but writers may use completely different physical layouts for vectorization, TMA, coalescing, or scale partitions.</p>
 <p>The reader must use the writer's address formula as the source of truth.</p>
-<h3 id="162-调试-prefilldecode-必须分别埋点">16.2 Debugging prefill/decode must be buried separately</h3>
+<h3 id="162-调试-prefilldecode-必须分别埋点">16.2 Instrument prefill and decode separately</h3>
 <p>warmup, prefill and decode may be used differently:</p>
 <ul>
-<li>shape；</li>
-<li>kernel；</li>
-<li>cache slot；</li>
-<li>backend；</li>
-<li>tensor stride。</li>
+<li>shape ;</li>
+<li>kernel ;</li>
+<li>cache slot ;</li>
+<li>backend ;</li>
+<li>tensor stride.</li>
 </ul>
 <p>The "first function call" is usually just a warmup and does not represent a real request.</p>
-<h3 id="163-第一枚-token-正常是重要线索">The diagnostic significance of the first token</h3>
+<h3 id="163-第一枚-token-正常是重要线索">16.3 A correct first token is a useful diagnostic clue</h3>
 <p>It narrows the fault scope to:</p>
-<pre><code class="language-text">prefill 写 cache
-→ cache 持久化
+<pre><code class="language-text">prefill writes the cache
+→ cache persists
 → decode metadata
 → decode cache reader
 → decode attention</code></pre>
 <p>instead of anywhere in the entire model.</p>
-<h3 id="164-数值诊断要形成层级链">16.4 Numerical diagnosis should form a hierarchical chain</h3>
+<h3 id="164-数值诊断要形成层级链">16.4 Build a layered chain of numerical evidence</h3>
 <p>Valid diagnosis sequence for this round:</p>
 <pre><code class="language-text">Q finite?
 indices/indptr correct?
@@ -1376,7 +1376,7 @@ logits finite?
 probs finite?
 output token normal?</code></pre>
 <p>This is much more efficient than just looking at the final gibberish.</p>
-<h3 id="165-负结果也必须记录">16.5 Negative results must also be recorded</h3>
+<h3 id="165-负结果也必须记录">16.5 Record negative results</h3>
 <p>SwiGLU repair, chat template repair, removal <code>.contiguous()</code> are all valuable:</p>
 <ul>
 <li>Some independent bugs have been fixed;</li>
@@ -1385,32 +1385,32 @@ output token normal?</code></pre>
 </ul>
 <p>The full report cannot retain only the last two lines of diff.</p>
 <hr>
-<h2 id="17-最终结论">17. Final Conclusion</h2>
-<p>As of 2026-08-26, vLLM 0.27.x has been successfully ported to Hygon DCU gfx936; DeepSeek V4 Flash FP4 has completed TP=4/8 end-to-end inference through V1 Engine and entered the stability and performance optimization stage.</p>
+<h2 id="17-最终结论">17. Conclusion</h2>
+<p>As of 2026-08-26, vLLM 0.27.x runs on Hygon DCU gfx936, and DeepSeek V4 Flash FP4 completes end-to-end inference through the V1 Engine at TP=4 and TP=8. The work has entered the stability and performance optimization phase.</p>
 <p>The ultimate success was achieved not by falling back to a pure BF16 model, but by staying:</p>
 <ul>
-<li>FP4 expert；</li>
-<li>MXFP4 emulation；</li>
+<li>FP4 expert ;</li>
+<li>MXFP4 emulation ;</li>
 <li>FP8 backbone software inverse quantization;</li>
-<li>FP8 <code>fp8_ds_mla</code> KV cache；</li>
-<li>Sparse MLA；</li>
-<li>TP=8。</li>
+<li>FP8 <code>fp8_ds_mla</code> KV cache ;</li>
+<li>Sparse MLA ;</li>
+<li>TP=8.</li>
 </ul>
 <p>The decisive fix was to make the gfx936 Sparse MLA PyTorch decode fallback read the KV cache according to the block-packed physical layout of the C++ writer.</p>
 <p>The final evidence also covers:</p>
 <ul>
-<li>scheduler；</li>
-<li>engine；</li>
+<li>scheduler ;</li>
+<li>engine ;</li>
 <li>weight and backend;</li>
-<li>cache bytes；</li>
-<li>dequantized K；</li>
-<li>attention logits/probs；</li>
-<li>token IDs；</li>
+<li>cache bytes ;</li>
+<li>dequantized K ;</li>
+<li>attention logits/probs ;</li>
+<li>token IDs ;</li>
 <li>natural language output;</li>
-<li>workload exit code。</li>
+<li>workload exit code.</li>
 </ul>
 <p>can therefore be officially confirmed:</p>
-<blockquote>vLLM 0.27.x on Hygon DCU gfx936 has been successful; the real weight, V1 Engine, TP=4/8 and continuous decode of DeepSeek V4 Flash FP4 have all been run through. Currently entering the stage of high batch stability, accuracy and performance optimization.</blockquote>
+<blockquote>vLLM 0.27.x runs on Hygon DCU gfx936. DeepSeek V4 Flash FP4 completed end-to-end testing with the actual weights, the V1 Engine, TP=4/8, and continuous decoding. The next phase is to improve stability at larger batch sizes, validate accuracy, and optimize performance.</blockquote>
     </main>
   </div>
 </body>

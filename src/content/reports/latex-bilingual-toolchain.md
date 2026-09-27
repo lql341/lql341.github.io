@@ -2,7 +2,7 @@
 title: XeLaTeX 中英文科研排版工具链验证
 titleEn: Bilingual XeLaTeX Research Typesetting Validation
 summary: 通过三页样稿验证中英混排、数学公式、图表、代码、交叉引用及 Biber 文献构建链路。
-summaryEn: A reproducible three-page XeLaTeX smoke test covering bilingual text, mathematics, figures, code, cross-references, and Biber.
+summaryEn: A reproducible three-page XeLaTeX validation covering bilingual text, mathematics, figures, code, cross-references, and the Biber bibliography workflow.
 metricLabelEn: core typesetting checks passed
 date: 2026-08-30
 tags: [LaTeX, XeLaTeX, Typesetting, Reproducibility]
