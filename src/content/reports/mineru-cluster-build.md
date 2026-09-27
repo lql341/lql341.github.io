@@ -1,15 +1,15 @@
 ---
-title: MinerU 海光 Z100 DCU 解析链路与服务池测试
-titleEn: MinerU Pipeline and Service Pool on Hygon Z100 DCU
-summary: 从 gfx906 能力探测、Triton/vLLM 兼容性到离线解析、服务池压测及环境漂移后完整复现的公开记录。
+title: MinerU 海光 Z100：3.4.4 生产基线与 4.0.7 评估
+titleEn: MinerU 3.4.4 Production Baseline and 4.0.7 Evaluation on Hygon Z100
+summary: 以生产与实验双轨重构 MinerU 在 gfx906 上的兼容性、性能、四档验证和 Slurm 批量解析结论。
 date: 2026-09-27
-tags: [MinerU, Z100, HIP, Deployment]
-tagsZh: [MinerU, Z100, HIP, 部署验证]
+tags: [MinerU, Z100, HIP, Slurm]
+tagsZh: [MinerU, Z100, HIP, Slurm]
 href: /reports/mineru-cluster-build-report.html
 featured: true
 homeOrder: 3
-metric: 3.9 s/page
-metricLabel: DCU 流水线解析速度
+metric: 955 docs/hour
+metricLabel: 3.4.4 服务池实测吞吐
 ---
 
-本报告公开技术版本、依赖冲突、验证结论和可复现运行时闭包；集群地址、端口、用户名、目录路径、节点与作业标识及其他内部基础设施信息已脱敏或移除。
+本报告以 3.4.4 生产线和 4.0.7 实验线为主轴；完整失败链与命令记录保留在独立档案中。集群地址、端口、用户名、目录路径、节点与作业标识均已脱敏。

@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MinerU on 海光 Z100 DCU · 完整实验档案</title>
+<style>
+  :root{
+    --void:#121014;
+    --surface:#1A1712;
+    --surface-2:#211D17;
+    --surface-3:#282319;
+    --ink:#EDE6DA;
+    --ink-2:#BDB3A4;
+    --muted:#847B6D;
+    --hair:#332C22;
+    --hair-2:#42392C;
+
+    --amber:#E0A34E;
+    --amber-deep:#F0C078;
+    --amber-wash:#2C2318;
+
+    --verified:#4FC2A4;
+    --verified-wash:#122A26;
+
+    --superseded:#8C8175;
+    --superseded-wash:#221F1A;
+
+    --boundary:#E0764E;
+    --boundary-wash:#2C1D18;
+
+    --danger:#E0764E;
+
+    --mono:"SF Mono",'JetBrains Mono',"Fira Code",Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+    margin:0;
+  }
+  a{color:var(--amber-deep); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code, pre, .mono{font-family:var(--mono);}
+
+  /* ---------- layout ---------- */
+  .shell{display:flex; max-width:1440px; margin:0 auto;}
+  .sidebar{
+    position:sticky; top:0; align-self:flex-start;
+    width:272px; flex:0 0 272px;
+    height:100vh; overflow-y:auto;
+    padding:28px 18px 40px 28px;
+    border-right:1px solid var(--hair);
+  }
+  .sidebar::-webkit-scrollbar{width:6px;}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--hair-2); border-radius:3px;}
+  .brand{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--amber); font-weight:600; margin-bottom:4px;
+  }
+  .brand-sub{font-size:12.5px; color:var(--muted); margin-bottom:24px; line-height:1.5;}
+  .toc{list-style:none; margin:0; padding:0;}
+  .toc li{margin:0;}
+  .toc a{
+    display:block; padding:7px 10px; margin:1px 0;
+    font-size:13px; color:var(--ink-2); border-radius:5px;
+    border-left:2px solid transparent;
+  }
+  .toc a:hover{background:var(--surface-2); text-decoration:none; color:var(--ink);}
+  .toc a.active{color:var(--amber-deep); border-left-color:var(--amber); background:var(--surface-2);}
+  .toc .num{font-family:var(--mono); color:var(--muted); margin-right:7px; font-size:12px;}
+
+  .content{flex:1; min-width:0; padding:0 40px 120px;}
+  .content-inner{max-width:840px; margin:0 auto;}
+
+  /* ---------- masthead ---------- */
+  .mast{padding:56px 0 28px; border-bottom:1px solid var(--hair);}
+  .mast .tag{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--amber); font-weight:600;
+  }
+  .mast h1{
+    font-size:clamp(28px,3.6vw,40px); line-height:1.15; letter-spacing:-.02em;
+    font-weight:800; margin:14px 0 0; color:var(--ink);
+  }
+  .mast .standfirst{font-size:16px; color:var(--ink-2); max-width:66ch; margin-top:16px;}
+  .mast .standfirst b{color:var(--amber-deep); font-weight:650;}
+  .runline{
+    display:flex; flex-wrap:wrap; gap:7px 24px; margin-top:22px;
+    font-family:var(--mono); font-size:12px; color:var(--muted);
+  }
+  .runline b{color:var(--ink-2); font-weight:600;}
+
+  /* ---------- sections ---------- */
+  section{margin-top:58px; scroll-margin-top:24px;}
+  .sec-head{
+    display:flex; align-items:baseline; gap:12px; border-bottom:1px solid var(--hair-2);
+    padding-bottom:10px; margin-bottom:24px;
+  }
+  .sec-head .idx{font-family:var(--mono); color:var(--amber); font-weight:700; font-size:15px;}
+  .sec-head h2{font-size:22px; font-weight:750; letter-spacing:-.012em; margin:0; color:var(--ink);}
+  h3{font-size:17px; font-weight:700; margin:32px 0 14px; color:var(--ink);}
+  h4{font-size:14.5px; font-weight:700; margin:22px 0 10px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.02em;}
+  p{margin:0 0 15px; max-width:74ch; color:var(--ink);}
+  p:last-child{margin-bottom:0;}
+  .lede{font-size:16px; color:var(--ink-2);}
+  ul,ol{max-width:74ch; padding-left:22px; margin:0 0 15px;}
+  li{margin-bottom:5px;}
+  strong{color:var(--amber-deep); font-weight:650;}
+
+  /* ---------- summary metrics ---------- */
+  .metrics{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1px; background:var(--hair); border:1px solid var(--hair); margin:28px 0;
+  }
+  .metric{background:var(--surface); padding:18px 20px;}
+  .metric .v{font-family:var(--mono); font-size:22px; font-weight:700; color:var(--amber-deep);}
+  .metric .l{font-size:12px; color:var(--muted); margin-top:5px;}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto; margin:0 0 20px; border:1px solid var(--hair); border-radius:6px;}
+  table{border-collapse:collapse; width:100%; font-size:13.5px;}
+  th, td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--hair); white-space:nowrap;}
+  td:last-child, th:last-child{white-space:normal;}
+  th{
+    background:var(--surface-2); color:var(--ink-2); font-weight:650; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+  td code{font-size:12.5px; color:var(--amber-deep);}
+
+  /* ---------- code blocks ---------- */
+  pre{
+    background:var(--surface-2); border:1px solid var(--hair); border-radius:7px;
+    padding:16px 18px; overflow-x:auto; font-size:12.8px; line-height:1.62; margin:0 0 18px;
+    color:var(--ink-2);
+  }
+  pre code{color:inherit; background:none; padding:0;}
+  p code, li code{
+    background:var(--surface-3); color:var(--amber-deep); padding:1.5px 6px;
+    border-radius:4px; font-size:12.8px; border:1px solid var(--hair-2);
+  }
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border-left:3px solid var(--muted); background:var(--surface); border-radius:0 7px 7px 0;
+    padding:13px 18px; margin:18px 0; font-size:13.8px; max-width:74ch;
+  }
+  .callout .cl-label{
+    font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    font-weight:700; margin-bottom:5px; display:block;
+  }
+  .callout.lesson{border-left-color:var(--amber); background:var(--amber-wash);}
+  .callout.lesson .cl-label{color:var(--amber-deep);}
+  .callout.warn{border-left-color:var(--boundary); background:var(--boundary-wash);}
+  .callout.warn .cl-label{color:var(--boundary);}
+  .callout.note{border-left-color:var(--hair-2);}
+  .callout.note .cl-label{color:var(--muted);}
+  .callout p{margin-bottom:0;}
+  .callout p + p{margin-top:8px;}
+
+  /* ---------- badges ---------- */
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px;
+    font-weight:700; padding:2.5px 9px; border-radius:20px; letter-spacing:.01em;
+  }
+  .badge.verified{background:var(--verified-wash); color:var(--verified);}
+  .badge.superseded{background:var(--superseded-wash); color:var(--superseded);}
+  .badge.boundary{background:var(--boundary-wash); color:var(--boundary);}
+  .badge.dead{background:var(--superseded-wash); color:var(--superseded); text-decoration:line-through;}
+
+  /* ---------- diagram ---------- */
+  .diagram{
+    font-family:var(--mono); font-size:12.3px; line-height:1.55; white-space:pre;
+    background:var(--surface-2); border:1px solid var(--hair); border-radius:7px;
+    padding:20px 22px; overflow-x:auto; color:var(--ink-2); margin:20px 0;
+  }
+
+  /* ---------- correction cards (§12) ---------- */
+  .corr{
+    border:1px solid var(--hair); border-radius:8px; margin:20px 0; overflow:hidden;
+  }
+  .corr-head{
+    display:flex; align-items:center; gap:10px; padding:12px 18px;
+    background:var(--surface-2); border-bottom:1px solid var(--hair);
+  }
+  .corr-head .n{font-family:var(--mono); color:var(--muted); font-size:12px;}
+  .corr-head .t{font-weight:700; font-size:14.5px;}
+  .corr-body{padding:16px 18px;}
+  .corr-body p{margin-bottom:10px;}
+
+  /* ---------- footer ---------- */
+  .foot{
+    margin-top:80px; padding-top:22px; border-top:1px solid var(--hair);
+    font-family:var(--mono); font-size:11.5px; color:var(--muted);
+  }
+
+  /* ---------- mobile ---------- */
+  .menu-btn{display:none;}
+  @media (max-width:960px){
+    .sidebar{
+      position:fixed; z-index:40; left:0; top:0; bottom:0; background:var(--void);
+      transform:translateX(-100%); transition:transform .2s ease; width:280px; box-shadow:0 0 40px rgba(0,0,0,.5);
+    }
+    .sidebar.open{transform:translateX(0);}
+    .content{padding:0 20px 100px;}
+    .menu-btn{
+      display:flex; align-items:center; gap:8px; position:fixed; top:16px; left:16px; z-index:50;
+      background:var(--surface); border:1px solid var(--hair-2); color:var(--ink);
+      font-family:var(--mono); font-size:12px; padding:8px 12px; border-radius:20px; cursor:pointer;
+    }
+    .mast{padding-top:76px;}
+  }
+
+  /* 与站点 LAMMPS 报告统一：深色技术档案、青绿色主色、蓝色辅助色。 */
+  :root{
+    --void:#07101d; --surface:#0d1a2b; --surface-2:#12233a; --surface-3:#173351;
+    --ink:#eef5fc; --ink-2:#b8c7d8; --muted:#9eb0c7; --hair:#243954; --hair-2:#315171;
+    --amber:#5eead4; --amber-deep:#5eead4; --amber-wash:rgba(94,234,212,.08);
+    --verified:#a6e3a1; --verified-wash:rgba(166,227,161,.10);
+    --superseded:#9eb0c7; --superseded-wash:rgba(158,176,199,.09);
+    --boundary:#f9e2af; --boundary-wash:rgba(249,226,175,.09); --danger:#f9e2af;
+  }
+  body{background:radial-gradient(circle at 12% 0,#11385f 0,transparent 34%),var(--void);}
+  .sidebar{border-right-color:var(--hair);}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--hair-2);}
+  .toc a:hover,.toc a.active{background:var(--surface-2);}
+  .mast{border-bottom-color:var(--hair);}
+  .sec-head{border-bottom-color:var(--hair-2);}
+  .metric{background:var(--surface);}
+  .tw{border-color:var(--hair);}
+  th{background:var(--surface-3);color:var(--ink);}
+  td{border-bottom-color:var(--hair);}
+  tr:nth-child(even){background:rgba(96,165,250,.045);}
+  pre,.diagram{background:#081321;border-color:var(--hair);}
+  .corr,.callout{background:rgba(96,165,250,.045);border-color:var(--hair);}
+  .callout.lesson{background:rgba(94,234,212,.055);border-left-color:var(--amber);}
+  .callout.warn{background:var(--boundary-wash);border-left-color:var(--boundary);}
+</style>
+<link rel="stylesheet" href="/reports/report-theme.css">
+</head>
+<body>
+<div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
+
+<button class="menu-btn" id="menuBtn">☰ 目录</button>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">MinerU · Z100 DCU</div>
+    <div class="brand-sub">兼容性与部署测试<br>测试集群 · gfx906 · 2026-08-12~13<br>环境复验 · 2026-09-27</div>
+    <ul class="toc" id="toc">
+      <li><a href="#s1"><span class="num">01</span>结论速览</a></li>
+      <li><a href="#s2"><span class="num">02</span>起点与问题定义</a></li>
+      <li><a href="#s3"><span class="num">03</span>硬件能力探测</a></li>
+      <li><a href="#s4"><span class="num">04</span>Triton 三层错误链</a></li>
+      <li><a href="#s5"><span class="num">05</span>vLLM 移植可行性</a></li>
+      <li><a href="#s6"><span class="num">06</span>打通解析链路</a></li>
+      <li><a href="#s7"><span class="num">07</span>解析质量验证</a></li>
+      <li><a href="#s8"><span class="num">08</span>性能测试</a></li>
+      <li><a href="#s9"><span class="num">09</span>服务池架构与实现</a></li>
+      <li><a href="#s10"><span class="num">10</span>服务池压测</a></li>
+      <li><a href="#s11"><span class="num">11</span>走死的路径</a></li>
+      <li><a href="#s12"><span class="num">12</span>被推翻的判断</a></li>
+      <li><a href="#s13"><span class="num">13</span>裸金属部署</a></li>
+      <li><a href="#s14"><span class="num">14</span>环境恢复与完整复现</a></li>
+      <li><a href="#s15"><span class="num">15</span>附录：命令速查</a></li>
+      <li><a href="#s16"><span class="num">·</span>数据来源索引</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <div class="content-inner">
+
+      <header class="mast">
+        <div class="tag">完整实验档案 · 脱敏公开版</div>
+        <h1>MinerU on 海光 Z100 DCU</h1>
+        <p class="standfirst">
+          从环境验证到生产级服务池的完整记录。包含 <b>全部尝试路径</b>——成功的和走死的、
+          每一条具体命令、每一个实测数字及其来源作业号，以及过程中被推翻的错误判断。
+        </p>
+        <div class="runline">
+          <span><b>集群</b> 测试集群（国产超算）</span>
+          <span><b>硬件</b> 海光 Z100 DCU (gfx906) × 4</span>
+          <span><b>系统</b> CentOS 7.6 / glibc 2.17</span>
+          <span><b>软件栈</b> DTK 26.04</span>
+          <span><b>时间</b> 2026-08-12 ~ 2026-08-13；复验 2026-09-27</span>
+          <span><b>交付形态</b> 裸金属（systemd）</span>
+        </div>
+      </header>
+
+      <!-- §1 -->
+      <section id="s1">
+        <div class="sec-head"><span class="idx">01</span><h2>结论速览</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>项</th><th>结果</th><th>依据</th></tr>
+            <tr><td>服务池吞吐</td><td><strong>955 docs/hour</strong>（4 卡，并发 12）</td><td><code>soak.log</code></td></tr>
+            <tr><td>稳定性</td><td>72 请求 0 失败 0 拒绝</td><td>§10</td></tr>
+            <tr><td>故障自愈</td><td>压测中 kill worker，自动重建，请求不丢</td><td>§10.3</td></tr>
+            <tr><td>内存泄漏</td><td>无（72 请求前后 RSS 零增长）</td><td>§10.4</td></tr>
+            <tr><td>后端选择</td><td><strong>pipeline</strong> 3.9 s/页；VLM 14.93 s/页不建议</td><td>§8.1</td></tr>
+            <tr><td>FP16 / FP32 / BF16</td><td>16.15 / 9.01 / 5.83 TFLOPS</td><td>§3</td></tr>
+            <tr><td>Triton / <code>torch.compile</code></td><td><span class="badge boundary">✕ 架构边界</span> gfx906 不支持</td><td>§4</td></tr>
+            <tr><td>vLLM HIP kernel</td><td><span class="badge verified">✓ 可用</span> PagedAttention 实测可用</td><td>§5</td></tr>
+            <tr><td>CPU 队列</td><td>产出等价，稳态慢 8.9×</td><td>§8.3</td></tr>
+            <tr><td>环境漂移后复现</td><td><span class="badge verified">✓ 通过</span> 14 页 pipeline，返回码 0</td><td>§14</td></tr>
+          </table>
+        </div>
+        <div class="callout lesson">
+          <span class="cl-label">一句话</span>
+          <p>Z100 跑 MinerU 生产服务完全可行，走 pipeline 后端；Triton 生态用不了，但 MinerU 不需要它。</p>
+        </div>
+      </section>
+
+      <!-- §2 -->
+      <section id="s2">
+        <div class="sec-head"><span class="idx">02</span><h2>起点与问题定义</h2></div>
+
+        <h3>2.1 接手时的状态</h3>
+        <p>前序工作已完成环境搭建并产出 V2 报告，声称「全部通过」。核查后发现一个关键缺口：</p>
+        <pre><code>ssh -p &lt;SSH_PORT&gt; &lt;CLUSTER_HOST&gt; 'ls ~/.cache/modelscope/hub ~/models ~/output 2>/dev/null'
+# 全部为空</code></pre>
+        <p><strong>MinerU 从未解析过任何文档。</strong> V2 报告的「端到端测试」实际测的是 magika
+        文件类型检测——那是 MinerU 的第一步预处理，不是解析。模型一个都没下载。</p>
+
+        <h3>2.2 已有资产（可用）</h3>
+        <div class="tw">
+          <table>
+            <tr><th>项</th><th>路径 / 版本</th></tr>
+            <tr><td>venv</td><td><code>&lt;USER_HOME&gt;/mineru-venv-py310</code>（Python 3.10.14）</td></tr>
+            <tr><td>torch</td><td>2.7.1+das.opt1.dtk2604</td></tr>
+            <tr><td>MinerU</td><td>3.4.4（editable，源码已改 magika 兼容）</td></tr>
+            <tr><td>glibc 2.28</td><td><code>&lt;USER_HOME&gt;/glibc-2.28-rpm/</code>（当时路径；复验时已迁移，见 §14）</td></tr>
+            <tr><td>包装器</td><td><code>dcu-python</code> / <code>mineru</code> / <code>mineru-api</code></td></tr>
+          </table>
+        </div>
+
+        <h3>2.3 集群约束（profile 记录）</h3>
+        <pre><code>cat ~/&lt;SKILL_CONFIG&gt;</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>约束</th><th>值</th></tr>
+            <tr><td>内存上限</td><td><code>cpus-per-task × 3569 MB</code></td></tr>
+            <tr><td>DCU 队列</td><td><code>kshdnormal</code>，QOS 强制 <code>--gres=dcu:1</code></td></tr>
+            <tr><td>CPU 队列</td><td><code>kshcnormal</code>，若干节点，无 GRES 限制</td></tr>
+            <tr><td>计算节点外网</td><td>❌ 无</td></tr>
+            <tr><td><code>/tmp</code></td><td>不跨节点共享</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- §3 -->
+      <section id="s3">
+        <div class="sec-head"><span class="idx">03</span><h2>硬件能力探测</h2></div>
+
+        <h3>3.1 第一次探针（有缺陷）</h3>
+        <p>作业 <code>&lt;JOB_ID&gt;</code>：</p>
+        <pre><code>sbatch ~/probe_caps.slurm     # 见 cluster/probe_caps.py</code></pre>
+        <pre><code>torch 2.7.1 devices 4
+arch: gfx906:sramecc-:xnack- mem GB: 17.2
+[OK]   bf16 matmul: supported=True maxerr=0.250
+[OK]   fp16 matmul: 4.85 TFLOPS          ← 可疑：比 FP32 还慢
+[OK]   fp32 matmul: 8.91 TFLOPS
+[FAIL] triton kernel: FileNotFoundError: '.../gcc-11.2.0-install/bin/gcc'
+[OK]   SDPA: flash_avail=True mem_eff=True
+[FAIL] torch.compile: FileNotFoundError: (同上)
+[OK]   torch._int_mm: ok (512, 512)
+[OK]   onnxruntime: 1.16.3 providers=['AzureExecutionProvider','CPUExecutionProvider']</code></pre>
+        <p><strong>FP16 比 FP32 慢是反常的</strong>——追查发现没做 warmup。</p>
+
+        <h3>3.2 修正后的探针</h3>
+        <p>作业 <code>&lt;JOB_ID&gt;</code>，加 5 次预热 + 30 次计时：</p>
+        <pre><code>def bench(dt, n=2048, iters=30):
+    a = torch.randn(n, n, device="cuda", dtype=dt)
+    b = torch.randn(n, n, device="cuda", dtype=dt)
+    for _ in range(5): c = a @ b          # ← 关键：预热
+    torch.cuda.synchronize(); s = time.time()
+    for _ in range(iters): c = a @ b
+    torch.cuda.synchronize()
+    return 2 * n**3 / ((time.time() - s) / iters) / 1e12</code></pre>
+        <pre><code>fp32: 9.01 TFLOPS
+fp16: 16.15 TFLOPS      ← 是 FP32 的 1.8 倍
+bf16: 5.73 TFLOPS
+--- 强制 rocblas/hipblas 后端 ---
+fp16: 16.12 TFLOPS      ← 无变化，说明本来就走 rocBLAS
+bf16: 5.83 TFLOPS</code></pre>
+
+        <h3>3.3 最终能力表</h3>
+        <div class="tw">
+          <table>
+            <tr><th>能力</th><th>结果</th><th>说明</th></tr>
+            <tr><td>FP16 GEMM</td><td><strong>16.15 TFLOPS</strong></td><td>推理应走 FP16</td></tr>
+            <tr><td>FP32 GEMM</td><td>9.01 TFLOPS</td><td></td></tr>
+            <tr><td>BF16 GEMM</td><td>5.83 TFLOPS</td><td>软件模拟，最慢</td></tr>
+            <tr><td><code>torch._int_mm</code></td><td><span class="badge verified">✓</span></td><td>INT8 可用</td></tr>
+            <tr><td>SDPA</td><td><span class="badge boundary">⚠ 退化</span></td><td>回落 math 后端，无 flash / mem-efficient</td></tr>
+            <tr><td>多卡</td><td><span class="badge verified">✓ 4 卡</span></td><td>每卡 16 GB（报告 17.2 GB）</td></tr>
+            <tr><td>hipBLASLt</td><td><span class="badge dead">✕ 无 gfx906 kernel</span></td><td>库中只有 gfx928，运行时刷 warning</td></tr>
+            <tr><td>FP8 / MFMA</td><td><span class="badge dead">✕</span></td><td>Vega20 架构限制</td></tr>
+          </table>
+        </div>
+        <div class="callout lesson">
+          <span class="cl-label">方法论教训</span>
+          <p>任何含一次性开销（kernel 自动调优、JIT、模型加载）的基准都必须预热，否则可能得出方向完全相反的结论。</p>
+        </div>
+      </section>
+
+      <!-- §4 -->
+      <section id="s4">
+        <div class="sec-head"><span class="idx">04</span><h2>Triton 三层错误链</h2></div>
+        <p class="lede">这是本次最有价值的排查案例：<strong>真因藏在两层假错误之下</strong>。</p>
+
+        <h3>第 1 层：不存在的 gcc 路径</h3>
+        <pre><code>FileNotFoundError: '&lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc'</code></pre>
+        <p>用户 PATH 里有这个目录，但它<strong>不存在</strong>：</p>
+        <pre><code>echo $PATH | tr ':' '\n' | grep gcc
+# &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin   ← 坏路径
+ls &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc
+# ls: cannot access ...: No such file or directory</code></pre>
+        <p>看起来像「Triton 挂了」，其实只是路径坏。</p>
+
+        <h3>第 2 层：系统 gcc 也是坏的</h3>
+        <p>指向真实存在的 gcc-11.2.0 后：</p>
+        <pre><code>cc1: error while loading shared libraries: libisl.so.15: cannot open shared object file</code></pre>
+        <p>逐个实测集群上的编译器：</p>
+        <pre><code>echo "int main(){return 0;}" > /tmp/t.c
+for cc in &lt;SOFTWARE_ROOT&gt;/compiler/gcc-11.2.0/bin/gcc \
+          &lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0/bin/gcc \
+          &lt;SOFTWARE_ROOT&gt;/compiler/gcc-13.3.0/bin/gcc \
+          /opt/rh/devtoolset-7/root/usr/bin/gcc \
+          &lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04/llvm/bin/clang; do
+  $cc /tmp/t.c -o /tmp/t.out 2>/dev/null && echo "OK   $cc" || echo "FAIL $cc"
+done</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>编译器</th><th>结果</th></tr>
+            <tr><td>gcc-11.2.0</td><td><span class="badge dead">✕ 缺 libisl.so.15</span></td></tr>
+            <tr><td><strong>gcc-12.2.0</strong></td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td>gcc-13.3.0</td><td><span class="badge dead">✕ 缺 libisl.so.15</span></td></tr>
+            <tr><td><strong>devtoolset-7</strong></td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td><strong>DTK clang</strong></td><td><span class="badge verified">✓</span></td></tr>
+          </table>
+        </div>
+
+        <h3>第 3 层：真因</h3>
+        <p>用 gcc-12.2.0 后（作业 <code>&lt;JOB_ID&gt;</code>）：</p>
+        <pre><code>loc("probe_triton.py":4:0): error: unsupported target: 'gfx906'
+RuntimeError: PassManager::run failed</code></pre>
+
+        <h3>海光官方 Triton 也一样</h3>
+        <p>海光发布了 DCU 专版 Triton，值得单独验证：</p>
+        <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"
+# triton-3.1.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl</code></pre>
+        <p>装到独立目录避免污染工作 venv：</p>
+        <pre><code>cp triton-3.1.0+...manylinux_2_28_x86_64.whl triton-3.1.0+...manylinux2014_x86_64.whl
+pip install --no-deps --target=&lt;USER_HOME&gt;/dcu-triton-test <retagged.whl></code></pre>
+        <p>首次运行缺 <code>libgcvm.so.17git</code>，定位到 <code>dtk-26.04/dcc/gcvm/lib</code>（不在包装器库路径里），
+        补进 <code>dcu-python</code> 的 <code>ALL_LIBS</code> 后（作业 <code>&lt;JOB_ID&gt;</code>）：</p>
+        <pre><code>triton: 3.1.0 from &lt;USER_HOME&gt;/dcu-triton-test/triton/__init__.py
+arch: gfx906:sramecc-:xnack-
+[FAIL] RuntimeError: PassManager::run failed
+error: unsupported target: 'gfx906'      ← 与 PyPI 版完全相同</code></pre>
+        <p>读源码确认架构白名单：</p>
+        <pre><code>grep -ohE "gfx9[0-9]{2}[a-z]*" triton/backends/amd/compiler.py | sort -u
+# gfx928 gfx936 gfx940 gfx941 gfx942
+grep -ohE "gfx9[0-9]{2}[a-z]*" triton/backends/hcu/compiler.py | sort -u
+# gfx928 gfx936 gfx938 gfx940 gfx941 gfx942</code></pre>
+        <p><strong>gfx906 不在任何列表中。</strong></p>
+
+        <div class="callout warn">
+          <span class="cl-label">⚠ 注意一个误导性证据</span>
+          <p><code>strings libtriton.so | grep gfx906</code> 能搜到 gfx906。那是 LLVM 上游的 AMDGPU target 列表，
+          <strong>LLVM 认识 ≠ Triton 支持</strong>。必须实测，不能靠 strings 推断。</p>
+        </div>
+        <div class="callout note">
+          <span class="cl-label">结论</span>
+          <p>Triton 3.x（PyPI 版与海光 DCU 版）均不支持 gfx906，<code>torch.compile</code> 连带不可用。
+          <strong>这是架构边界，配置改不了。</strong></p>
+        </div>
+      </section>
+
+      <!-- §5 -->
+      <section id="s5">
+        <div class="sec-head"><span class="idx">05</span><h2>vLLM 移植可行性</h2></div>
+
+        <h3>5.1 关键区分</h3>
+        <p>先厘清概念（这两个名字容易混）：</p>
+        <ul>
+          <li><strong>VLM</strong> = Vision-Language Model，一类<strong>模型</strong>（MinerU2.5-Pro-2605-1.2B 就是）</li>
+          <li><strong>vLLM</strong> = 一个推理<strong>引擎软件</strong>（PagedAttention）</li>
+        </ul>
+        <p>MinerU 的选项分两层，差一个字母：</p>
+        <div class="diagram">后端（用什么方法解析）
+  ├── pipeline        专用小模型：版面 + OCR + 公式 + 表格
+  ├── vlm-engine      用 VLM 大模型端到端读整页
+  └── hybrid-engine
+        └─ vlm-engine 内部再选引擎
+              ├── transformers   纯 PyTorch，最慢
+              ├── vllm-engine    ← vLLM 在这里
+              └── lmdeploy</div>
+
+        <h3>5.2 关键发现：kernel 编译进了 gfx906</h3>
+        <p>海光也发布了 DCU 版 vLLM：</p>
+        <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/vllm/DAS1.8/"
+# vllm-0.11.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl</code></pre>
+        <p>解包检查编译目标：</p>
+        <pre><code>strings vllm/_C.abi3.so     | grep -oE "gfx[0-9]{3,4}" | sort -u
+# gfx906 gfx926 gfx928 gfx936 gfx938
+strings vllm/_moe_C.abi3.so | grep -oE "gfx[0-9]{3,4}" | sort -u
+# gfx906 gfx926 gfx928 gfx936 gfx938</code></pre>
+        <p><strong>海光在 Triton 里排除了 gfx906，却在 vLLM 的 HIP kernel 里保留了它。</strong></p>
+
+        <h3>5.3 实测（作业 <code>&lt;JOB_ID&gt;</code>）</h3>
+        <pre><code>from vllm import _custom_ops as ops
+# PagedAttention —— vLLM 的核心
+ks = torch.tensor(1.0, device="cuda"); vs = torch.tensor(1.0, device="cuda")
+ops.paged_attention_v1(out, q, kc, vc, nkvh, 1.0/(hd**0.5),
+                       btab, slen, bs, bs*2, None, "auto", ks, vs, 0,0,0,64,0)</code></pre>
+        <pre><code>arch: gfx906:sramecc-:xnack-
+[OK] import vllm 0.11.0
+[OK] vllm._C loaded
+[OK] rms_norm (HIP): maxerr=0.0010
+[OK] rotary_embedding (HIP): ran
+[OK] paged_attention_v1 (HIP) ★: out(4, 8, 64) finite=True</code></pre>
+
+        <h3>5.4 结论与未竟事项</h3>
+        <p><strong>Z100 上 vLLM 有真实通路</strong>——核心 HIP kernel 全部可用，与 Triton 的结论方向相反。</p>
+        <p><strong>未解决</strong>：平台检测失败（<code>is_rocm: False</code>）。vLLM 靠 <code>import amdsmi</code> 判断 ROCm：</p>
+        <pre><code># vllm/platforms/__init__.py:109
+import amdsmi
+amdsmi.amdsmi_init()</code></pre>
+        <p>而 DTK 26.04 只有旧的 <code>rocm_smi</code>（<code>.hyhal/rocm_smi/bin/rsmiBindings.py</code>）。
+        需要 amdsmi shim 或 patch <code>rocm_platform_plugin()</code> 才能走通完整推理。</p>
+        <p><strong>对 MinerU 无收益</strong>：vLLM 的价值在 PagedAttention + 连续批处理，针对高并发长文本
+        生成；MinerU 的 VLM 负载是单页图 + 短输出，用不上。若要在 Z100 上做 LLM 推理服务，
+        这条路值得继续。</p>
+      </section>
+
+      <!-- §6 -->
+      <section id="s6">
+        <div class="sec-head"><span class="idx">06</span><h2>打通解析链路：六个阻塞问题</h2></div>
+        <p class="lede">每次报错都不同，说明在逐层前进。按实际遇到的顺序：</p>
+
+        <h3>6.1 模型缺失</h3>
+        <p><code>modelscope</code> 会 import torch，在登录节点必炸（无 DCU 驱动）。改用 <code>huggingface_hub</code>
+        （纯 Python）+ hf-mirror：</p>
+        <pre><code># 探测可达性
+curl -s -o /dev/null -w "%{http_code}" https://hf-mirror.com/     # 200
+curl -s -o /dev/null -w "%{http_code}" https://huggingface.co/    # 被墙</code></pre>
+        <pre><code># cluster/dl_models.py
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+os.environ["HF_HOME"] = "&lt;USER_HOME&gt;/mineru-models/hf"
+from huggingface_hub import snapshot_download
+for repo in ["opendatalab/MinerU2.5-Pro-2605-1.2B",
+             "opendatalab/PDF-Extract-Kit-1.0"]:
+    snapshot_download(repo, max_workers=8)</code></pre>
+        <p>下载 20 GB。配置本地路径：</p>
+        <pre><code>{
+  "models-dir": {
+    "pipeline": "&lt;USER_HOME&gt;/mineru-models/models/OpenDataLab--PDF-Extract-Kit-1.0/snapshots/master",
+    "vlm":      "&lt;USER_HOME&gt;/mineru-models/models/OpenDataLab--MinerU2.5-Pro-2605-1.2B/snapshots/master"
+  },
+  "model-source": "local",
+  "device-mode": "cuda"
+}</code></pre>
+
+        <h3>6.2 <code>libssl.so.3 not found</code></h3>
+        <pre><code>File "mineru/cli/fast_api.py", line 19, in <module>
+    import uvicorn
+ImportError: libssl.so.3: cannot open shared object file
+Error: Local mineru-api exited before becoming healthy.</code></pre>
+        <p><strong>根因</strong>：MinerU CLI 会 fork 一个 <code>mineru-api</code> 子进程，用裸 <code>sys.executable</code> 启动，
+        <strong>绕过 <code>dcu-python</code> 包装器</strong>。</p>
+        <p><strong>当时的绕法</strong>：改走 <code>do_parse()</code> Python API，不经 CLI。
+        <strong>后来的根治</strong>（服务化必须）：把 <code>/usr/local/lib64</code> 加进包装器 <code>ALL_LIBS</code>。</p>
+
+        <h3>6.3 <code>operator torchvision::nms does not exist</code></h3>
+        <p>torchvision 0.21.0 是 PyPI 通用版，与 DCU torch 2.7.1 ABI 不匹配。</p>
+        <p>DCU 版 torchvision 在 sourcefind 的 <strong><code>vision/</code></strong> 目录（不是 <code>torchvision/</code>）：</p>
+        <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/vision/DAS1.8/"
+# torchvision-0.22.0+das.opt1.dtk2604.torch271-cp310-...whl   ← 与 torch271 配套</code></pre>
+        <p>pip 拒绝 manylinux_2_28（系统 glibc 2.17）。<strong>重打标签强装</strong>——运行时本来就在
+        glibc 2.28 下，pip 的平台检查是多余的：</p>
+        <pre><code>W=torchvision-0.22.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl
+cp $W ${W/manylinux_2_28/manylinux2014}
+pip install --no-deps --force-reinstall ${W/manylinux_2_28/manylinux2014}</code></pre>
+
+        <h3>6.4 缺 OCR / 版面依赖</h3>
+        <pre><code>pip install shapely pyclipper omegaconf einops ftfy</code></pre>
+
+        <h3>6.5 <code>BrokenProcessPool</code></h3>
+        <pre><code>concurrent.futures.process.BrokenProcessPool:
+  A process in the process pool was terminated abruptly</code></pre>
+        <p><strong>根因</strong>：MinerU 渲染 PDF 用 <strong>spawn</strong> 进程池：</p>
+        <pre><code># mineru/utils/pdf_image_tools.py:160
+if start_method != "spawn":
+    return ProcessPoolExecutor(max_workers=max_workers,
+                               mp_context=multiprocessing.get_context("spawn"))</code></pre>
+        <p>spawn 重新 exec <code>sys.executable</code>，丢掉全部库路径。</p>
+        <p><strong>解法</strong>——<code>sitecustomize.py</code>，Python 启动时自动 import，全局生效：</p>
+        <pre><code># <venv>/lib/python3.10/site-packages/sitecustomize.py
+import os
+_w = "&lt;USER_HOME&gt;/mineru-venv-py310/bin/dcu-python"
+if os.path.exists(_w):
+    import multiprocessing
+    multiprocessing.set_executable(_w)
+    try:
+        multiprocessing.get_context("spawn").set_executable(_w)
+    except Exception:
+        pass</code></pre>
+        <p>验证：</p>
+        <pre><code>dcu-python -c "
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
+def f(x): return x*x
+if __name__=='__main__':
+    with ProcessPoolExecutor(2, mp_context=mp.get_context('spawn')) as ex:
+        print(list(ex.map(f,[1,2,3])))"
+# [1, 4, 9]</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">⚠ 调用方注意</span>
+          <p>调用 MinerU 的脚本<strong>必须</strong>有 <code>if __name__ == "__main__":</code> 保护。
+          spawn 子进程会 import 主模块；没有保护则整个脚本被重复执行（日志里 <code>[info]</code>
+          打印两次），随后 BrokenProcessPool。MinerU 文档未说明这点。</p>
+        </div>
+
+        <h3>6.6 <code>Unsupported model IR version: 10</code></h3>
+        <pre><code>onnxruntime.capi.onnxruntime_pybind11_state.Fail:
+  Load model from .../PP-LCNet_x1_0_table_cls.onnx failed:
+  Unsupported model IR version: 10, max supported IR version: 9</code></pre>
+        <p>onnxruntime 1.16.3 上限 IR v9，MinerU 的表格分类模型是 IR v10。</p>
+        <p>V2 报告判定「onnxruntime ≥1.17 仅发布 manylinux_2_28，不兼容」——但用 6.3 的
+        重打标签手法可解，而且<strong>这不是可选优化，是必需项</strong>：</p>
+        <pre><code>curl -sL "https://pypi.tuna.tsinghua.edu.cn/simple/onnxruntime/" \
+  | grep -oE 'href="[^"]*onnxruntime-1\.20\.1-cp310-cp310-manylinux_2_27_x86_64[^"]*"'
+curl -sL -o ort.whl "https://pypi.tuna.tsinghua.edu.cn/packages/63/47/.../onnxruntime-1.20.1-...whl"
+cp ort.whl onnxruntime-1.20.1-cp310-cp310-manylinux2014_x86_64.whl
+pip install --no-deps --force-reinstall onnxruntime-1.20.1-cp310-cp310-manylinux2014_x86_64.whl</code></pre>
+
+        <h3>6.7 附带修复</h3>
+        <div class="tw">
+          <table>
+            <tr><th>问题</th><th>修法</th></tr>
+            <tr><td>onnxruntime 刷 <code>pthread_setaffinity</code> 报错</td><td>设 <code>OMP/ORT/OPENBLAS/MKL_NUM_THREADS=4</code></td></tr>
+            <tr><td><code>libgcvm.so.17git</code> 缺失</td><td>补 <code>dtk-26.04/dcc/gcvm/lib</code> 进 <code>ALL_LIBS</code></td></tr>
+            <tr><td><code>No module named mineru.cli.api</code></td><td>3.4.4 里模块叫 <code>fast_api</code>，修 <code>mineru-api</code> 包装器</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- §7 -->
+      <section id="s7">
+        <div class="sec-head"><span class="idx">07</span><h2>解析质量验证</h2></div>
+        <p>作业 <code>&lt;JOB_ID&gt;</code>，Mooncake 论文 23 页 0.58 MB。</p>
+        <pre><code>dcu-python parse_api.py ~/sourcecode/Mooncake/Mooncake-v3.pdf ~/parse-out/api-pipeline pipeline</code></pre>
+        <pre><code>[RESULT] backend=pipeline elapsed=146.8s
+[OUT] .../Mooncake-v3.md chars=81072
+processing-window multi-file infer finished, cost: 90.52, speed: 0.254 page/s</code></pre>
+        <p>产出文件：</p>
+        <pre><code>Mooncake-v3.md                  81 KB    Markdown 正文
+Mooncake-v3_content_list.json  121 KB    结构化内容
+Mooncake-v3_middle.json        2.1 MB    中间表示
+Mooncake-v3_layout.pdf         835 KB    版面可视化
+Mooncake-v3_span.pdf           832 KB    span 可视化
+images/                        26 文件</code></pre>
+        <p>逐项核对（不满足于「作业返回 0」）：</p>
+        <div class="tw">
+          <table>
+            <tr><th>要素</th><th>结果</th><th>核对方式</th></tr>
+            <tr><td>Markdown</td><td>81,072 字符</td><td>标题层级、上标署名 ♠♡、摘要结构正确</td></tr>
+            <tr><td>表格</td><td>3 个 HTML</td><td>抽样核对 LRUCache/LFUCache 数值行完整</td></tr>
+            <tr><td>图像</td><td>23 引用 / 26 文件</td><td><code>images/</code> 实际落盘</td></tr>
+            <tr><td>标题</td><td>31 个</td><td>层级与原文一致</td></tr>
+            <tr><td><strong>行内公式</strong></td><td><strong>17 处 LaTeX</strong></td><td><code>$T_{queue}$</code>、<code>$\mathrm{MLP}$</code>、<code>$T_{prefill}$</code></td></tr>
+            <tr><td>显示公式</td><td>0 个</td><td>原文确实用行内数学，非漏检</td></tr>
+          </table>
+        </div>
+        <p>首页输出片段：</p>
+        <pre><code># Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving
+
+Ruoyu Qin♠♡1 Zheming Li♠1 ... ♠Moonshot AI ♡Tsinghua University
+
+## Abstract
+
+Mooncake is the serving platform for Kimi, a leading LLM service provided by Moonshot AI...</code></pre>
+        <div class="callout lesson">
+          <span class="cl-label">核查教训</span>
+          <p>初次只 grep <code>$$</code> 显示块得到「0 个公式」，据此差点判定公式识别失效。
+          实际这篇系统论文通篇用行内数学，middle.json 有 38 个 <code>inline_equation</code>，
+          MFR 识别 19 个区域。<strong>按内容实际形态选检验方法，不能用一种格式的缺席推断功能缺失。</strong></p>
+        </div>
+      </section>
+
+      <!-- §8 -->
+      <section id="s8">
+        <div class="sec-head"><span class="idx">08</span><h2>性能测试</h2></div>
+
+        <h3>8.1 三种后端</h3>
+        <div class="tw">
+          <table>
+            <tr><th>后端</th><th>作业</th><th>速度</th><th>结论</th></tr>
+            <tr><td><strong>pipeline (DCU)</strong></td><td><code>&lt;JOB_ID&gt;</code></td><td><strong>3.9 s/页</strong>（90.5 s / 23 页）</td><td><strong>生产选用</strong></td></tr>
+            <tr><td>pipeline (CPU)</td><td><code>&lt;JOB_ID&gt;</code></td><td>10.1 s/页（231.3 s）</td><td>产出等价，见 §8.3</td></tr>
+            <tr><td>VLM (transformers)</td><td><code>&lt;JOB_ID&gt;</code></td><td><strong>14.93 s/页</strong></td><td>50 分钟超时未完成</td></tr>
+          </table>
+        </div>
+        <p>VLM 慢 3.8 倍且 gfx906 上无加速手段（Triton 不可用 ⇒ vllm-engine 路径走不通），
+        <strong>生产不建议启用</strong>。</p>
+        <p>验证 VLM 确实在算而非挂死：</p>
+        <pre><code>ssh &lt;COMPUTE_NODE&gt; "cat /proc/&lt;PID&gt;/status | grep -E '^State|^Threads'; ls /proc/&lt;PID&gt;/fd | grep -c kfd"
+# State: R (running)   Threads: 44   kfd handles: 1</code></pre>
+
+        <h3>8.2 模型加载主导</h3>
+        <p><strong>最重要的一个数字</strong>：</p>
+        <div class="metrics">
+          <div class="metric"><div class="v">146.8s</div><div class="l">单文档（冷启动）</div></div>
+          <div class="metric"><div class="v">22.5s</div><div class="l">批量中的同一文档</div></div>
+          <div class="metric"><div class="v">~85%</div><div class="l">耗时占比：模型加载</div></div>
+        </div>
+        <p><strong>模型加载占约 85%。</strong> 这直接否定「一文档一作业」的架构——85% 机时花在反复加载
+        同一批模型上。<strong>必须常驻进程批量喂。</strong></p>
+
+        <h3>8.3 CPU 队列等价性</h3>
+        <p>产出逐字节比对：</p>
+        <pre><code>diff ~/parse-out/cpu/Mooncake-v3/auto/Mooncake-v3.md \
+     ~/parse-out/api-pipeline/Mooncake-v3/auto/Mooncake-v3.md
+# 5 行差异：
+# 98,99c98
+# < ## Listing 1: Request samples.
+# ---
+# > Listing 1: Request samples.</code></pre>
+        <p><strong>81,074 vs 81,072 字符，差异仅一处标题层级。</strong> CPU 队列是生产可用路径，非降级方案。</p>
+        <p><strong>但单文档对比会严重低估差距</strong>：</p>
+        <div class="tw">
+          <table>
+            <tr><th></th><th>单文档</th><th>批量稳态</th></tr>
+            <tr><td>DCU</td><td>146.8 s</td><td>19.6 s</td></tr>
+            <tr><td>CPU</td><td>315.4 s</td><td>173.8 s</td></tr>
+            <tr><td><strong>比值</strong></td><td><strong>2.1×</strong></td><td><strong>8.9×</strong></td></tr>
+          </table>
+        </div>
+        <p>单文档两侧都被模型加载主导（CPU/DCU 上耗时相近），<strong>稀释真实差距 4 倍</strong>。</p>
+        <p>CPU 路径代价集中在公式识别：MFR 在 DCU 上 5.86 it/s，CPU 上 3.85 s/it（约 22×）。</p>
+
+        <h3>8.4 批量吞吐（无 HTTP）</h3>
+        <p>作业 <code>&lt;JOB_ID&gt;</code>（DCU）、<code>&lt;JOB_ID&gt;</code>（CPU）：</p>
+        <pre><code>dcu-python throughput.py ~/pdf-corpus ~/parse-out/tput pipeline 4</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>配置</th><th>冷启动计入</th><th>稳态</th><th>稳态单文档</th></tr>
+            <tr><td>4 DCU</td><td>233 docs/h</td><td><strong>735 docs/h</strong></td><td>19.6 s</td></tr>
+            <tr><td>4 CPU worker</td><td>63 docs/h</td><td>83 docs/h</td><td>173.8 s</td></tr>
+          </table>
+        </div>
+        <p>4 卡负载均衡：各 worker 总耗时 176.4 / 177.4 / 185.3 / 185.7 s，<strong>偏差 &lt; 6%</strong>。</p>
+        <p><strong>发现的 bug</strong>：批量跑完 worker 不退出，4 进程各占 3.8 GB RSS 挂死。
+        MinerU 的 <code>_get_pdf_render_executor()</code> 创建<strong>常驻</strong> ProcessPoolExecutor，
+        非 daemon 子进程阻止父进程退出。修法：</p>
+        <pre><code>from mineru.utils.pdf_image_tools import shutdown_pdf_render_executor
+shutdown_pdf_render_executor()   # worker 收尾时调用</code></pre>
+        <p>修复后 CPU 批量作业正常打印 <code>BENCH_DONE</code> 并 <code>RC=0</code> 退出。</p>
+
+        <h3>8.5 队列选型</h3>
+        <p>实测时的集群负载：</p>
+        <pre><code>sinfo -p kshdnormal -o "%t %D" -h | sort    # alloc 735 / idle 2  （满载）
+sinfo -p kshcnormal -o "%t %D" -h | sort    # idle 1106           （空闲）</code></pre>
+        <p><strong>总吞吐 = 单节点速度 × 能拿到的节点数</strong>：</p>
+        <ul>
+          <li>少量空闲 DCU 节点 × 735 = 约 <strong>1,470 docs/h</strong></li>
+          <li>若干空闲 CPU 节点 × 83 = 约 <strong>91,663 docs/h</strong></li>
+        </ul>
+        <p>量级差距来自可用性，不是算力。大批量离线解析应铺 CPU 队列；
+        DCU 留给时延敏感的在线请求和公式密集语料。</p>
+      </section>
+
+      <!-- §9 -->
+      <section id="s9">
+        <div class="sec-head"><span class="idx">09</span><h2>服务池架构与实现</h2></div>
+
+        <h3>9.1 网络可达性（决定架构）</h3>
+        <p>作业 <code>&lt;JOB_ID&gt;</code>。先验证计算节点能否对外提供服务：</p>
+        <pre><code># 计算节点上起服务，写出 endpoint
+IP=$(hostname -I | awk '{print $1}'); PORT=$((30000 + RANDOM % 5000))
+dcu-python svc_hello.py $PORT &
+echo "$IP:$PORT" > ~/svc_endpoint.txt
+
+# 登录节点访问
+curl --max-time 8 "http://$(cat ~/svc_endpoint.txt)/"
+# MINERU_SVC_ALIVE on &lt;COMPUTE_NODE&gt;      ← 通</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>测试</th><th>结果</th></tr>
+            <tr><td>计算节点绑 <code>0.0.0.0</code> 自测</td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td><strong>登录节点 → 计算节点端口</strong></td><td><span class="badge verified">✓</span></td></tr>
+            <tr><td>计算节点 → 外网</td><td><span class="badge dead">✕（预期）</span></td></tr>
+          </table>
+        </div>
+        <p><strong>集群内网互通</strong>，与「计算节点无外网」是两件事。服务池因此能真正对外服务。</p>
+
+        <h3>9.2 架构</h3>
+        <div class="diagram">                    ┌───────────────────────────────┐
+   客户端  ──HTTP──►│  网关 :38080                   │
+                    │  健康探测 · 最小负载调度        │
+                    │  每 worker 限流 · 失败重试      │
+                    └───────┬───────────────────────┘
+                            │ 按空闲槽位分发
+        ┌───────────┬───────┴───────┬───────────┐
+        ▼           ▼               ▼           ▼
+   worker :38100  :38101        :38102      :38103
+     DCU 0         DCU 1          DCU 2       DCU 3
+        │           │               │           │
+        └───────────┴───────┬───────┴───────────┘
+                            ▼
+                  注册表（共享目录，文件 mtime = 心跳）</div>
+        <p><strong>设计依据</strong>（每条都来自实测，不是先验）：</p>
+        <div class="tw">
+          <table>
+            <tr><th>决策</th><th>依据</th></tr>
+            <tr><td>每卡一进程</td><td>MinerU 模型非线程安全，单进程内并发会串行化</td></tr>
+            <tr><td><code>HIP_VISIBLE_DEVICES</code> 钉卡</td><td>显存隔离，一个 worker OOM 不影响其他</td></tr>
+            <tr><td><strong>每 worker 并发上限 = 1</strong></td><td>压测得出，见 §10.1</td></tr>
+            <tr><td>文件 mtime 做心跳</td><td>worker 自注册自摘除，网关只扫目录，无需额外服务发现</td></tr>
+            <tr><td>失败重试到别的 worker</td><td>解析是幂等的，可安全重试</td></tr>
+          </table>
+        </div>
+
+        <h3>9.3 MinerU API 端点</h3>
+        <pre><code>grep -n "@app\.\(get\|post\)" -A3 mineru/cli/fast_api.py</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>路由</th><th>用途</th></tr>
+            <tr><td><code>POST /file_parse</code></td><td>同步解析</td></tr>
+            <tr><td><code>POST /tasks</code></td><td>异步提交</td></tr>
+            <tr><td><code>GET /tasks/{id}</code> <code>/tasks/{id}/result</code></td><td>异步查询</td></tr>
+            <tr><td><code>GET /health</code></td><td>健康检查（网关用）</td></tr>
+          </table>
+        </div>
+
+        <h3>9.4 关键实现片段</h3>
+        <p><strong>网关调度</strong>（<code>scripts/mineru_gateway.py</code>）：</p>
+        <pre><code>def _acquire(exclude=()):
+    """Reserve a slot on the least-loaded healthy worker, waiting if all busy."""
+    deadline = time.time() + SLOT_WAIT_TIMEOUT
+    with _cv:
+        while True:
+            cands = [(v["inflight"], v["served"], u)
+                     for u, v in _workers.items()
+                     if v["healthy"] and u not in exclude
+                     and v["inflight"] < MAX_INFLIGHT]      # ← 限流
+            if cands:
+                cands.sort()
+                url = cands[0][2]
+                _workers[url]["inflight"] += 1
+                return url
+            if time.time() >= deadline: return None
+            _cv.wait(2.0)                                    # ← 排队而非失败</code></pre>
+        <p><strong>失败重试</strong>：</p>
+        <pre><code>for attempt in range(MAX_ATTEMPTS):
+    url = _acquire(exclude=tuple(tried))     # 排除已失败的 worker
+    ...
+    except urllib.error.HTTPError as e:
+        if e.code < 500:                     # 4xx 是客户端问题，不重试
+            return <passthrough>
+        _release(url, False)
+    tried.append(url)</code></pre>
+        <p><strong>worker 监督</strong>（<code>cluster/mineru_worker.sh</code>）：</p>
+        <pre><code>while true; do
+  mineru-api --host 0.0.0.0 --port $PORT &
+  APID=$!
+  # 等健康后再注册，避免流量打到还在加载模型的 worker
+  for i in $(seq 1 90); do
+    curl -sf --max-time 3 "http://127.0.0.1:$PORT/health" >/dev/null && READY=1 && break
+    sleep 2
+  done
+  [ "$READY" = 1 ] && echo "{\"url\":\"$URL\",...}" > "$REGFILE"
+  # 心跳：健康就 touch，网关靠 mtime 判活
+  while kill -0 $APID &lt;PID&gt;>/dev/null; do
+    curl -sf --max-time 5 ".../health" >/dev/null && touch "$REGFILE"
+    sleep 10
+  done
+  rm -f "$REGFILE"; sleep 5      # 崩了就重启
+done</code></pre>
+
+        <h3>9.5 启动</h3>
+        <pre><code>sbatch ~/mineru_pool.slurm        # cluster/mineru_pool.slurm</code></pre>
+        <pre><code>[t+95s] healthy workers: 4
+=== POOL READY ===
+{"pool_size": 4, "healthy": 4, "max_inflight_per_worker": 1, ...}</code></pre>
+        <p>从登录节点验证：</p>
+        <pre><code>curl -s "http://&lt;SERVICE_ENDPOINT&gt;/pool/status" | python3 -m json.tool</code></pre>
+      </section>
+
+      <!-- §10 -->
+      <section id="s10">
+        <div class="sec-head"><span class="idx">10</span><h2>服务池压测</h2></div>
+
+        <h3>10.1 网关 v1 vs v2</h3>
+        <p>同样 24 请求 / 并发 8：</p>
+        <pre><code>python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 8 2</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th>指标</th><th>v1（无限流无重试）</th><th><strong>v2（生产版）</strong></th></tr>
+            <tr><td><strong>错误率</strong></td><td><strong>8.3%</strong>（2 × 502）</td><td><strong>0.0%</strong></td></tr>
+            <tr><td><strong>吞吐</strong></td><td>374 docs/h</td><td><strong>440 docs/h</strong>（+18%）</td></tr>
+            <tr><td><strong>负载分布</strong></td><td>11 / 4 / 5 / 2</td><td><strong>6 / 5 / 7 / 6</strong></td></tr>
+            <tr><td>p50</td><td>27.2 s</td><td>38.0 s</td></tr>
+            <tr><td>p90</td><td>111.9 s</td><td>121.7 s</td></tr>
+          </table>
+        </div>
+        <p>原始输出：<code>data/loadtest.log</code>、<code>data/loadtest2.log</code></p>
+        <p><strong>限流反而提升吞吐</strong>——MinerU 模型非线程安全、请求串行处理，往忙碌 worker 堆请求
+        只会内部排队。偏斜从 5.5:1 收敛到 1.4:1。</p>
+        <p><strong>p50 上升是预期且正确的</strong>：v1 的低 p50 是少数请求抢到空闲 worker 的假象，
+        代价是 p90 拖长和 8.3% 失败。v2 让所有请求公平排队。</p>
+
+        <h3>10.2 超订压测（3× worker 数）</h3>
+        <p>48 请求 / 并发 12：</p>
+        <pre><code>python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 12 4</code></pre>
+        <pre><code>total=48  ok=48  failed=0  error_rate=0.0%
+wall=180.9s  throughput=955 docs/hour  concurrency=12
+latency  p50=32.4s  p90=70.4s  p99=131.1s  min=11.9s  max=131.1s
+per-worker distribution:  11 / 11 / 14 / 12</code></pre>
+        <p>压测中途的池状态：</p>
+        <pre><code>"in_flight": 4  "waiting_for_slot": 8  "queue_peak": 8  "retries": 0  "rejected": 0</code></pre>
+        <p><strong>背压正确</strong>：在途硬顶 4，超出的 8 个排队而非失败。<strong>过载降速，不丢请求。</strong></p>
+        <p>并发 8→12 吞吐 440→955 docs/h，说明并发 8 时管道未打满。
+        955 已<strong>超过纯批处理的 735</strong>——批处理按卡静态分片有空转，服务池按空闲槽位动态分发。</p>
+
+        <h3>10.3 故障自愈（压测进行中执行）</h3>
+        <pre><code>PID=$(python3 -c "import json;print(json.load(open('.../&lt;COMPUTE_NODE&gt;-dcu3.json'))['pid'])")
+ssh &lt;COMPUTE_NODE&gt; "kill -9 $PID"        # PID &lt;PID&gt;</code></pre>
+        <p>50 秒后：</p>
+        <pre><code>before: "healthy": 3  "total_served": 5   "total_failed": 0
+after:  "healthy": 4  "total_served": 16  "total_failed": 0</code></pre>
+        <p>验证确实重建（PID 变化 + 日志）：</p>
+        <pre><code>cat ~/mineru-registry/&lt;COMPUTE_NODE&gt;-dcu3.json
+# {"url":"http://&lt;SERVICE_ENDPOINT&gt;",...,"pid":&lt;PID&gt;}     ← 原 &lt;PID&gt;
+
+grep -a dcu3 pool-*.err | grep -E "restart|READY|exited"
+# [worker dcu3] exited, restarting in 5s (total restarts: 1)
+# [worker dcu3] starting on http://&lt;SERVICE_ENDPOINT&gt; (restart #1)
+# [worker dcu3] READY -> registered http://&lt;SERVICE_ENDPOINT&gt;</code></pre>
+        <p><strong>在真实负载下验证，<code>total_failed</code> 全程 0，请求未丢失。</strong></p>
+
+        <h3>10.4 泄漏检查（72 请求前后）</h3>
+        <pre><code>ssh &lt;COMPUTE_NODE&gt; "ps -u &lt;USER&gt; -o rss,cmd --sort=-rss | grep -a fast_api | awk '{print \$1/1024}'"</code></pre>
+        <div class="tw">
+          <table>
+            <tr><th></th><th>w0</th><th>w1</th><th>w2</th><th>w3</th></tr>
+            <tr><td>前</td><td>4839</td><td>4780</td><td>4754</td><td>4744</td></tr>
+            <tr><td>后</td><td>4837</td><td>4773</td><td>4762</td><td>4742</td></tr>
+          </table>
+        </div>
+        <p><strong>无增长</strong>。进程数稳定 4，无 spawn 子进程堆积。</p>
+
+        <h3>10.5 汇总</h3>
+        <div class="metrics">
+          <div class="metric"><div class="v">72</div><div class="l">累计请求（24+48）</div></div>
+          <div class="metric"><div class="v">0</div><div class="l">失败</div></div>
+          <div class="metric"><div class="v">0</div><div class="l">拒绝</div></div>
+          <div class="metric"><div class="v">955/h</div><div class="l">峰值吞吐</div></div>
+        </div>
+      </section>
+
+      <!-- §11 -->
+      <section id="s11">
+        <div class="sec-head"><span class="idx">11</span><h2>走死的路径</h2></div>
+        <p class="lede">记录失败路径与其代价，避免重复投入。</p>
+
+        <h3>11.1 patchelf 烧路径进 ELF <span class="badge dead">✕ 失败</span></h3>
+        <p><strong>动机</strong>：<code>ld-linux</code> 包装器只覆盖顶层进程，想用 patchelf 把库路径写进 Python
+        二进制，让所有子进程自动继承。理论上比包装器干净。</p>
+        <pre><code>patchelf --set-interpreter $GLIBC_DIR/ld-linux-x86-64.so.2 python3.10</code></pre>
+        <pre><code>Inconsistency detected by ld.so: dl-call-libc-early-init.c: 37:
+  _dl_call_libc_early_init: Assertion `sym != NULL' failed!</code></pre>
+        <p>加 rpath 后仍 segfault，连 <code>ldd</code> 都崩：</p>
+        <pre><code>patchelf --set-interpreter ... --force-rpath --set-rpath "$G:/usr/local/lib64:/usr/lib64" python3.10
+./python3.10 -c "print(1)"        # Segmentation fault
+ldd python3.10                    # Segmentation fault</code></pre>
+        <p>分项定位：</p>
+        <div class="tw">
+          <table>
+            <tr><th>测试</th><th>结果</th></tr>
+            <tr><td>只改 rpath，保留系统 interpreter</td><td><span class="badge verified">✓ 正常</span></td></tr>
+            <tr><td>只换 interpreter</td><td><span class="badge dead">✕ 断言失败</span></td></tr>
+            <tr><td>两者都改</td><td><span class="badge dead">✕ segfault</span></td></tr>
+          </table>
+        </div>
+        <div class="callout note">
+          <span class="cl-label">结论</span>
+          <p>glibc 2.28 的 <code>ld.so</code> 与系统 libc 2.17 混用不可行。已从备份回滚。
+          <strong>改 ELF 这条路在 glibc 大版本跨越时走不通</strong>，只能用包装器 + <code>sitecustomize.py</code>。</p>
+        </div>
+
+        <h3>11.2 VLM 后端 <span class="badge boundary">⚠ 能跑但不实用</span></h3>
+        <p>14.93 s/页，50 分钟超时未完成 23 页。gfx906 上无加速手段：
+        Triton 不可用 ⇒ <code>vllm-engine</code> / <code>lmdeploy</code> 引擎路径都走不通，只能 transformers
+        单序列推理。pipeline 后端已能出高质量结果且快 3.8 倍。</p>
+
+        <h3>11.3 vLLM 完整推理 <span class="badge boundary">⏸ 未完成，非失败</span></h3>
+        <p>核心 HIP kernel 实测可用（§5），但平台检测卡在 <code>import amdsmi</code>。
+        DTK 26.04 只有旧的 <code>rocm_smi</code>。需要写 shim 或 patch。<strong>这条路是通的，只是没走完。</strong></p>
+
+        <h3>11.4 V2 报告中已记录的失败路径</h3>
+        <div class="tw">
+          <table>
+            <tr><th>路径</th><th>结果</th><th>原因</th></tr>
+            <tr><td>Conda 装 onnxruntime</td><td><span class="badge dead">✕</span></td><td>channels 访问超时</td></tr>
+            <tr><td>Singularity 容器</td><td><span class="badge dead">✕</span></td><td>Docker Hub 被墙</td></tr>
+            <tr><td>Python 3.8</td><td><span class="badge dead">✕</span></td><td>MinerU 需 ≥3.10</td></tr>
+            <tr><td>Python 3.12 + onnx 1.17 强装</td><td><span class="badge boundary">✕（当时）</span></td><td>本次用重打标签手法解决了同类问题</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- §12 -->
+      <section id="s12">
+        <div class="sec-head"><span class="idx">12</span><h2>被推翻的判断</h2></div>
+        <p class="lede">工作过程中三次自我更正，都影响了结论方向。记录在此因为方法论比结论本身更有价值。</p>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.1</span><span class="t">「FP16 无收益」← 未预热</span></div>
+          <div class="corr-body">
+            <p>无预热测出 FP16 4.85 TFLOPS（比 FP32 的 8.91 还慢），会得出「gfx906 上 FP16
+            没意义」的结论。预热后 <strong>16.15 TFLOPS，是 FP32 的 1.8 倍</strong>。</p>
+            <div class="callout lesson"><span class="cl-label">教训</span><p>任何含一次性开销的基准都必须预热。</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.2</span><span class="t">「vLLM 在 gfx906 上没戏」← 用 Triton 的失败推断 vLLM</span></div>
+          <div class="corr-body">
+            <p>最初说「vLLM 依赖 Triton，gfx906 上没戏」。<strong>这个推理是错的</strong>——没有分清依赖层次。
+            vLLM 的 PagedAttention 是手写 HIP kernel，不经 Triton。实测海光把
+            <code>_C.abi3.so</code> 编译进了 gfx906，<code>paged_attention_v1</code> 正常工作。</p>
+            <div class="callout lesson"><span class="cl-label">教训</span><p>不要用一个组件的失败推断另一个组件，即使它们看起来相关。分层验证。</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.3</span><span class="t">「CPU 只慢 2.1 倍」← 用单文档数据外推批量</span></div>
+          <div class="corr-body">
+            <p>单文档 315.4 s vs 146.8 s = 2.1×，据此写了「CPU 队列只是稍慢」的建议。
+            批量稳态实测 173.8 s vs 19.6 s = <strong>8.9×</strong>，差 4 倍。</p>
+            <p>原因：单文档两侧都被模型加载主导，而模型加载在 CPU/DCU 上耗时相近，稀释了真实差距。</p>
+            <div class="callout lesson"><span class="cl-label">教训</span><p>含固定启动开销的对比必须用稳态数据。</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.4</span><span class="t">「公式识别失效」← 只查了一种格式</span></div>
+          <div class="corr-body">
+            <p>初次只 grep <code>$$</code> 显示块，得到「0 个公式」。实际这篇论文通篇用行内数学，
+            有 17 处 <code>$...$</code>，middle.json 里 38 个 <code>inline_equation</code>。</p>
+            <div class="callout lesson"><span class="cl-label">教训</span><p>按内容实际形态选检验方法，不能用一种格式的缺席推断功能缺失。</p></div>
+          </div>
+        </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.5</span><span class="t">「ONNX Runtime 已无法运行」← 子进程绕过 loader</span></div>
+          <div class="corr-body">
+            <p>2026-09-27 环境复验时，顶层 Python 已经通过用户态 glibc 2.28 启动，但
+            MinerU CLI 拉起的本地 API 子进程重新使用系统 glibc 2.17，报
+            <code>GLIBC_2.27 not found</code>。这看起来像 wheel 已经失效，实际是<strong>进程边界丢失运行时闭包</strong>。</p>
+            <p>加载 GCC 12.2 与 DTK 26.04 module、用同一个 loader 启动主进程，并让
+            multiprocessing 子进程继承该入口后，14 页 pipeline 完整解析并返回 0。</p>
+            <div class="callout lesson"><span class="cl-label">教训</span><p>动态库兼容性必须沿完整进程树验证；父进程 import 成功，不能证明 CLI、服务进程和 spawn worker 使用了同一运行时。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- §13 -->
+      <section id="s13">
+        <div class="sec-head"><span class="idx">13</span><h2>裸金属部署</h2></div>
+        <p class="lede">交付形态是裸金属，不含 Slurm。</p>
+
+        <h3>13.1 关键建议：换 glibc ≥ 2.28 的发行版</h3>
+        <p>集群上那套 <code>ld-linux</code> 包装器是为绕开 CentOS 7 的 glibc 2.17 而生的，
+        代价是子进程盲区（§6.2、§6.5）。<strong>裸金属你控制 OS，这个坑本可以不踩。</strong></p>
+        <p>DCU torch 实际要求 <code>GLIBC_2.25</code>：</p>
+        <pre><code>objdump -T torch.libs/libevent_core*.so* | grep -oE "GLIBC_[0-9.]+" | sort -u -V | tail -3
+# GLIBC_2.14
+# GLIBC_2.17
+# GLIBC_2.25      ← 真实要求</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">⚠</span>
+          <p>用 <code>sort -V</code>，不能用 <code>sort -u</code>——后者按字典序会把 <code>2.9</code> 排在 <code>2.25</code> 之后，
+          得出「只需 GLIBC_2.9」的假结论。</p>
+        </div>
+        <p>另外：<strong>两个 torch wheel（manylinux_2_17 / _2_28）md5 完全相同</strong>
+        （<code>7b098c2f9c036fcdb9ae244228bac822</code>），只是标签不同，别指望换标签那个能省事。</p>
+        <p>选 Rocky 8+ / Ubuntu 20.04+ / CentOS 8+，<code>sitecustomize.py</code>、包装器、
+        重打标签这些手法全部不需要。</p>
+
+        <h3>13.2 部署</h3>
+        <pre><code>./mineru-baremetal-deploy.sh preflight    # 检查 glibc / DTK / venv / 模型
+sudo ./mineru-baremetal-deploy.sh install # 生成 systemd unit
+sudo ./mineru-baremetal-deploy.sh start
+./mineru-baremetal-deploy.sh status</code></pre>
+        <p>systemd 负责开机自启与崩溃重启（<code>Restart=always</code>）。
+        <code>TimeoutStartSec=300</code> 给模型加载留时间；注册脚本<strong>等健康检查通过后才注册</strong>，
+        避免流量打到还在加载模型的 worker。</p>
+
+        <h3>13.3 调用</h3>
+        <pre><code>curl -X POST http://<host>:8000/file_parse \
+     -F "files=@paper.pdf" -F "backend=pipeline"
+
+curl http://<host>:8000/pool/status</code></pre>
+        <p>响应头 <code>X-MinerU-Worker</code> 标明处理的 worker，<code>X-MinerU-Attempt</code> 标明第几次尝试。</p>
+
+        <h3>13.4 监控接入</h3>
+        <div class="tw">
+          <table>
+            <tr><th>字段</th><th>告警建议</th></tr>
+            <tr><td><code>healthy</code></td><td>&lt; 期望值 报警</td></tr>
+            <tr><td><code>waiting_for_slot</code></td><td>持续 &gt; 2× worker 数 → 需扩容</td></tr>
+            <tr><td><code>total_failed</code></td><td>增速异常报警</td></tr>
+            <tr><td><code>retries</code></td><td>突增说明有 worker 不稳定</td></tr>
+            <tr><td><code>rejected</code></td><td>&gt; 0 立即排查</td></tr>
+          </table>
+        </div>
+
+        <h3>13.5 扩容</h3>
+        <p>横向线性扩展，不需改网关：新机器部署 worker（不启网关），
+        注册表目录指向共享存储（NFS/GPFS）上同一路径，网关自动发现。</p>
+        <p>单机上限由卡数决定。若 CPU 成瓶颈（版面分析、OCR 前处理是 CPU 密集的），
+        降低 <code>*_NUM_THREADS</code> 或减少 worker 数。</p>
+      </section>
+
+      <!-- §14 -->
+      <section id="s14">
+        <div class="sec-head"><span class="idx">14</span><h2>环境恢复与完整复现</h2></div>
+        <p class="lede">2026-09-27，在原实验目录经过归档和路径迁移后，从零审计运行时闭包，并重新完成一份 14 页 PDF 的端到端 pipeline 解析。</p>
+
+        <div class="callout lesson">
+          <span class="cl-label">最终结论</span>
+          <p>昆山 module 系统<strong>没有独立 glibc module</strong>。可复现条件是：
+          GCC 12.2 + DTK 26.04 module、用户态 glibc 2.28 loader、正确的本地模型配置，
+          以及主进程和 multiprocessing 子进程共用同一个 Python 启动入口。</p>
+        </div>
+
+        <h3>14.1 复现范围与证据边界</h3>
+        <div class="tw">
+          <table>
+            <tr><th>层次</th><th>验证内容</th><th>证据类型</th></tr>
+            <tr><td>登录节点</td><td>module 清单中无独立 glibc；GCC 12.2、DTK 26.04 可用</td><td><code>module avail/show</code></td></tr>
+            <tr><td>计算节点</td><td>Torch 导入、设备枚举、FP32/FP16/BF16 GEMM</td><td>1 卡受控探针</td></tr>
+            <tr><td>进程树</td><td>主 Python、PDF render spawn worker 使用同一 loader</td><td>multiprocessing 实测</td></tr>
+            <tr><td>端到端</td><td>14 页 PDF → Markdown / JSON / 图片 / 可视化 PDF</td><td>pipeline 返回码 0</td></tr>
+          </table>
+        </div>
+        <p>公开版省略用户名、集群地址、节点名、实际作业号和真实目录，只保留版本、错误类型、
+        命令结构、性能数字与验收条件。</p>
+
+        <h3>14.2 先审计环境漂移</h3>
+        <p>不要直接重跑旧命令。先检查包装器、配置和模型路径是否仍然存在：</p>
+        <pre><code>module -t avail 2&gt;&amp;1 | grep -Ei '(^|/)glibc([/-]|$)|compat-glibc'
+# 预期：无输出。glibc 2.28 不是 module 提供的。
+
+for f in \
+  &lt;VENV&gt;/bin/dcu-python \
+  &lt;VENV&gt;/bin/mineru \
+  &lt;VENV&gt;/bin/mineru-api \
+  &lt;VENV&gt;/lib/python3.10/site-packages/sitecustomize.py
+do
+  echo "=== $f ==="
+  sed -n '1,80p' "$f"
+done
+
+test -x &lt;GLIBC_ROOT&gt;/lib64/ld-linux-x86-64.so.2
+test -x &lt;VENV&gt;/bin/python3.10
+test -f &lt;MODEL_CONFIG&gt;
+test -d &lt;PIPELINE_MODEL_ROOT&gt;</code></pre>
+        <p>本次复验发现，旧的四个入口仍硬编码已经被归档的 glibc 目录；
+        模型权重仍在，但配置文件移动到了新的脚本目录。<strong>环境内容未必丢失，入口路径可能先失效。</strong></p>
+
+        <h3>14.3 加载完整 module 组合</h3>
+        <pre><code>module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;VENV&gt;/bin/activate
+
+module list
+# compiler/gcc/12.2.0
+# compiler/dtk/26.04
+
+gcc --version | head -1
+# gcc (GCC) 12.2.0
+
+echo "$ROCM_PATH"
+# &lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04</code></pre>
+        <p>DTK module 提供 HIP/数学库；GCC module 提供新版 <code>libstdc++.so.6</code>。
+        两者都不替代 glibc。只加载 DTK、或只把 glibc 放进 <code>--library-path</code>，
+        仍可能报 <code>CXXABI_1.3.8 not found</code>。</p>
+
+        <h3>14.4 建立单一 Python launcher</h3>
+        <p>不要分别维护多个稍有差异的包装器。建立一个入口，CLI、服务和 spawn worker 都调用它：</p>
+        <pre><code>#!/bin/bash
+set -u
+
+GLIBC_ROOT="${GLIBC_ROOT:-&lt;USER_HOME&gt;/softwares/runtime/glibc-2.28}"
+GCC_ROOT="${GCC_ROOT:-&lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0}"
+DTK_ROOT="${DTK_ROOT:-&lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04}"
+VENV="${VENV:-&lt;USER_HOME&gt;/mineru-venv-py310}"
+
+LD_SO="$GLIBC_ROOT/lib64/ld-linux-x86-64.so.2"
+PYTHON="$VENV/bin/python3.10"
+ALL_LIBS="$GLIBC_ROOT/lib64:$GCC_ROOT/lib64:\
+$DTK_ROOT/.hyhal/rocm_smi/lib:$DTK_ROOT/lib:$DTK_ROOT/lib64:\
+$DTK_ROOT/hip/lib:$DTK_ROOT/dcc/lib:$DTK_ROOT/dcc/gcvm/lib:\
+/usr/local/lib64:/usr/lib64"
+
+exec "$LD_SO" --library-path "$ALL_LIBS" "$PYTHON" "$@"</code></pre>
+        <p>保存为 <code>&lt;RUN_DIR&gt;/dcu-python</code> 并执行 <code>chmod +x</code>。预检：</p>
+        <pre><code>&lt;RUN_DIR&gt;/dcu-python - &lt;&lt;'PY'
+import ctypes, platform, sys
+import onnxruntime, torch
+print("python", sys.version.split()[0])
+print("libc", platform.libc_ver())
+print("torch", torch.__version__)
+print("onnxruntime", onnxruntime.__version__)
+print("devices", torch.cuda.device_count())
+print("arch", torch.cuda.get_device_properties(0).gcnArchName)
+PY</code></pre>
+
+        <h3>14.5 固化本地模型配置</h3>
+        <p>不要依赖旧工作目录里的默认文件名。为复现实验显式指定一个配置：</p>
+        <pre><code>{
+  "models-dir": {
+    "pipeline": "&lt;PIPELINE_MODEL_ROOT&gt;",
+    "vlm": "&lt;VLM_MODEL_ROOT&gt;"
+  },
+  "model-source": "local",
+  "device-mode": "cuda"
+}</code></pre>
+        <pre><code>export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1</code></pre>
+        <p>若配置路径不存在，模型初始化会在较晚阶段报
+        <code>AttributeError: 'NoneType' object has no attribute 'get'</code>。
+        这不是模型损坏，也不是 DCU 算子错误。</p>
+
+        <h3>14.6 让 spawn 子进程继承 loader</h3>
+        <p>MinerU 3.4.4 的 PDF render executor 使用 <code>spawn</code>。复现脚本必须在创建进程池前覆盖 executable：</p>
+        <pre><code>import multiprocessing
+
+LAUNCHER = "&lt;RUN_DIR&gt;/dcu-python"
+multiprocessing.set_executable(LAUNCHER)
+try:
+    multiprocessing.get_context("spawn").set_executable(LAUNCHER)
+except Exception:
+    pass</code></pre>
+        <p>生产环境可以把相同逻辑放进 <code>sitecustomize.py</code>；一次性复现实验更建议在脚本中显式设置，
+        避免修改共享 venv。两种方式都要求 launcher 路径真实存在。</p>
+
+        <h3>14.7 直接调用 pipeline API</h3>
+        <p>本次复验不走 <code>mineru.cli.client</code>：旧 CLI 会启动本地 API 子进程，
+        若该子进程使用裸 <code>sys.executable</code>，就会重新落回系统 glibc 2.17。</p>
+        <pre><code>import multiprocessing
+import sys, time
+from pathlib import Path
+
+LAUNCHER = "&lt;RUN_DIR&gt;/dcu-python"
+multiprocessing.set_executable(LAUNCHER)
+try:
+    multiprocessing.get_context("spawn").set_executable(LAUNCHER)
+except Exception:
+    pass
+
+from mineru.cli.common import do_parse, read_fn
+
+def main():
+    pdf = Path(sys.argv[1])
+    output = Path(sys.argv[2])
+    data = read_fn(str(pdf))
+    started = time.perf_counter()
+    do_parse(
+        output_dir=str(output),
+        pdf_file_names=[pdf.stem],
+        pdf_bytes_list=[data],
+        p_lang_list=["ch"],
+        backend="pipeline",
+    )
+    print(f"PARSE_ELAPSED={time.perf_counter() - started:.3f}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">为什么必须保留 main guard</span>
+          <p><code>spawn</code> 会重新 import 主模块；没有
+          <code>if __name__ == "__main__":</code>，子进程会重复执行整份解析脚本。</p>
+        </div>
+
+        <h3>14.8 最小 Slurm 作业</h3>
+        <pre><code>#!/bin/bash -l
+#SBATCH -p &lt;DCU_PARTITION&gt;
+#SBATCH --gres=dcu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=27gb
+#SBATCH --time=00:20:00
+#SBATCH -J mineru-reproduce
+#SBATCH -o &lt;LOG_DIR&gt;/mineru-reproduce-%j.out
+#SBATCH -e &lt;LOG_DIR&gt;/mineru-reproduce-%j.err
+
+set -u
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;VENV&gt;/bin/activate
+
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+export OMP_NUM_THREADS=8
+export ORT_NUM_THREADS=8
+
+&lt;RUN_DIR&gt;/dcu-python \
+  &lt;RUN_DIR&gt;/reproduce.py \
+  &lt;INPUT_PDF&gt; \
+  &lt;OUTPUT_DIR&gt;
+rc=$?
+echo "PARSE_EXIT_RC=$rc"
+exit "$rc"</code></pre>
+        <p>提交后同时检查调度器状态和工作负载退出码：</p>
+        <pre><code>sbatch reproduce.slurm
+sacct -j &lt;JOB_ID&gt; -X -o State,ExitCode,Elapsed -P -n
+grep -E "PARSE_ELAPSED|PARSE_EXIT_RC" &lt;LOG_FILE&gt;
+# COMPLETED | 0:0
+# PARSE_EXIT_RC=0</code></pre>
+
+        <h3>14.9 结果与产物验收</h3>
+        <div class="tw">
+          <table>
+            <tr><th>项目</th><th>2026-09-27 复验</th></tr>
+            <tr><td>输入</td><td>14 页技术论文 PDF</td></tr>
+            <tr><td>pipeline 返回码</td><td><span class="badge verified">0</span></td></tr>
+            <tr><td>冷启动解析时间</td><td><strong>142.9 s</strong></td></tr>
+            <tr><td>模型初始化</td><td>17.2 s</td></tr>
+            <tr><td>processing-window 推理</td><td>45.6 s，0.307 page/s</td></tr>
+            <tr><td>FP32 / FP16 / BF16</td><td>9.123 / 16.147 / 5.764 TFLOPS</td></tr>
+            <tr><td>Markdown</td><td>30,483 bytes</td></tr>
+            <tr><td><code>middle.json</code></td><td>893,576 bytes</td></tr>
+            <tr><td>提取图片</td><td>27 文件</td></tr>
+          </table>
+        </div>
+        <pre><code>test -s &lt;OUTPUT_DIR&gt;/*/auto/*.md
+test -s &lt;OUTPUT_DIR&gt;/*/auto/*_middle.json
+test -s &lt;OUTPUT_DIR&gt;/*/auto/*_layout.pdf
+
+find &lt;OUTPUT_DIR&gt; -type f | sort
+grep -c '^#' &lt;OUTPUT_DIR&gt;/*/auto/*.md
+grep -o '!\[\](images/' &lt;OUTPUT_DIR&gt;/*/auto/*.md | wc -l</code></pre>
+        <p>返回码 0 只是第一层验收；还应检查 Markdown 非空、结构化 JSON 能解析、
+        图片实际落盘，以及标题、公式和图注是否出现在内容中。</p>
+
+        <h3>14.10 错误链与定位表</h3>
+        <div class="tw">
+          <table>
+            <tr><th>现象</th><th>真实原因</th><th>处理</th></tr>
+            <tr><td><code>ld-linux... No such file</code> / rc 127</td><td>包装器硬编码旧 glibc 目录</td><td>重新解析现存 runtime 路径，不改系统 ELF</td></tr>
+            <tr><td><code>CXXABI_1.3.8 not found</code></td><td>只加载 glibc/DTK，缺 GCC runtime</td><td>加载 GCC 12.2 module，并把其 <code>lib64</code> 放入闭包</td></tr>
+            <tr><td><code>GLIBC_2.27 not found</code></td><td>CLI 启动的 API 子进程绕过 loader</td><td>直调 <code>do_parse()</code>，或修好服务入口包装器</td></tr>
+            <tr><td><code>BrokenProcessPool</code></td><td>spawn worker 使用裸 Python</td><td><code>multiprocessing.set_executable()</code></td></tr>
+            <tr><td><code>NoneType ... get</code></td><td>模型配置路径已移动</td><td>显式设置并预检 <code>MINERU_TOOLS_CONFIG_JSON</code></td></tr>
+            <tr><td><code>pthread_setaffinity</code> 刷屏</td><td>ONNX Runtime 线程亲和性与 cgroup 不匹配</td><td>限制线程；本次不影响结果正确性</td></tr>
+            <tr><td><code>torchvision.io</code> 的 zlib warning</td><td>可选 image extension 解析到系统 zlib</td><td>本次 pipeline 成功；若使用该 extension 必须另做功能验证</td></tr>
+          </table>
+        </div>
+
+        <div class="callout note">
+          <span class="cl-label">适用边界</span>
+          <p>这套步骤证明 MinerU 3.4.4 pipeline 可在该 Z100 / DTK 26.04 环境中恢复运行，
+          不代表所有 CLI 服务入口、VLM 引擎或未来版本自动继承兼容性。升级任何 wheel、
+          module 或模型后，都应从 14.2 的审计重新开始。</p>
+        </div>
+      </section>
+
+      <!-- §15 -->
+      <section id="s15">
+        <div class="sec-head"><span class="idx">15</span><h2>附录：命令速查</h2></div>
+
+        <h3>15.1 环境</h3>
+        <pre><code># 连接
+ssh -p &lt;SSH_PORT&gt; &lt;CLUSTER_HOST&gt;
+
+# 作业里必须先
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;USER_HOME&gt;/mineru-venv-py310/bin/activate
+
+# 离线声明（计算节点无外网）
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+
+# 唯一可用的 gcc（gcc-11.2.0 / 13.3.0 都缺 libisl.so.15）
+export CC=&lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0/bin/gcc
+
+# 多 worker 共享机器时限制线程
+export OMP_NUM_THREADS=4 ORT_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
+
+# CentOS 7 复现必须通过 §14 的统一 launcher 启动 Python；
+# 裸 python / 裸 sys.executable 会回到系统 glibc 2.17。</code></pre>
+
+        <h3>15.2 作业模板</h3>
+        <pre><code>#!/bin/bash
+#SBATCH -p kshdnormal
+#SBATCH --gres=dcu:4              # QOS 强制至少 1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=111gb               # 上限 = cpus × 3569 MB
+#SBATCH --time=02:00:00
+#SBATCH -o job-%j.out
+#SBATCH -e job-%j.err
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;USER_HOME&gt;/mineru-venv-py310/bin/activate
+...
+rc=$?; echo "EXIT_RC=$rc"; exit $rc     # ★ 必须，否则 sacct 状态会骗人</code></pre>
+        <p>先验证配额不真排队：</p>
+        <pre><code>sbatch --test-only job.slurm
+# "Job N to start at ..."  → 配额合法
+# "Requested node configuration is not available" → 无空闲节点（配额没问题）
+# "too much memory" → 超配额</code></pre>
+
+        <h3>15.3 服务池</h3>
+        <pre><code>~/mineru_pool_ctl.sh status       # 作业 + 存活 worker + 网关健康
+~/mineru_pool_ctl.sh scale 2      # 保持 2 个池作业（每个 4 卡）
+~/mineru_pool_ctl.sh stop         # 停止并清注册表
+~/mineru_pool_ctl.sh endpoints    # 打印网关地址</code></pre>
+
+        <h3>15.4 压测</h3>
+        <pre><code>python3 loadtest.py <host:port> <corpus_dir> <concurrency> <rounds>
+python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 12 4</code></pre>
+
+        <h3>15.5 排查</h3>
+        <pre><code># ★ 不要只看 sacct 的 State，必须读日志
+sacct -j &lt;ID&gt; -X -o State,Elapsed,ExitCode -P -n
+
+# onnxruntime 会刷屏，过滤掉
+grep -av "pthread_setaffinity" job-&lt;ID&gt;.err | tail -30
+
+# 确认进程在算还是挂死
+ssh <node> "cat /proc/<pid>/status | grep -E '^State|^Threads'"
+ssh <node> "ls /proc/<pid>/fd | grep -c kfd"     # >0 说明持有 DCU 句柄
+
+# 查 wheel 的真实 glibc 要求（必须 sort -V）
+objdump -T <lib>.so | grep -oE "GLIBC_[0-9.]+" | sort -u -V | tail -3</code></pre>
+
+        <h3>15.6 manylinux 重打标签强装</h3>
+        <p>运行时已在 glibc 2.28 下时，pip 的平台检查是多余的：</p>
+        <pre><code>cp pkg-1.0-cp310-cp310-manylinux_2_28_x86_64.whl \
+   pkg-1.0-cp310-cp310-manylinux2014_x86_64.whl
+pip install --no-deps --force-reinstall pkg-1.0-cp310-cp310-manylinux2014_x86_64.whl</code></pre>
+
+        <h3>15.7 海光 DCU 软件下载</h3>
+        <pre><code># 目录结构（注意 torchvision 在 vision/ 下）
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/"
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/vision/DAS1.8/"
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/vllm/DAS1.8/"
+curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"</code></pre>
+        <p>版本必须与 torch 严格配套，如 <code>...das.opt1.dtk2604.torch271</code>。</p>
+      </section>
+
+      <!-- data index -->
+      <section id="s16">
+        <div class="sec-head"><span class="idx">·</span><h2>数据来源索引</h2></div>
+        <div class="tw">
+          <table>
+            <tr><th>数据</th><th>作业号</th><th>原始文件</th></tr>
+            <tr><td>硬件能力（初测）</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/job-logs.txt</code></td></tr>
+            <tr><td>硬件能力（含预热）</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
+            <tr><td>首次成功解析</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/sample-parse-output.md</code></td></tr>
+            <tr><td>CPU 单文档</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/job-logs.txt</code></td></tr>
+            <tr><td>VLM 后端</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
+            <tr><td>DCU 批量吞吐</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
+            <tr><td>CPU 批量吞吐</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
+            <tr><td>海光 Triton</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
+            <tr><td>vLLM kernel</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
+            <tr><td>服务池 v1</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/loadtest.log</code></td></tr>
+            <tr><td>服务池 v2</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/loadtest2.log</code>、<code>data/soak.log</code></td></tr>
+            <tr><td>环境漂移恢复</td><td><code>&lt;JOB_ID&gt;</code></td><td>脱敏后的 module、loader、配置路径与错误链记录</td></tr>
+            <tr><td>2026-09-27 完整复验</td><td><code>&lt;JOB_ID&gt;</code></td><td>14 页 pipeline 日志与 Markdown / JSON / 图片产物清单</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <div class="foot">初版：2026-08-13 · 环境恢复复验：2026-09-27 · 数据来自脱敏后的实测记录 · 公开报告版本</div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // mobile sidebar toggle
+  var btn = document.getElementById('menuBtn');
+  var sidebar = document.getElementById('sidebar');
+  if (btn) {
+    btn.addEventListener('click', function(){ sidebar.classList.toggle('open'); });
+    sidebar.addEventListener('click', function(e){
+      if (e.target.tagName === 'A') sidebar.classList.remove('open');
+    });
+  }
+
+  // scrollspy
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  function onScroll(){
+    var pos = window.scrollY + 120;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].offsetTop <= pos) current = sections[i];
+    }
+    links.forEach(function(a){ a.classList.remove('active'); });
+    if (current) {
+      var id = '#' + current.id;
+      var match = links.find(function(a){ return a.getAttribute('href') === id; });
+      if (match) match.classList.add('active');
+    }
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+
+</body>
+</html>
