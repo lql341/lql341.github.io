@@ -91,18 +91,75 @@ const reports = (await getCollection('reports'))
     let nextMeteorAt = performance.now() + 1800;
     let meteor: { startedAt: number; x: number; y: number; dx: number; dy: number } | null = null;
     let stars: { x: number; y: number; radius: number; phase: number; color: string; vx: number; vy: number }[] = [];
+    let edges: { from: number; to: number; opacity: number }[] = [];
+    let nebula: HTMLCanvasElement | null = null;
     let animationFrame = 0;
+
+    const makeNebula = () => {
+      const scale = Math.min(0.45, 680 / width, 680 / height);
+      const texture = document.createElement('canvas');
+      texture.width = Math.max(1, Math.round(width * scale));
+      texture.height = Math.max(1, Math.round(height * scale));
+      const haze = texture.getContext('2d');
+      if (!haze) return texture;
+
+      const w = texture.width;
+      const h = texture.height;
+      const cx = w * 0.72;
+      const cy = h * 0.48;
+      const radius = Math.min(w * 0.88, h * 1.35);
+      haze.globalCompositeOperation = 'screen';
+
+      const core = haze.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.78);
+      core.addColorStop(0, 'rgba(90,126,194,0.09)');
+      core.addColorStop(0.36, 'rgba(79,102,172,0.055)');
+      core.addColorStop(1, 'rgba(65,76,130,0)');
+      haze.fillStyle = core;
+      haze.fillRect(0, 0, w, h);
+
+      const colors = [
+        [108, 125, 220],
+        [95, 181, 208],
+        [155, 234, 52],
+      ];
+      for (let arm = 0; arm < 3; arm += 1) {
+        for (let step = 0; step < 54; step += 1) {
+          const progress = (step + 1) / 54;
+          const angle = progress * Math.PI * 3.2 + (arm * Math.PI * 2) / 3;
+          const distance = progress * radius;
+          const x = cx + Math.cos(angle) * distance * 1.12;
+          const y = cy + Math.sin(angle) * distance * 0.64;
+          const puff = 7 + progress * Math.min(w, h) * 0.095;
+          const alpha = 0.035 + Math.sin(progress * Math.PI) * 0.035;
+          const color = colors[arm];
+          const cloud = haze.createRadialGradient(x, y, 0, x, y, puff);
+          cloud.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},${alpha})`);
+          cloud.addColorStop(0.48, `rgba(${color[0]},${color[1]},${color[2]},${alpha * 0.42})`);
+          cloud.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
+          haze.fillStyle = cloud;
+          haze.beginPath();
+          haze.arc(x, y, puff, 0, Math.PI * 2);
+          haze.fill();
+        }
+      }
+
+      return texture;
+    };
 
     const resize = () => {
       window.cancelAnimationFrame(animationFrame);
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
+      const pixelRatio = Math.min(
+        window.devicePixelRatio || 1,
+        1.5,
+        Math.sqrt(2_073_600 / Math.max(1, width * height)),
+      );
       canvas.width = Math.round(width * pixelRatio);
       canvas.height = Math.round(height * pixelRatio);
       context!.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-      const count = Math.max(90, Math.round((width * height) / 5600));
+      const count = Math.min(220, Math.max(90, Math.round((width * height) / 10_000)));
       stars = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -112,6 +169,16 @@ const reports = (await getCollection('reports'))
         vx: (Math.random() - 0.5) * 0.62,
         vy: (Math.random() - 0.5) * 0.44,
       }));
+      edges = [];
+      for (let from = 0; from < stars.length; from += 1) {
+        for (let to = from + 1; to < stars.length; to += 1) {
+          const dx = stars[from].x - stars[to].x;
+          const dy = stars[from].y - stars[to].y;
+          const distance = Math.hypot(dx, dy);
+          if (distance < 108) edges.push({ from, to, opacity: (1 - distance / 108) * 0.16 });
+        }
+      }
+      nebula = makeNebula();
       lastFrameAt = 0;
       draw(performance.now());
     };
@@ -120,6 +187,7 @@ const reports = (await getCollection('reports'))
       context!.clearRect(0, 0, width, height);
       const delta = lastFrameAt ? Math.min(time - lastFrameAt, 50) / 1000 : 0;
       lastFrameAt = time;
+      if (nebula) context!.drawImage(nebula, 0, 0, width, height);
 
       if (!reducedMotion.matches) {
         stars.forEach((star) => {
@@ -128,24 +196,14 @@ const reports = (await getCollection('reports'))
         });
       }
 
-      // Connect only nearby stars to form sparse, quiet constellations.
-      for (let i = 0; i < stars.length; i += 1) {
-        const a = stars[i];
-        for (let j = i + 1; j < stars.length; j += 1) {
-          const b = stars[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const distance = Math.hypot(dx, dy);
-          if (distance < 92) {
-            context!.strokeStyle = `rgba(171, 205, 224, ${(1 - distance / 92) * 0.16})`;
-            context!.lineWidth = 0.6;
-            context!.beginPath();
-            context!.moveTo(a.x, a.y);
-            context!.lineTo(b.x, b.y);
-            context!.stroke();
-          }
-        }
-      }
+      edges.forEach(({ from, to, opacity }) => {
+        context!.strokeStyle = `rgba(171, 205, 224, ${opacity})`;
+        context!.lineWidth = 0.6;
+        context!.beginPath();
+        context!.moveTo(stars[from].x, stars[from].y);
+        context!.lineTo(stars[to].x, stars[to].y);
+        context!.stroke();
+      });
 
       stars.forEach((star) => {
         const twinkle = reducedMotion.matches ? 0.68 : 0.52 + Math.sin(time * 0.0011 + star.phase) * 0.36;
