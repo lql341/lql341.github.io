@@ -232,8 +232,8 @@
     .platform-grid { grid-template-columns: 1fr; }
   }
 </style>
-<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -247,7 +247,7 @@
 </div>
 
 <div class="section">
-  <h2>📋 1. 环境信息与验证范围</h2>
+  <h2>测试平台与验证范围</h2>
   <p>本报告将两次独立验证按同一工程链路重组。平台 A 负责 gfx936 的架构适配、GPU 包对照和源码优化；平台 B 负责 gfx906/Z100 的原生架构构建、正确性与多卡扩展。地域、集群别名、SSH 地址、分区名、节点名和绝对用户目录均已脱敏。</p>
   <div class="platform-grid">
     <div class="platform-card">
@@ -278,7 +278,7 @@
 </div>
 
 <div class="section">
-  <h2>⚙️ 2. 编译过程与主要难题</h2>
+  <h2>构建方案与问题分析</h2>
 
   <h3>2.1 方案一：GPU 包 + HIP 后端</h3>
   <p><strong>尝试：</strong>使用 <code>-D PKG_GPU=ON -D GPU_API=HIP -D HIP_ARCH=gfx936</code></p>
@@ -344,7 +344,7 @@
 </div>
 
 <div class="section">
-  <h2>🔧 3. 最终编译命令</h2>
+  <h2>构建配置与命令</h2>
   <pre><span class="comment"># 使用 hipcc 编译器，启用 KOKKOS + HIP + OpenMP 包</span>
 cmake ../lammps-22Jul2025/cmake \
   -D PKG_KOKKOS=ON \
@@ -388,7 +388,7 @@ cmake -S lammps-22Jul2025/cmake -B build-gfx906 \
 </div>
 
 <div class="section">
-  <h2>📜 4. 测试作业脚本</h2>
+  <h2>测试作业脚本</h2>
   <pre><span class="comment">#!/bin/bash</span>
 <span class="comment">#SBATCH</span> -p &lt;partition&gt;
 <span class="comment">#SBATCH</span> -N 1
@@ -406,15 +406,15 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
 </div>
 
 <div class="section">
-  <h2>🚀 5. 性能对比结果</h2>
+  <h2>性能测试结果</h2>
 
-  <h3>测试配置</h3>
+  <h3>测试配置与工作负载</h3>
   <div class="info-grid">
     <span class="label">CPU 测试</span><span class="value">32,000 原子, 16 OMP 线程, 20,000 步</span>
     <span class="label">DCU 测试</span><span class="value">256,000 原子, 1 DCU 卡, 20,000 步 (8倍原子数)</span>
   </div>
 
-  <h3>性能对比表格</h3>
+  <h3>性能测试数据</h3>
   <table>
     <thead>
       <tr>
@@ -476,7 +476,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
     </tbody>
   </table>
 
-  <h3>DCU 监控数据</h3>
+  <h3>DCU 资源监控结果</h3>
   <table>
     <thead>
       <tr>
@@ -492,7 +492,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
     </tbody>
   </table>
 
-  <h3>关键结论</h3>
+  <h3>主要结果</h3>
   <div class="conclusion-item">📌 DCU 单卡处理 8 倍原子数，总耗时仅为 CPU 的 1/20</div>
   <div class="conclusion-item">📌 换算为同规模，DCU 单卡相当于约 160 核 CPU 的计算能力</div>
   <div class="conclusion-item">📌 Pair 计算加速比高达 219 倍，GPU 最擅长的计算密集型任务效果显著</div>
@@ -552,7 +552,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
 </div>
 
 <div class="section">
-  <h2>⚖️ 6. GPU 包 vs Kokkos 性能对比</h2>
+  <h2>GPU 包与 Kokkos 后端性能比较</h2>
 
   <h3>6.1 测试目的</h3>
   <p>验证是否存在比 Kokkos 更高效的 GPU 加速方案。GPU 包使用手写优化的 HIP 内核，理论上可能比 Kokkos 的通用抽象更高效。</p>
@@ -645,7 +645,7 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
 </div>
 
 <div class="section">
-  <h2>🔬 7. 热点分析与源码优化</h2>
+  <h2>性能热点分析与代码优化</h2>
 
   <h3>7.1 HIP 热点跟踪</h3>
   <p>使用 DTK 25.04.2 <code>hipprof --hip-trace --stats</code> 对 1,048,576 原子动态 LJ 基准进行热点分析。</p>
@@ -726,7 +726,7 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
 </div>
 
 <div class="section">
-  <h2>📊 8. CPU vs DCU 性能对比分析</h2>
+  <h2>CPU 与 DCU 性能比较</h2>
 
   <h3>8.1 原始"160 核"结论的缺陷</h3>
   <p>第一版报告声称 DCU 单卡相当于 160 核 CPU，该结论基于<strong>不同原子数</strong>的对比：</p>
@@ -756,7 +756,7 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
 </div>
 
 <div class="section">
-  <h2>🔬 9. 优化实验全记录</h2>
+  <h2>优化实验结果</h2>
 
   <h3>9.1 有效优化</h3>
   <table>
@@ -879,7 +879,7 @@ hipcc → &lt;DTK_ROOT&gt;/dcc/bin/dcc
 </div>
 
 <div class="section">
-  <h2>🔧 10. MPI 编译与 GPU-aware 配置</h2>
+  <h2>MPI 构建与 GPU-aware 通信配置</h2>
 
   <h3>10.1 背景</h3>
   <p>LAMMPS 多 GPU 需要 MPI 支持。系统自带的 OpenMPI（GCC 8.5.0 编译）与当前 GCC 9.3.0 存在 ABI 不匹配，导致 <code>MPI_Finalize</code> 时 <code>double free</code> crash。此外，无 GPU-aware 的 MPI 在每步通信时需要 CPU↔GPU 数据拷贝，通信开销极大。</p>
@@ -976,7 +976,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
 </div>
 
 <div class="section">
-  <h2>📁 11. 最终文件结构</h2>
+  <h2>交付文件结构</h2>
   <div class="file-tree">
     <span class="dir">~/softwares/lammps/</span><br>
     ├── <span class="dir">lammps-22Jul2025/</span>     <span class="comment"># 源码 (Git 仓库)</span><br>
@@ -1005,7 +1005,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
 </div>
 
 <div class="section">
-  <h2>🎯 12. 最终结论</h2>
+  <h2>结论与适用范围</h2>
 
   <div class="highlight-box">
     <div class="title">推荐方案</div>
@@ -1098,7 +1098,7 @@ mpirun --mca pml ob1 --mca btl vader,self \
 </div>
 
 <div class="section">
-  <h2>🔗 13. 上游贡献建议</h2>
+  <h2>上游改进建议</h2>
 
   <h3>13.1 Kokkos 上游</h3>
   <table>

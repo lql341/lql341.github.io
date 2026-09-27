@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MinerU on 海光 Z100 · 生产基线与 4.0.7 评估</title>
 <meta name="keywords" content="MinerU, 海光 DCU, Z100, OCR, production baseline, performance">
-<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
 <style>
   *{box-sizing:border-box}
   body{margin:0;font-size:15px;line-height:1.72}
@@ -73,7 +73,7 @@
   }
   @media(max-width:680px){.decision-grid{grid-template-columns:1fr}}
 </style>
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -103,8 +103,8 @@
       <header class="mast report-banner">
         <div class="tag">兼容性与性能决策报告 · 脱敏公开版</div>
         <h1>MinerU on 海光 Z100</h1>
-        <p class="standfirst">将原有实验日志重构为两条清晰路线：<b>MinerU 3.4.4 生产基线</b>与
-        <b>MinerU 4.0.7 实验评估</b>。主报告回答“现在用什么、为什么”；完整失败链和命令保留在独立档案。</p>
+        <p class="standfirst">本报告分别评估 <b>MinerU 3.4.4 生产基线</b>与
+        <b>MinerU 4.0.7 实验路线</b>，说明当前部署配置及其测试依据。详细故障记录与复现命令见独立实验档案。</p>
         <div class="runline">
           <span><b>硬件</b> Z100 · gfx906 · 16 GB × 4</span>
           <span><b>系统</b> CentOS 7.6 · glibc 2.17</span>
@@ -115,14 +115,14 @@
       </header>
 
       <section id="s1">
-        <div class="sec-head"><span class="idx">01</span><h2>当前结论</h2></div>
+        <div class="sec-head"><span class="idx">01</span><h2>主要结论</h2></div>
         <div class="tw">
           <table>
             <tr><th>问题</th><th>结论</th><th>状态</th></tr>
             <tr><td>稳定批量生产</td><td><strong>3.4.4 pipeline + 常驻 Z100 worker</strong></td><td><span class="badge verified">生产基线</span></td></tr>
             <tr><td>快速预览 / 建索引</td><td><strong>4.0.7 Flash</strong></td><td><span class="badge verified">可用</span></td></tr>
             <tr><td>4.x 高质量本地解析</td><td><strong>4.0.7 Basic</strong>：ONNX CPU 或常驻 Torch/DCU</td><td><span class="badge verified">可用</span></td></tr>
-            <tr><td>Standard / Advanced</td><td>Transformers VLM 隔离补丁已跑通，仅作实验</td><td><span class="badge boundary">实验性</span></td></tr>
+            <tr><td>Standard / Advanced</td><td>Transformers VLM 隔离补丁已通过功能验证，仅用于实验</td><td><span class="badge boundary">实验性</span></td></tr>
             <tr><td>批量入口</td><td>Slurm-native <strong>mineru-drop</strong>，支持 3.x / 4.x adapter</td><td><span class="badge verified">已验证</span></td></tr>
           </table>
         </div>
@@ -130,7 +130,7 @@
           <div class="metric"><div class="v">955/h</div><div class="l">3.4.4 四卡服务池吞吐</div></div>
           <div class="metric"><div class="v">12 s</div><div class="l">3.4.4 暖态 14 页 GOC</div></div>
           <div class="metric"><div class="v">2.64 s</div><div class="l">4.0.7 Basic/Torch 暖态 2 页</div></div>
-          <div class="metric"><div class="v">4 / 4</div><div class="l">4.0.7 tier 已跑通</div></div>
+          <div class="metric"><div class="v">4 / 4</div><div class="l">4.0.7 功能验证通过</div></div>
         </div>
         <div class="callout lesson"><span class="cl-label">一句话</span>
           <p>4.0.7 已经“能用”，但还没有替代 3.4.4 的生产证据；生产与实验环境保持并行，不原地升级。</p>
@@ -138,7 +138,7 @@
       </section>
 
       <section id="s2">
-        <div class="sec-head"><span class="idx">02</span><h2>范围与方法</h2></div>
+        <div class="sec-head"><span class="idx">02</span><h2>测试范围与方法</h2></div>
         <p class="lede">报告不把不同档位、不同冷热状态和不同页数混成一个“速度排名”。</p>
         <div class="tw">
           <table>
@@ -157,7 +157,7 @@
       </section>
 
       <section id="s3">
-        <div class="sec-head"><span class="idx">03</span><h2>平台与运行时基础</h2></div>
+        <div class="sec-head"><span class="idx">03</span><h2>测试平台与运行时环境</h2></div>
         <div class="tw">
           <table>
             <tr><th>能力</th><th>实测</th><th>含义</th></tr>
@@ -180,7 +180,7 @@ module load compiler/gcc/12.2.0 compiler/dtk/26.04
       </section>
 
       <section id="s4">
-        <div class="sec-head"><span class="idx">04</span><h2>MinerU 3.4.4：生产线</h2></div>
+        <div class="sec-head"><span class="idx">04</span><h2>MinerU 3.4.4 生产环境基线</h2></div>
         <p class="lede">3.4.4 的价值不在“版本旧”，而在已经完成质量、稳态吞吐、背压、重试和故障恢复验证。</p>
         <div class="tw">
           <table>
@@ -208,7 +208,7 @@ Slurm 服务池网关 ── 背压 / 最小负载 / 重试
       </section>
 
       <section id="s5">
-        <div class="sec-head"><span class="idx">05</span><h2>MinerU 4.0.7：独立实验线</h2></div>
+        <div class="sec-head"><span class="idx">05</span><h2>MinerU 4.0.7 实验环境与验证</h2></div>
         <p>4.0.7 使用独立 venv、模型目录和配置，不覆盖 3.4.4。新版以 tier 表达质量，以
         <code>small_backend</code> 和 <code>vlm.engine</code> 表达实际引擎。</p>
         <div class="tw">
@@ -220,7 +220,7 @@ Slurm 服务池网关 ── 背压 / 最小负载 / 重试
             <tr><td>vlm-engine</td><td>Advanced</td><td>更高 VLM 推理投入</td></tr>
           </table>
         </div>
-        <h3>独立栈</h3>
+        <h3>实验环境配置</h3>
         <pre><code>MinerU             4.0.7
 DocVortex          0.5.1
 ONNX Runtime       1.20.1
@@ -234,9 +234,9 @@ OpenCV             4.11.0</code></pre>
       </section>
 
       <section id="s6">
-        <div class="sec-head"><span class="idx">06</span><h2>Basic 优化：从冷启动到常驻模型</h2></div>
+        <div class="sec-head"><span class="idx">06</span><h2>Basic 模式性能优化</h2></div>
         <p class="lede">性能瓶颈不是单页算子，而是“每个任务新建 Python + 加载全部模型”。</p>
-        <h3>ONNX CPU 线程扫描</h3>
+        <h3>ONNX Runtime CPU 线程配置</h3>
         <div class="tw">
           <table>
             <tr><th>intra-op 线程</th><th>冷态 2 页</th><th>暖态 2 页</th><th>建议</th></tr>
@@ -280,7 +280,7 @@ OpenCV             4.11.0</code></pre>
       </section>
 
       <section id="s8">
-        <div class="sec-head"><span class="idx">08</span><h2>4.0.7 四档验证</h2></div>
+        <div class="sec-head"><span class="idx">08</span><h2>4.0.7 功能验证</h2></div>
         <div class="tw">
           <table>
             <tr><th>Tier</th><th>资源 / 后端</th><th>样本</th><th>结果</th><th>定位</th></tr>
@@ -297,7 +297,7 @@ OpenCV             4.11.0</code></pre>
       </section>
 
       <section id="s9">
-        <div class="sec-head"><span class="idx">09</span><h2>MinerU Drop：Slurm 批量入口</h2></div>
+        <div class="sec-head"><span class="idx">09</span><h2>MinerU Drop 批量处理入口</h2></div>
         <div class="flow">本机 push 文件 / 目录
         │
         ▼
@@ -311,7 +311,7 @@ afterany CPU merge ── Markdown / JSON / 图片 / manifest
         │
         ▼
 status / retry / fetch</div>
-        <h3>两个 adapter</h3>
+        <h3>适配器实现</h3>
         <div class="tw">
           <table>
             <tr><th>远端根</th><th>版本</th><th>用途</th></tr>
@@ -334,12 +334,12 @@ mineru-drop [--remote-root ...] fetch  --batch &lt;BATCH_ID&gt;</code></pre>
       </section>
 
       <section id="s10">
-        <div class="sec-head"><span class="idx">10</span><h2>选型建议</h2></div>
+        <div class="sec-head"><span class="idx">10</span><h2>部署配置建议</h2></div>
         <div class="decision-grid">
           <div class="decision"><h3>批量最终解析</h3><p><strong>3.4.4 pipeline</strong><br>已有四卡吞吐、稳定性、背压和故障恢复证据。</p></div>
           <div class="decision"><h3>快速检索与预览</h3><p><strong>4.0.7 Flash</strong><br>无需本地大模型，适合第一遍扫描和索引。</p></div>
-          <div class="decision"><h3>需要 4.x 输出协议</h3><p><strong>4.0.7 Basic</strong><br>CPU 用 ONNX 8/16 线程；Z100 必须常驻模型。</p></div>
-          <div class="decision"><h3>复杂页面试验</h3><p><strong>Standard / Advanced</strong><br>仅人工指定小批量，不进入默认自动路由。</p></div>
+          <div class="decision"><h3>4.x 输出协议场景</h3><p><strong>4.0.7 Basic</strong><br>CPU 用 ONNX 8/16 线程；Z100 必须常驻模型。</p></div>
+          <div class="decision"><h3>复杂页面解析评估</h3><p><strong>Standard / Advanced</strong><br>仅人工指定小批量，不进入默认自动路由。</p></div>
         </div>
         <h3>推荐路由</h3>
         <pre><code>原生文本，只需索引        → 4.0.7 Flash
@@ -349,7 +349,7 @@ mineru-drop [--remote-root ...] fetch  --batch &lt;BATCH_ID&gt;</code></pre>
       </section>
 
       <section id="s11">
-        <div class="sec-head"><span class="idx">11</span><h2>复现、边界与档案</h2></div>
+        <div class="sec-head"><span class="idx">11</span><h2>复现方法与适用边界</h2></div>
         <h3>最小复现约束</h3>
         <ul>
           <li>登录节点准备依赖和模型；计算节点离线运行。</li>
@@ -358,7 +358,7 @@ mineru-drop [--remote-root ...] fetch  --batch &lt;BATCH_ID&gt;</code></pre>
           <li>Slurm 脚本必须传递真实工作负载退出码。</li>
           <li>4.0.7 ONNX Runtime 1.20.1 使用重打标签 wheel，只能在外部 glibc 2.28 下运行。</li>
         </ul>
-        <h3>已知边界</h3>
+        <h3>已知限制</h3>
         <div class="tw">
           <table>
             <tr><th>边界</th><th>影响</th></tr>

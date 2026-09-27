@@ -142,8 +142,8 @@
     .report-site-nav{max-width:1380px;margin:0 auto 18px;display:flex;justify-content:space-between;gap:20px}
     .report-site-nav a{color:#9bea34;text-decoration:none;font-weight:700}.report-site-nav nav{display:flex;gap:18px}
   </style>
-  <link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+  <link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
   <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -237,7 +237,7 @@
         <h1 id="deepseek-v4-flash-fp4-在海光-dcu-gfx936-上的-vllm-移植与调试报告">vLLM 0.27.x 移植成功：DeepSeek V4 Flash FP4 海光 DCU 完整报告</h1>
       </header>
 <blockquote><strong>2026-08-26 核心成果：</strong>vLLM <code>0.27.x</code> 已成功移植到海光 DCU gfx936。经 DTK 定向适配，V1 Engine 使用真实 DeepSeek V4 Flash FP4 权重完成 TP=4/8 端到端推理；Sparse MLA、MXFP4 MoE 与连续 decode 整条混合精度链路均已跑通。当前已从“功能移植”进入稳定性与性能工程阶段。</blockquote>
-<h2 id="0-后续优化进展">0. 2026-08-24 至 08-26 后续优化进展</h2>
+<h2 id="0-后续优化进展">补充验证结果（2026-08-24 至 08-26）</h2>
 <h3>0.1 从功能跑通到稳定性能基线</h3>
 <ul>
 <li>vLLM V1 Engine 的 TP=4 / TP=8 路线均已验证；4 卡可完整装载模型。</li>
@@ -332,7 +332,7 @@ attention logits finite = True
 attention probs finite = True</code></pre>
 <p>由此形成了从物理地址、量化 scale、K cache 数值、attention logits、token 序列到最终自然语言输出的完整证据闭环。</p>
 <hr>
-<h2 id="2-目标范围与成功标准">2. 目标、范围与成功标准</h2>
+<h2 id="2-目标范围与成功标准">验证目标、范围与判据</h2>
 <h3 id="21-核心目标">2.1 核心目标</h3>
 <p>核心目标始终是：</p>
 <blockquote>在海光 DCU gfx936 上，通过 vLLM 跑通 DeepSeek V4 Flash FP4 推理。</blockquote>
@@ -470,7 +470,7 @@ attention probs finite = True</code></pre>
 Using &#x27;EMULATION&#x27; Mxfp4 MoE backend.
 Using DeepSeek&#x27;s fp8_ds_mla KV cache format.
 Using FP8 indexer cache for Lightning Indexer.</code></pre>
-<h3 id="34-最终关键环境变量">3.4 最终关键环境变量</h3>
+<h3 id="34-最终关键环境变量">运行环境变量</h3>
 <pre><code class="language-bash">export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export TORCHINDUCTOR_USE_STATIC_CUDA_LAUNCHER=0
 export DSV4_SHIM_DEBUG=1
@@ -487,7 +487,7 @@ export VLLM_ROCM_USE_SKINNY_GEMM=0</code></pre>
 <p>调试阶段还使用：</p>
 <pre><code class="language-bash">export DSV4_SPARSE_DEBUG=1</code></pre>
 <hr>
-<h2 id="4-技术路径概览">4. 技术路径概览</h2>
+<h2 id="4-技术路径概览">实现路径</h2>
 <p>端到端执行链可简化为：</p>
 <pre><code class="language-text">模型 config / tokenizer
         │
@@ -521,7 +521,7 @@ DeepSeek V4 Sparse MLA
 </ol>
 <p>其中第 4 类是导致“首 token 正常、后续全 BOS”的最终根因。</p>
 <hr>
-<h2 id="5-测试探针设计">5. 测试探针设计</h2>
+<h2 id="5-测试探针设计">诊断方法与测试探针</h2>
 <p>主探针按照阶段打印：</p>
 <pre><code class="language-text">### STAGE: env
 ### STAGE: config
@@ -568,7 +568,7 @@ echo &quot;PY_EXIT=$rc&quot;
 exit &quot;$rc&quot;</code></pre>
 <p>因此报告中的 Slurm 状态、Python verdict 和 raw 日志可以交叉验证。</p>
 <hr>
-<h2 id="6-完整作业时间线">6. 完整作业时间线</h2>
+<h2 id="6-完整作业时间线">实验过程与作业记录</h2>
 <h3 id="61-汇总表">6.1 汇总表</h3>
 <div class="table-wrap"><table><thead><tr>
 <th>Job</th>
@@ -816,7 +816,7 @@ TOKEN_DECODE:
 <p>但共同模式始终是：</p>
 <pre><code class="language-text">[prefill token, BOS, BOS, BOS, ...]</code></pre>
 <p>因此不能把问题解释为固定 tokenizer 映射；故障发生在 decode 计算链。</p>
-<h3 id="610-J14诊断探针第一次未命中真实-decode">6.10 J14：诊断探针第一次未命中真实 decode</h3>
+<h3 id="610-J14诊断探针第一次未命中真实-decode">J14：诊断探针未捕获目标 decode</h3>
 <p>首次诊断输出：</p>
 <pre><code class="language-text">q shape = (8, 8, 512)
 main_indptr = [0, 0, ..., 0]</code></pre>
@@ -867,7 +867,7 @@ probs_max     = nan</code></pre>
   → hidden state 污染
   → LM head 退化
   → token 0 / BOS</code></pre>
-<h3 id="612-J16第一次-stride-修复为什么不够">6.12 J16：第一次 stride 修复为什么不够</h3>
+<h3 id="612-J16第一次-stride-修复为什么不够">J16：stride 修复的适用范围</h3>
 <p>第一版修复去掉：</p>
 <pre><code class="language-python">cache.view(torch.uint8).contiguous()</code></pre>
 <p>改为保留原始 cache view，试图使用：</p>
@@ -911,7 +911,7 @@ probs_finite  = True
 probs_max     =  0.9574916362phase</code></pre>
 <p>最终 token 不再退化，并形成连贯中文。</p>
 <hr>
-<h2 id="7-最终根因逻辑-shape-与物理-cache-layout-不一致">7. 最终根因：逻辑 shape 与物理 cache layout 不一致</h2>
+<h2 id="7-最终根因逻辑-shape-与物理-cache-layout-不一致">KV cache 布局问题的根因分析</h2>
 <h3 id="71-表面上的逻辑张量">7.1 表面上的逻辑张量</h3>
 <p>后端声明每个 token 占 584 byte：</p>
 <pre><code class="language-text">448 byte FP8 NoPE
@@ -1004,7 +1004,7 @@ k_nope *= k_scales[:, :7].repeat_interleave(64, dim=1)</code></pre>
     .view(torch.bfloat16)
     .float()
 )</code></pre>
-<h3 id="75-为什么最终-scale-合理">7.5 为什么最终 scale 合理</h3>
+<h3 id="75-为什么最终-scale-合理">scale 参数的确定依据</h3>
 <p>最终 scale bytes：</p>
 <pre><code class="language-text">[118, 119, 119, 119, 118, 119, 118, 0]</code></pre>
 <p>前 7 个 byte 对应 448 个 NoPE 元素的 7 个 64-element group。</p>
@@ -1014,8 +1014,8 @@ encoded 119 → scale = 2^(119 - 127) = 2^-8</code></pre>
 <p>最后一个 byte 是 padding，值为 0，不参与 7 个实际 group 的反量化。</p>
 <p>这与 writer 的 7 个 UE8M0 scale + 1 byte pad 设计完全一致。</p>
 <hr>
-<h2 id="8-被证伪或仅部分成立的假设">8. 被证伪或仅部分成立的假设</h2>
-<h3 id="81-fp4-moe-本身坏了">8.1 “FP4 MoE 本身坏了”</h3>
+<h2 id="8-被证伪或仅部分成立的假设">假设检验与适用范围</h2>
+<h3 id="81-fp4-moe-本身坏了">FP4 MoE 实现异常假设</h3>
 <p>证据不支持。</p>
 <ul>
 <li>FP4 backend 正常初始化；</li>
@@ -1024,32 +1024,32 @@ encoded 119 → scale = 2^(119 - 127) = 2^-8</code></pre>
 <li>因此连续 BOS 的最终根因不在 FP4 expert 主路径。</li>
 </ul>
 <p>但 SwiGLU 参数修复仍应保留，因为它修复了模型公式一致性。</p>
-<h3 id="82-tokenizer-或-chat-template-是唯一根因">8.2 “tokenizer 或 chat template 是唯一根因”</h3>
+<h3 id="82-tokenizer-或-chat-template-是唯一根因">tokenizer 与 chat template 根因假设</h3>
 <p>只部分成立。</p>
 <ul>
 <li>chat template 修复后第一枚 token 从无意义符号变为“你好”；</li>
 <li>但第二枚 token 之后仍全 BOS；</li>
 <li>因而 template 解释了输入格式问题，不能解释 decode 数值退化。</li>
 </ul>
-<h3 id="83-kv-cache-改成-autobf16-就能绕开">8.3 “KV cache 改成 auto/BF16 就能绕开”</h3>
+<h3 id="83-kv-cache-改成-autobf16-就能绕开">KV cache 配置的影响</h3>
 <p>不成立。</p>
 <p>当前 DeepSeek V4 ROCm Sparse MLA layout 强制要求：</p>
 <pre><code class="language-text">fp8_ds_mla</code></pre>
 <p><code>auto</code> 在 engine init 被明确拒绝。</p>
-<h3 id="84-只去掉-contiguous-就能修好">8.4 “只去掉 contiguous 就能修好”</h3>
+<h3 id="84-只去掉-contiguous-就能修好">contiguous 操作的影响</h3>
 <p>不成立。</p>
 <p><code>.contiguous()</code> 确实会丢失 block stride，但逻辑 token stride 同样不能代表物理布局。必须同时修复：</p>
 <ol>
 <li>block stride；</li>
 <li>data/scale 分区地址。</li>
 </ol>
-<h3 id="85-首-token-正常说明整个模型数值正确">8.5 “首 token 正常说明整个模型数值正确”</h3>
+<h3 id="85-首-token-正常说明整个模型数值正确">首 token 结果与整体数值正确性</h3>
 <p>不成立。</p>
 <p>第一枚生成 token 来源于 prefill。只有请求下一枚 token 时才进入单 token decode。此次故障恰好位于 prefill → decode 的状态转换。</p>
 <p>因此端到端测试至少需要：</p>
 <pre><code class="language-text">max_tokens &gt;= 2</code></pre>
 <p>更稳妥的是 16 或 32。</p>
-<h3 id="86-slurm-completed-就代表模型正确">8.6 “Slurm COMPLETED 就代表模型正确”</h3>
+<h3 id="86-slurm-completed-就代表模型正确">Slurm 作业状态与模型正确性</h3>
 <p>不成立。</p>
 <p><code>J08</code> 是典型反例：</p>
 <pre><code class="language-text">State = COMPLETED
@@ -1065,7 +1065,7 @@ TOKEN_IDS = [32, 0, 0, ...]</code></pre>
 <li>中间数值 finite 状态。</li>
 </ul>
 <hr>
-<h2 id="9-已实施的关键修改">9. 已实施的关键修改</h2>
+<h2 id="9-已实施的关键修改">实现修改</h2>
 <h3 id="91-gfx936-兼容-shim">9.1 gfx936 兼容 shim</h3>
 <p><code>sitecustomize.py</code> 在 worker spawn 后自动应用，用于补足当前 Triton/vLLM API 差异，并避免启动时过早 import Triton。</p>
 <p>涉及的兼容点包括：</p>
@@ -1126,7 +1126,7 @@ probs_finite  = True</code></pre>
 GPU KV cache size approximately 85K tokens</code></pre>
 <p>这些数字受节点、JIT、allocator 和 cache 配置影响，仅用于本轮功能验证记录。</p>
 <hr>
-<h2 id="11-日志噪声与真实错误判定">11. 日志噪声与真实错误判定</h2>
+<h2 id="11-日志噪声与真实错误判定">日志分析与错误判定</h2>
 <h3 id="111-usage-report-json-错误">11.1 Usage report JSON 错误</h3>
 <p>多轮日志出现：</p>
 <pre><code class="language-text">Exception in thread Thread-1 (_report_usage_worker)
@@ -1205,7 +1205,7 @@ PY_EXIT
 sacct State / ExitCode</code></pre>
 <p>不应只 grep <code>OUTPUT:</code>，因为 BOS 等 special token 可能被 tokenizer 从最终文本中省略。</p>
 <hr>
-<h2 id="13-当前代码与辅助文件">13. 当前代码与辅助文件</h2>
+<h2 id="13-当前代码与辅助文件">代码版本与辅助文件</h2>
 <p>本地仓库：</p>
 <div class="table-wrap"><table><thead><tr>
 <th>文件</th>
@@ -1245,7 +1245,7 @@ sacct State / ExitCode</code></pre>
   vllm/v1/attention/ops/rocm_aiter_mla_sparse.py</code></pre>
 <p>远端保留了修复前备份和诊断脚本，便于对比。</p>
 <hr>
-<h2 id="14-当前结论的边界">14. 当前结论的边界</h2>
+<h2 id="14-当前结论的边界">结论与适用范围</h2>
 <h3 id="141-已经证明">14.1 已经证明</h3>
 <ul>
 <li>DeepSeek V4 Flash checkpoint 可在单节点 8 × gfx936 上完整加载；</li>
@@ -1276,7 +1276,7 @@ sacct State / ExitCode</code></pre>
 <p>因此当前应表述为：</p>
 <blockquote>FP4 功能链路和连续 decode 已跑通，具备正确性基线；生产级稳定性、精度和性能验收仍需后续测试。</blockquote>
 <hr>
-<h2 id="15-后续工作建议">15. 后续工作建议</h2>
+<h2 id="15-后续工作建议">后续工作</h2>
 <h3 id="151-第一优先级固化回归测试">15.1 第一优先级：固化回归测试</h3>
 <p>增加至少以下回归：</p>
 <ol>
@@ -1349,7 +1349,7 @@ assert torch.isfinite(probs).all()</code></pre>
 <li>将 <code>VLLM_ROCM_USE_SKINNY_GEMM=0</code> 变成 gfx936 平台默认或明确 capability gate。</li>
 </ul>
 <hr>
-<h2 id="16-关键工程经验">16. 关键工程经验</h2>
+<h2 id="16-关键工程经验">工程经验总结</h2>
 <h3 id="161-shape-不等于物理-layout">16.1 shape 不等于物理 layout</h3>
 <p>量化 cache 常用“方便表达容量”的逻辑 shape，但 writer 可能为向量化、TMA、coalescing 或 scale 分区采用完全不同的物理布局。</p>
 <p>reader 必须以 writer 的地址公式为事实来源。</p>
@@ -1363,7 +1363,7 @@ assert torch.isfinite(probs).all()</code></pre>
 <li>tensor stride。</li>
 </ul>
 <p>“第一次函数调用”通常只是 warmup，不代表真实请求。</p>
-<h3 id="163-第一枚-token-正常是重要线索">16.3 第一枚 token 正常是重要线索</h3>
+<h3 id="163-第一枚-token-正常是重要线索">首个 token 的诊断意义</h3>
 <p>它把故障范围缩小到：</p>
 <pre><code class="language-text">prefill 写 cache
 → cache 持久化

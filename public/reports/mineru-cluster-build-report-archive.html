@@ -245,8 +245,8 @@
   .callout.lesson{background:rgba(94,234,212,.055);border-left-color:var(--amber);}
   .callout.warn{background:var(--boundary-wash);border-left-color:var(--boundary);}
 </style>
-<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -284,8 +284,7 @@
         <div class="tag">完整实验档案 · 脱敏公开版</div>
         <h1>MinerU on 海光 Z100 DCU</h1>
         <p class="standfirst">
-          从环境验证到生产级服务池的完整记录。包含 <b>全部尝试路径</b>——成功的和走死的、
-          每一条具体命令、每一个实测数字及其来源作业号，以及过程中被推翻的错误判断。
+          本档案记录环境验证、服务池实现与性能测试过程，包括各方案的验证结果、复现命令、测量数据及其来源作业号，并说明相关假设的检验依据。
         </p>
         <div class="runline">
           <span><b>集群</b> 测试集群（国产超算）</span>
@@ -299,7 +298,7 @@
 
       <!-- §1 -->
       <section id="s1">
-        <div class="sec-head"><span class="idx">01</span><h2>结论速览</h2></div>
+        <div class="sec-head"><span class="idx">01</span><h2>主要结论</h2></div>
         <div class="tw">
           <table>
             <tr><th>项</th><th>结果</th><th>依据</th></tr>
@@ -323,16 +322,16 @@
 
       <!-- §2 -->
       <section id="s2">
-        <div class="sec-head"><span class="idx">02</span><h2>起点与问题定义</h2></div>
+        <div class="sec-head"><span class="idx">02</span><h2>项目背景与验证范围</h2></div>
 
-        <h3>2.1 接手时的状态</h3>
+        <h3>前序环境状态</h3>
         <p>前序工作已完成环境搭建并产出 V2 报告，声称「全部通过」。核查后发现一个关键缺口：</p>
         <pre><code>ssh -p &lt;SSH_PORT&gt; &lt;CLUSTER_HOST&gt; 'ls ~/.cache/modelscope/hub ~/models ~/output 2>/dev/null'
 # 全部为空</code></pre>
         <p><strong>MinerU 从未解析过任何文档。</strong> V2 报告的「端到端测试」实际测的是 magika
         文件类型检测——那是 MinerU 的第一步预处理，不是解析。模型一个都没下载。</p>
 
-        <h3>2.2 已有资产（可用）</h3>
+        <h3>可复用的软件与数据</h3>
         <div class="tw">
           <table>
             <tr><th>项</th><th>路径 / 版本</th></tr>
@@ -344,7 +343,7 @@
           </table>
         </div>
 
-        <h3>2.3 集群约束（profile 记录）</h3>
+        <h3>集群资源与运行约束</h3>
         <pre><code>cat ~/&lt;SKILL_CONFIG&gt;</code></pre>
         <div class="tw">
           <table>
@@ -360,9 +359,9 @@
 
       <!-- §3 -->
       <section id="s3">
-        <div class="sec-head"><span class="idx">03</span><h2>硬件能力探测</h2></div>
+        <div class="sec-head"><span class="idx">03</span><h2>硬件能力与软件环境</h2></div>
 
-        <h3>3.1 第一次探针（有缺陷）</h3>
+        <h3>首次探测结果及局限</h3>
         <p>作业 <code>&lt;JOB_ID&gt;</code>：</p>
         <pre><code>sbatch ~/probe_caps.slurm     # 见 cluster/probe_caps.py</code></pre>
         <pre><code>torch 2.7.1 devices 4
@@ -377,7 +376,7 @@ arch: gfx906:sramecc-:xnack- mem GB: 17.2
 [OK]   onnxruntime: 1.16.3 providers=['AzureExecutionProvider','CPUExecutionProvider']</code></pre>
         <p><strong>FP16 比 FP32 慢是反常的</strong>——追查发现没做 warmup。</p>
 
-        <h3>3.2 修正后的探针</h3>
+        <h3>修正后的探测方法</h3>
         <p>作业 <code>&lt;JOB_ID&gt;</code>，加 5 次预热 + 30 次计时：</p>
         <pre><code>def bench(dt, n=2048, iters=30):
     a = torch.randn(n, n, device="cuda", dtype=dt)
@@ -416,10 +415,10 @@ bf16: 5.83 TFLOPS</code></pre>
 
       <!-- §4 -->
       <section id="s4">
-        <div class="sec-head"><span class="idx">04</span><h2>Triton 三层错误链</h2></div>
-        <p class="lede">这是本次最有价值的排查案例：<strong>真因藏在两层假错误之下</strong>。</p>
+        <div class="sec-head"><span class="idx">04</span><h2>Triton 构建问题分析</h2></div>
+        <p class="lede">该案例展示了多层环境配置问题的定位过程：<strong>初始错误信息并未直接指向根因</strong>。</p>
 
-        <h3>第 1 层：不存在的 gcc 路径</h3>
+        <h3>GCC 路径配置错误</h3>
         <pre><code>FileNotFoundError: '&lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc'</code></pre>
         <p>用户 PATH 里有这个目录，但它<strong>不存在</strong>：</p>
         <pre><code>echo $PATH | tr ':' '\n' | grep gcc
@@ -428,7 +427,7 @@ ls &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc
 # ls: cannot access ...: No such file or directory</code></pre>
         <p>看起来像「Triton 挂了」，其实只是路径坏。</p>
 
-        <h3>第 2 层：系统 gcc 也是坏的</h3>
+        <h3>系统 GCC 版本与路径问题</h3>
         <p>指向真实存在的 gcc-11.2.0 后：</p>
         <pre><code>cc1: error while loading shared libraries: libisl.so.15: cannot open shared object file</code></pre>
         <p>逐个实测集群上的编译器：</p>
@@ -451,12 +450,12 @@ done</code></pre>
           </table>
         </div>
 
-        <h3>第 3 层：真因</h3>
+        <h3>根本原因</h3>
         <p>用 gcc-12.2.0 后（作业 <code>&lt;JOB_ID&gt;</code>）：</p>
         <pre><code>loc("probe_triton.py":4:0): error: unsupported target: 'gfx906'
 RuntimeError: PassManager::run failed</code></pre>
 
-        <h3>海光官方 Triton 也一样</h3>
+        <h3>海光 Triton 版本对照验证</h3>
         <p>海光发布了 DCU 专版 Triton，值得单独验证：</p>
         <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"
 # triton-3.1.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl</code></pre>
@@ -492,7 +491,7 @@ grep -ohE "gfx9[0-9]{2}[a-z]*" triton/backends/hcu/compiler.py | sort -u
       <section id="s5">
         <div class="sec-head"><span class="idx">05</span><h2>vLLM 移植可行性</h2></div>
 
-        <h3>5.1 关键区分</h3>
+        <h3>后端能力边界</h3>
         <p>先厘清概念（这两个名字容易混）：</p>
         <ul>
           <li><strong>VLM</strong> = Vision-Language Model，一类<strong>模型</strong>（MinerU2.5-Pro-2605-1.2B 就是）</li>
@@ -508,7 +507,7 @@ grep -ohE "gfx9[0-9]{2}[a-z]*" triton/backends/hcu/compiler.py | sort -u
               ├── vllm-engine    ← vLLM 在这里
               └── lmdeploy</div>
 
-        <h3>5.2 关键发现：kernel 编译进了 gfx906</h3>
+        <h3>gfx906 内核架构验证结果</h3>
         <p>海光也发布了 DCU 版 vLLM：</p>
         <pre><code>curl -sL "https://download.sourcefind.cn:65024/directlink/4/vllm/DAS1.8/"
 # vllm-0.11.0+das.opt1.dtk2604.torch271-cp310-cp310-manylinux_2_28_x86_64.whl</code></pre>
@@ -532,7 +531,7 @@ ops.paged_attention_v1(out, q, kc, vc, nkvh, 1.0/(hd**0.5),
 [OK] rotary_embedding (HIP): ran
 [OK] paged_attention_v1 (HIP) ★: out(4, 8, 64) finite=True</code></pre>
 
-        <h3>5.4 结论与未竟事项</h3>
+        <h3>结论与未完成事项</h3>
         <p><strong>Z100 上 vLLM 有真实通路</strong>——核心 HIP kernel 全部可用，与 Triton 的结论方向相反。</p>
         <p><strong>未解决</strong>：平台检测失败（<code>is_rocm: False</code>）。vLLM 靠 <code>import amdsmi</code> 判断 ROCm：</p>
         <pre><code># vllm/platforms/__init__.py:109
@@ -547,7 +546,7 @@ amdsmi.amdsmi_init()</code></pre>
 
       <!-- §6 -->
       <section id="s6">
-        <div class="sec-head"><span class="idx">06</span><h2>打通解析链路：六个阻塞问题</h2></div>
+        <div class="sec-head"><span class="idx">06</span><h2>解析流程问题与修复结果</h2></div>
         <p class="lede">每次报错都不同，说明在逐层前进。按实际遇到的顺序：</p>
 
         <h3>6.1 模型缺失</h3>
@@ -702,7 +701,7 @@ Mooncake is the serving platform for Kimi, a leading LLM service provided by Moo
 
       <!-- §8 -->
       <section id="s8">
-        <div class="sec-head"><span class="idx">08</span><h2>性能测试</h2></div>
+        <div class="sec-head"><span class="idx">08</span><h2>性能测试与结果分析</h2></div>
 
         <h3>8.1 三种后端</h3>
         <div class="tw">
@@ -769,7 +768,7 @@ Mooncake is the serving platform for Kimi, a leading LLM service provided by Moo
 shutdown_pdf_render_executor()   # worker 收尾时调用</code></pre>
         <p>修复后 CPU 批量作业正常打印 <code>BENCH_DONE</code> 并 <code>RC=0</code> 退出。</p>
 
-        <h3>8.5 队列选型</h3>
+        <h3>队列配置比较</h3>
         <p>实测时的集群负载：</p>
         <pre><code>sinfo -p kshdnormal -o "%t %D" -h | sort    # alloc 735 / idle 2  （满载）
 sinfo -p kshcnormal -o "%t %D" -h | sort    # idle 1106           （空闲）</code></pre>
@@ -786,7 +785,7 @@ sinfo -p kshcnormal -o "%t %D" -h | sort    # idle 1106           （空闲）</
       <section id="s9">
         <div class="sec-head"><span class="idx">09</span><h2>服务池架构与实现</h2></div>
 
-        <h3>9.1 网络可达性（决定架构）</h3>
+        <h3>网络可达性与系统架构</h3>
         <p>作业 <code>&lt;JOB_ID&gt;</code>。先验证计算节点能否对外提供服务：</p>
         <pre><code># 计算节点上起服务，写出 endpoint
 IP=$(hostname -I | awk '{print $1}'); PORT=$((30000 + RANDOM % 5000))
@@ -901,9 +900,9 @@ done</code></pre>
 
       <!-- §10 -->
       <section id="s10">
-        <div class="sec-head"><span class="idx">10</span><h2>服务池压测</h2></div>
+        <div class="sec-head"><span class="idx">10</span><h2>服务池性能与稳定性测试</h2></div>
 
-        <h3>10.1 网关 v1 vs v2</h3>
+        <h3>网关版本性能比较</h3>
         <p>同样 24 请求 / 并发 8：</p>
         <pre><code>python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 8 2</code></pre>
         <div class="tw">
@@ -922,7 +921,7 @@ done</code></pre>
         <p><strong>p50 上升是预期且正确的</strong>：v1 的低 p50 是少数请求抢到空闲 worker 的假象，
         代价是 p90 拖长和 8.3% 失败。v2 让所有请求公平排队。</p>
 
-        <h3>10.2 超订压测（3× worker 数）</h3>
+        <h3>超额并发测试（3× worker 数）</h3>
         <p>48 请求 / 并发 12：</p>
         <pre><code>python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 12 4</code></pre>
         <pre><code>total=48  ok=48  failed=0  error_rate=0.0%
@@ -935,7 +934,7 @@ per-worker distribution:  11 / 11 / 14 / 12</code></pre>
         <p>并发 8→12 吞吐 440→955 docs/h，说明并发 8 时管道未打满。
         955 已<strong>超过纯批处理的 735</strong>——批处理按卡静态分片有空转，服务池按空闲槽位动态分发。</p>
 
-        <h3>10.3 故障自愈（压测进行中执行）</h3>
+        <h3>压测期间故障恢复测试</h3>
         <pre><code>PID=$(python3 -c "import json;print(json.load(open('.../&lt;COMPUTE_NODE&gt;-dcu3.json'))['pid'])")
 ssh &lt;COMPUTE_NODE&gt; "kill -9 $PID"        # PID &lt;PID&gt;</code></pre>
         <p>50 秒后：</p>
@@ -951,7 +950,7 @@ grep -a dcu3 pool-*.err | grep -E "restart|READY|exited"
 # [worker dcu3] READY -> registered http://&lt;SERVICE_ENDPOINT&gt;</code></pre>
         <p><strong>在真实负载下验证，<code>total_failed</code> 全程 0，请求未丢失。</strong></p>
 
-        <h3>10.4 泄漏检查（72 请求前后）</h3>
+        <h3>内存稳定性测试（72 次请求）</h3>
         <pre><code>ssh &lt;COMPUTE_NODE&gt; "ps -u &lt;USER&gt; -o rss,cmd --sort=-rss | grep -a fast_api | awk '{print \$1/1024}'"</code></pre>
         <div class="tw">
           <table>
@@ -973,7 +972,7 @@ grep -a dcu3 pool-*.err | grep -E "restart|READY|exited"
 
       <!-- §11 -->
       <section id="s11">
-        <div class="sec-head"><span class="idx">11</span><h2>走死的路径</h2></div>
+        <div class="sec-head"><span class="idx">11</span><h2>未采用方案与适用限制</h2></div>
         <p class="lede">记录失败路径与其代价，避免重复投入。</p>
 
         <h3>11.1 patchelf 烧路径进 ELF <span class="badge dead">✕ 失败</span></h3>
@@ -1024,7 +1023,7 @@ ldd python3.10                    # Segmentation fault</code></pre>
 
       <!-- §12 -->
       <section id="s12">
-        <div class="sec-head"><span class="idx">12</span><h2>被推翻的判断</h2></div>
+        <div class="sec-head"><span class="idx">12</span><h2>初始假设检验</h2></div>
         <p class="lede">工作过程中三次自我更正，都影响了结论方向。记录在此因为方法论比结论本身更有价值。</p>
 
         <div class="corr">
@@ -1080,10 +1079,10 @@ ldd python3.10                    # Segmentation fault</code></pre>
 
       <!-- §13 -->
       <section id="s13">
-        <div class="sec-head"><span class="idx">13</span><h2>裸金属部署</h2></div>
+        <div class="sec-head"><span class="idx">13</span><h2>部署与运行配置</h2></div>
         <p class="lede">交付形态是裸金属，不含 Slurm。</p>
 
-        <h3>13.1 关键建议：换 glibc ≥ 2.28 的发行版</h3>
+        <h3>运行环境兼容性与发行版要求</h3>
         <p>集群上那套 <code>ld-linux</code> 包装器是为绕开 CentOS 7 的 glibc 2.17 而生的，
         代价是子进程盲区（§6.2、§6.5）。<strong>裸金属你控制 OS，这个坑本可以不踩。</strong></p>
         <p>DCU torch 实际要求 <code>GLIBC_2.25</code>：</p>
@@ -1138,7 +1137,7 @@ curl http://<host>:8000/pool/status</code></pre>
 
       <!-- §14 -->
       <section id="s14">
-        <div class="sec-head"><span class="idx">14</span><h2>环境恢复与完整复现</h2></div>
+        <div class="sec-head"><span class="idx">14</span><h2>环境恢复与复现验证</h2></div>
         <p class="lede">2026-09-27，在原实验目录经过归档和路径迁移后，从零审计运行时闭包，并重新完成一份 14 页 PDF 的端到端 pipeline 解析。</p>
 
         <div class="callout lesson">
@@ -1161,7 +1160,7 @@ curl http://<host>:8000/pool/status</code></pre>
         <p>公开版省略用户名、集群地址、节点名、实际作业号和真实目录，只保留版本、错误类型、
         命令结构、性能数字与验收条件。</p>
 
-        <h3>14.2 先审计环境漂移</h3>
+        <h3>环境状态审计</h3>
         <p>不要直接重跑旧命令。先检查包装器、配置和模型路径是否仍然存在：</p>
         <pre><code>module -t avail 2&gt;&amp;1 | grep -Ei '(^|/)glibc([/-]|$)|compat-glibc'
 # 预期：无输出。glibc 2.28 不是 module 提供的。
@@ -1183,7 +1182,7 @@ test -d &lt;PIPELINE_MODEL_ROOT&gt;</code></pre>
         <p>本次复验发现，旧的四个入口仍硬编码已经被归档的 glibc 目录；
         模型权重仍在，但配置文件移动到了新的脚本目录。<strong>环境内容未必丢失，入口路径可能先失效。</strong></p>
 
-        <h3>14.3 加载完整 module 组合</h3>
+        <h3>Module 环境配置</h3>
         <pre><code>module purge
 module load compiler/gcc/12.2.0 compiler/dtk/26.04
 source &lt;VENV&gt;/bin/activate
@@ -1201,7 +1200,7 @@ echo "$ROCM_PATH"
         两者都不替代 glibc。只加载 DTK、或只把 glibc 放进 <code>--library-path</code>，
         仍可能报 <code>CXXABI_1.3.8 not found</code>。</p>
 
-        <h3>14.4 建立单一 Python launcher</h3>
+        <h3>统一 Python 启动入口</h3>
         <p>不要分别维护多个稍有差异的包装器。建立一个入口，CLI、服务和 spawn worker 都调用它：</p>
         <pre><code>#!/bin/bash
 set -u
@@ -1231,7 +1230,7 @@ print("devices", torch.cuda.device_count())
 print("arch", torch.cuda.get_device_properties(0).gcnArchName)
 PY</code></pre>
 
-        <h3>14.5 固化本地模型配置</h3>
+        <h3>本地模型配置</h3>
         <p>不要依赖旧工作目录里的默认文件名。为复现实验显式指定一个配置：</p>
         <pre><code>{
   "models-dir": {
@@ -1250,7 +1249,7 @@ export TRANSFORMERS_OFFLINE=1</code></pre>
         <code>AttributeError: 'NoneType' object has no attribute 'get'</code>。
         这不是模型损坏，也不是 DCU 算子错误。</p>
 
-        <h3>14.6 让 spawn 子进程继承 loader</h3>
+        <h3>spawn 子进程的动态库加载配置</h3>
         <p>MinerU 3.4.4 的 PDF render executor 使用 <code>spawn</code>。复现脚本必须在创建进程池前覆盖 executable：</p>
         <pre><code>import multiprocessing
 
@@ -1338,7 +1337,7 @@ grep -E "PARSE_ELAPSED|PARSE_EXIT_RC" &lt;LOG_FILE&gt;
 # COMPLETED | 0:0
 # PARSE_EXIT_RC=0</code></pre>
 
-        <h3>14.9 结果与产物验收</h3>
+        <h3>结果与产物验证</h3>
         <div class="tw">
           <table>
             <tr><th>项目</th><th>2026-09-27 复验</th></tr>
@@ -1363,7 +1362,7 @@ grep -o '!\[\](images/' &lt;OUTPUT_DIR&gt;/*/auto/*.md | wc -l</code></pre>
         <p>返回码 0 只是第一层验收；还应检查 Markdown 非空、结构化 JSON 能解析、
         图片实际落盘，以及标题、公式和图注是否出现在内容中。</p>
 
-        <h3>14.10 错误链与定位表</h3>
+        <h3>错误信息与定位方法</h3>
         <div class="tw">
           <table>
             <tr><th>现象</th><th>真实原因</th><th>处理</th></tr>
@@ -1387,7 +1386,7 @@ grep -o '!\[\](images/' &lt;OUTPUT_DIR&gt;/*/auto/*.md | wc -l</code></pre>
 
       <!-- §15 -->
       <section id="s15">
-        <div class="sec-head"><span class="idx">15</span><h2>附录：命令速查</h2></div>
+        <div class="sec-head"><span class="idx">15</span><h2>附录：命令参考</h2></div>
 
         <h3>15.1 环境</h3>
         <pre><code># 连接
@@ -1474,7 +1473,7 @@ curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"</cod
 
       <!-- data index -->
       <section id="s16">
-        <div class="sec-head"><span class="idx">·</span><h2>数据来源索引</h2></div>
+        <div class="sec-head"><span class="idx">·</span><h2>数据与作业记录索引</h2></div>
         <div class="tw">
           <table>
             <tr><th>数据</th><th>作业号</th><th>原始文件</th></tr>

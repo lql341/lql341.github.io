@@ -26,22 +26,54 @@
   const paperPages = [...main.querySelectorAll('.paper-page')];
   let sectionNumber = 0;
   let subsectionNumber = 0;
-  const cleanHeadingLabel = (heading) => heading.textContent.trim()
+  const cleanHeadingLabel = (heading) => {
+    const copy = heading.cloneNode(true);
+    copy.querySelectorAll('.badge, .status, [aria-hidden="true"]').forEach((element) => element.remove());
+    return copy.textContent.trim()
     .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '')
     .replace(/^\s*(?:(?:\d{1,2}\.\d+|\d{1,2})[、.)\s]+|[一二三四五六七八九十]+[、.])\s*/, '')
     .replace(/^\s*第\s*\d+\s*[章节层]\s*[：:、.]?\s*/, '')
     .trim();
+  };
+  const standardizeHeadingNumber = (heading, number) => {
+    const adjacentIndex = heading.previousElementSibling?.matches('.idx')
+      ? heading.previousElementSibling
+      : heading.parentElement?.querySelector(':scope > .idx');
+    if (adjacentIndex && !heading.contains(adjacentIndex)) {
+      adjacentIndex.textContent = number;
+      return;
+    }
+    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+    let firstText = walker.nextNode();
+    while (firstText && !firstText.data.trim()) firstText = walker.nextNode();
+    if (firstText) {
+      firstText.data = firstText.data
+        .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '')
+        .replace(/^\s*(?:(?:\d{1,2}\.\d+|\d{1,2})[、.)\s]+|[一二三四五六七八九十]+[、.])\s*/, '')
+        .replace(/^\s*第\s*\d+\s*[章节层]\s*[：:、.]?\s*/, '');
+    }
+    const marker = document.createElement('span');
+    marker.className = 'report-heading-number';
+    marker.setAttribute('aria-hidden', 'true');
+    marker.textContent = number;
+    heading.insertBefore(marker, heading.firstChild);
+  };
   const entries = headings.map((heading, index) => {
     if (!heading.id) heading.id = `report-section-${String(index + 1).padStart(2, '0')}`;
     if (heading.tagName === 'H2') {
       sectionNumber += 1;
       subsectionNumber = 0;
       const number = String(sectionNumber).padStart(2, '0');
-      return { id: heading.id, label: cleanHeadingLabel(heading), number, kind: 'h2' };
+      const label = cleanHeadingLabel(heading);
+      standardizeHeadingNumber(heading, number);
+      return { id: heading.id, label, number, kind: 'h2' };
     }
     if (!sectionNumber) sectionNumber = 1;
     subsectionNumber += 1;
-    return { id: heading.id, label: cleanHeadingLabel(heading), number: `${String(sectionNumber).padStart(2, '0')}.${subsectionNumber}`, kind: 'h3' };
+    const number = `${String(sectionNumber).padStart(2, '0')}.${subsectionNumber}`;
+    const label = cleanHeadingLabel(heading);
+    standardizeHeadingNumber(heading, number);
+    return { id: heading.id, label, number, kind: 'h3' };
   });
 
   if (!entries.length && paperPages.length) {

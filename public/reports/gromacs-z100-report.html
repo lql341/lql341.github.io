@@ -186,8 +186,8 @@
   .badge-warn { background:rgba(249,226,175,.09); color:var(--scnet-orange); }
   .badge-info { background:rgba(96,165,250,.10); color:var(--scnet-blue); }
 </style>
-<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -233,7 +233,7 @@
 
 <!-- ═══════════ 性能 ═══════════ -->
 <section>
-  <h2>一、性能对比（干净节点，每项 3 次重复）</h2>
+  <h2>性能测试结果（空闲节点，每项重复 3 次）</h2>
   <div class="table-wrap">
     <table>
       <thead>
@@ -257,22 +257,22 @@
 
 <!-- ═══════════ waterbox8 反转 ═══════════ -->
 <section>
-  <h2>二、waterbox8 反转：从「慢 2.7×」到「快 1.62×」</h2>
-  <p>上一版报告里 waterbox8 NPT 是 <strong>15.31 vs 41.22（慢 2.7×）</strong>，这是唯一一个
-  「HIP 变慢」的证据，也是整个 NPT 优化课题的起点。干净节点重测后：</p>
+  <h2>waterbox8 测试结果及变化原因</h2>
+  <p>上一版报告中，waterbox8 NPT 的测量值为 <strong>15.31 vs 41.22（HIP 慢 2.7×）</strong>，这是当时判断
+  HIP 性能较低的唯一依据。空闲节点复测结果如下：</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th></th><th>污染节点</th><th>干净节点</th></tr></thead>
+      <thead><tr><th></th><th>存在 CPU 竞争的节点</th><th>空闲节点</th></tr></thead>
       <tbody>
-        <tr><td>HIP 2026.3</td><td class="bad">15.31（假象）</td><td class="good">67.64</td></tr>
+        <tr><td>HIP 2026.3</td><td class="bad">15.31（受竞争负载影响）</td><td class="good">67.64</td></tr>
         <tr><td>CUDA 2023.2</td><td>41.22</td><td>41.66</td></tr>
       </tbody>
     </table>
   </div>
-  <p><strong>根因：HIP 后端对节点 CPU 争抢极敏感。</strong>同一争抢节点上，HIP 从 148 掉到 9.4
+  <p><strong>原因：HIP 后端性能受节点 CPU 竞争负载显著影响。</strong>同一竞争节点上，HIP 从 148 降至 9.4
   （15× 恶化），而 CUDA 翻译版几乎不动（稳定在 66.8）。上一版的 waterbox8 HIP 数字恰好落在
   争抢节点上。由此，「waterbox8 NPT 慢」这一整条优化课题（virial 回退、DPP 归约、寄存器/占用率）
-  都是在追这个测量假象，详见第四节死胡同记录。</p>
+  均基于受竞争负载影响的测量值；相关优化假设的复测结果见第四节。</p>
 </section>
 
 <!-- ═══════════ 正确性 ═══════════ -->
@@ -287,9 +287,9 @@
 
 <!-- ═══════════ 踩坑 ═══════════ -->
 <section>
-  <h2>四、踩过的坑</h2>
+  <h2>构建问题与性能分析</h2>
 
-  <h3>4.1 编译期真坑（必踩，静默失败）</h3>
+  <h3>编译期配置错误及其表现</h3>
   <p><strong>gfx90a→gfx906 探针坑</strong>：GROMACS 的 <code>gmxManageHipccConfig.cmake</code> 用
   <code>--offload-arch=gfx90a</code> 去探测 hipcc 是否支持各优化 flag，但 DTK 26.04 没有 gfx90a
   设备库——每个探测都失败，于是<strong>所有优化 flag 被静默丢弃</strong>，性能掉到 ~17 ns/day 且
@@ -297,7 +297,7 @@
   <code>-mcpu=gfx906</code>、去掉 gfx906 不认的 <code>-fno-gpu-rdc</code> / <code>-fno-slp-vectorize</code>）。
   <strong>这是影响最大的一处编译改动。</strong></p>
 
-  <h3>4.2 性能死胡同（都证伪了，避免后人重踩）</h3>
+  <h3>性能优化假设与验证结果</h3>
   <div class="table-wrap">
     <table>
       <thead><tr><th>假线索</th><th>实验</th><th>结论</th></tr></thead>
@@ -317,7 +317,7 @@
 
 <!-- ═══════════ 预检提示 ═══════════ -->
 <section>
-  <h2>五、预检提示（跑 benchmark 前必读）</h2>
+  <h2>基准测试前置条件</h2>
   <div class="callout">
     <span class="title">⚠ 确认节点干净 / 独占。</span>HIP 后端对 CPU 争抢极敏感（可达 4× 掉速），
     CUDA 翻译版相对稳。建议：① <code>squeue</code> 确认节点无其他作业或 <code>--exclusive</code> 独占；
@@ -328,7 +328,7 @@
 
 <!-- ═══════════ 编译方法 ═══════════ -->
 <section>
-  <h2>六、编译方法（完整复现）</h2>
+  <h2>构建方法与复现步骤</h2>
   <p><strong>工具链</strong>：DTK 26.04（HIP 6.3.26113 / clang 17）+ GCC 12.2.0 + CMake 3.28.6 + OpenMPI 4.1.5。</p>
   <pre><code># 0. 恢复 cmake_minimum_required 到 3.28（撤销任何 3.25 降级补丁）
 cd $SRC
@@ -379,7 +379,7 @@ make -j8</code></pre>
 
 <!-- ═══════════ 文件包 ═══════════ -->
 <section>
-  <h2>七、可执行文件包</h2>
+  <h2>构建产物</h2>
   <p>当前最优产物在 <code>&lt;USER_HOME&gt;/softwares/gromacs/build_cmake28/</code>：</p>
   <div class="table-wrap">
     <table>
@@ -403,7 +403,7 @@ export LD_LIBRARY_PATH=&lt;GCC_ROOT&gt;/lib64:$LD_LIBRARY_PATH
 
 <!-- ═══════════ 功能增益 ═══════════ -->
 <section>
-  <h2>八、功能增益：GROMACS 2023.2 → 2026.3</h2>
+  <h2>版本功能变化（GROMACS 2023.2—2026.3）</h2>
   <ul>
     <li><strong>原生 HIP 后端</strong>：2026.3 首次把 AMD/HIP 变成一等公民后端，所有 GPU kernel 可走官方原生 HIP 代码路径（不再靠翻译层或 SYCL）。</li>
     <li><strong>AMBER 力场 + OPC/OPC3 水模型</strong>（2026）；per-氨基酸 CMAP 类型（2025）。</li>

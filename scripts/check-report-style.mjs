@@ -77,13 +77,13 @@ for (const contract of ['--report-title-size', '--report-h2-size', '--report-h3-
   if (!theme.includes(`${contract}:`)) failures.push(`Shared theme is missing ${contract}.`);
   if (!guide.includes(contract)) failures.push(`Style guide is missing ${contract}.`);
 }
-for (const namingRule of ['项目/软件｜平台/版本', '01 摘要', '02 环境与范围', 'decimal numbering', '4–8 comma-separated entries']) {
+for (const namingRule of ['项目/软件｜平台/版本', '01 摘要', '02 目标与范围', 'decimal numbering', 'rhetorical questions', '4–8 comma-separated entries']) {
   if (!guide.includes(namingRule)) failures.push(`Style guide is missing the title/chapter naming rule: ${namingRule}.`);
 }
-for (const selector of ['.report-banner.report-banner', '.report-banner.report-banner h1', 'body > header.report-banner.report-banner', 'body .content-inner > section', '.report-outline-h3']) {
+for (const selector of ['.report-banner.report-banner', '.report-banner.report-banner h1', 'body > header.report-banner.report-banner', 'body .content-inner > section', '.report-outline-h3', '.report-heading-number']) {
   if (!theme.includes(selector)) failures.push(`Shared theme is missing the ${selector} layout rule.`);
 }
-for (const outlineContract of ['report-outline', 'legacy-report-toc', 'report-no-sidebar', 'h2, h3', 'subsectionNumber', 'report-outline-number', 'padStart(2, \'0\')']) {
+for (const outlineContract of ['report-outline', 'legacy-report-toc', 'report-no-sidebar', 'h2, h3', 'subsectionNumber', 'standardizeHeadingNumber', 'report-outline-number', 'report-heading-number', 'padStart(2, \'0\')']) {
   if (!outlineScript.includes(outlineContract) && !theme.includes(outlineContract)) {
     failures.push(`Shared report outline is missing ${outlineContract}.`);
   }

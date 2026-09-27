@@ -16,8 +16,8 @@
     table{width:100%;border-collapse:collapse;margin:13px 0 5px}th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}th{background:#f1f5f9;font-weight:650}code{background:#eef2f7;color:#23324d;padding:1px 5px;border-radius:4px}pre{background:var(--code);color:#e5efff;border-radius:11px;padding:16px 18px;overflow:auto;line-height:1.5}pre code{background:transparent;color:inherit;padding:0}.ok{color:var(--green);font-weight:700}.warn{color:var(--amber);font-weight:700}.bad{color:var(--red);font-weight:700}.note{border-left:4px solid var(--blue);background:#eff6ff;padding:11px 14px;margin:14px 0}.small{font-size:13px;color:var(--muted)}.cols{columns:2;column-gap:32px}.cols p{break-inside:avoid}
     @media(max-width:720px){.hero{padding:28px 23px}h1{font-size:29px}section{padding:22px 18px}.cols{columns:1}}
   </style>
-  <link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+  <link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav aria-label="Report navigation"><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -40,7 +40,7 @@
   </nav>
 
   <section id="s1"><h2>1. 最终结论</h2>
-    <p class="lede"><strong>PaddleOCR 3.7.0 的 Transformers/PyTorch 路线已在昆山 Z100 上端到端跑通。</strong>
+    <p class="lede"><strong>PaddleOCR 3.7.0 的 Transformers/PyTorch 路线已在昆山 Z100 上完成端到端功能验证。</strong>
     实际使用的是用户态 glibc 2.28 loader、GCC 12.2、DTK 26.04，以及海光适配的 Torch 2.7.1，
     不依赖 PaddlePaddle DCU wheel。</p>
     <div class="grid">
@@ -52,7 +52,7 @@
     <div class="note">适用定位：PaddleOCR 是高吞吐文本检测/识别引擎；MinerU 是文档解析 pipeline。两者不应只按“识别字符数”直接判定替代关系。</div>
   </section>
 
-  <section id="s2"><h2>2. 脱敏后的环境信息</h2>
+  <section id="s2"><h2>测试环境与软件配置</h2>
     <table><tr><th>层次</th><th>验证值</th><th>备注</th></tr>
       <tr><td>硬件</td><td>海光 Z100 / gfx906 / Device 66a1</td><td>作业申请 1 张 DCU</td></tr>
       <tr><td>系统</td><td>CentOS 7.6 / 系统 glibc 2.17</td><td>通过用户态 glibc 2.28 绕过 wheel ABI 限制</td></tr>
@@ -64,7 +64,7 @@
     </table>
   </section>
 
-  <section id="s3"><h2>3. 为什么选择 Transformers/PyTorch</h2>
+  <section id="s3"><h2>推理后端选择依据</h2>
     <div class="cols">
       <p>昆山 module 中可用的 DCU Torch 主要停留在 Python 3.7/Torch 1.10；PaddleOCR 3.7/PaddleX 3.7 使用 Python 3.8 语法和现代 Transformers API，直接强装到 Python 3.7 会触发位置参数语法、walrus 表达式和 typing/importlib API 错误。</p>
       <p>MinerU 报告中已经验证了更合适的用户态闭包：Python 3.10、Torch 2.7.1、DTK 26.04、用户态 glibc 2.28。本文在不修改 MinerU 的前提下，只读复用其 Torch/运行库，在独立目录安装 PaddleOCR/PaddleX。</p>
@@ -85,7 +85,7 @@
     <div class="note"><strong>架构边界：</strong>gfx906 没有匹配的 HIPBLASLt Tensile kernel；Flash Attention 不可用，Transformers 回退到 Torch native math attention。功能通过，性能不是硬件最优上限。</div>
   </section>
 
-  <section id="s5"><h2>5. PaddleOCR 性能</h2>
+  <section id="s5"><h2>PaddleOCR 性能测试结果</h2>
     <h3>5.1 单张图片稳定态</h3>
     <table><tr><th>指标</th><th>实测值</th></tr>
       <tr><td>模型冷加载</td><td>67.6–80.1 s</td></tr>
@@ -96,7 +96,7 @@
       <tr><td>每次识别行数</td><td>16</td></tr>
       <tr><td>推理阶段显存</td><td>0.212 GB allocated / 0.281 GB reserved</td></tr>
     </table>
-    <h3>5.2 同一篇 23 页 PDF：Mooncake-v3</h3>
+    <h3>Mooncake-v3 23 页 PDF 测试</h3>
     <table><tr><th>阶段</th><th>实测值</th></tr>
       <tr><td>PDF 渲染（pypdfium2，scale=2.0）</td><td>0.7254 s</td></tr>
       <tr><td>模型加载</td><td>80.0806 s</td></tr>
@@ -109,7 +109,7 @@
     </table>
   </section>
 
-  <section id="s6"><h2>6. 与 MinerU 同文档对比</h2>
+  <section id="s6"><h2>与 MinerU 的同文档比较</h2>
     <p>输入为同一份脱敏后仍保留在集群上的 <code>Mooncake-v3.pdf</code>，23 页、约 0.58 MB。
     MinerU 数字来自对应构建报告；PaddleOCR 数字来自本文同一 PDF 的现场复测。</p>
     <table><tr><th>维度</th><th>MinerU pipeline</th><th>PaddleOCR Transformers</th></tr>
@@ -133,7 +133,7 @@ work- loads
     <p>MinerU 报告中已核验标题层级、署名、表格数值、公式和图片落盘。对于论文、合同、表格和 PDF 转 Markdown 场景，MinerU 的结构化质量更重要；对于批量纯文字识别、局部重识别和低延迟 OCR，PaddleOCR 更合适。</p>
   </section>
 
-  <section id="s8"><h2>8. 生产级部署方式</h2>
+  <section id="s8"><h2>部署方案</h2>
     <h3>8.1 统一 launcher</h3>
     <p>系统 glibc 2.17 不能直接承载新 Torch wheel。生产进程必须通过用户态 glibc 2.28 loader，闭包包含 GCC 12.2、DTK 26.04、<code>dcc/gcvm</code> 和 <code>rocm_smi</code>。</p>
     <pre><code>&lt;PADDLEOCR_ROOT&gt;/bin/dcu-python your_worker.py</code></pre>
@@ -174,7 +174,7 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
   &lt;INPUT_PDF&gt; &lt;OUTPUT_DIR&gt;</code></pre>
   </section>
 
-  <section id="s10"><h2>10. 验收记录</h2>
+  <section id="s10"><h2>测试结果与验收</h2>
     <table><tr><th>验收项</th><th>结果</th></tr>
       <tr><td>独立目录</td><td class="ok">通过；未修改 MinerU venv</td></tr>
       <tr><td>模型离线 cache</td><td class="ok">PP-OCRv5 mobile det/rec safetensors</td></tr>

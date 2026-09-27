@@ -175,8 +175,8 @@
       a { color: inherit; text-decoration: none; }
     }
   </style>
-<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-17">
-  <script src="/reports/report-theme.js?v=20260927-17" defer></script>
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-19">
+  <script src="/reports/report-theme.js?v=20260927-19" defer></script>
 </head>
 <body>
 <div class="report-site-nav"><a class="report-brand" href="/">opensource_community</a><nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav></div>
@@ -275,7 +275,7 @@
       </div>
     </div>
 
-    <h3>最终二进制</h3>
+    <h3>构建产物</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>用途</th><th>路径</th><th>大小</th><th>SHA-256</th></tr></thead>
@@ -390,7 +390,7 @@ device_param-&gt;regsPerMultiprocessor = prop.regsPerMultiprocessor;
   </section>
 
   <section id="debug">
-    <h2>5. 调试过程与关键转折</h2>
+    <h2>故障定位与调试方法</h2>
     <ol>
       <li><strong>确认二进制包含 HIP：</strong>检查到 <code>hipInit</code>、<code>hipDeviceGetAttribute</code>、<code>hiprtcCompileProgram</code> 等符号，以及 <code>--backend-ignore-hip</code> 参数。</li>
       <li><strong>排除无卡节点误判：</strong>登录节点缺少 <code>/dev/kfd</code>；切换到已分配的计算节点后，DCU 与驱动均正常。</li>
@@ -521,7 +521,7 @@ Recovered:
 e11c594e6a2f4eb499cceadfca988595:13LEXON</code></pre>
     <p class="small">该字典测试的最终状态码为 1：输入包含 6494 个哈希，小字典耗尽时恢复其中 1 个。self-test 与目标恢复均成功，因此该状态码反映任务完成条件，而非 HIP 后端异常。</p>
 
-    <h3>迁移平台设备验证</h3>
+    <h3>gfx906/Z100 设备验证</h3>
     <pre><code>HIP.Version.: 6.3.26113
 
 Backend Device ID #01
@@ -574,7 +574,7 @@ Backend Device ID #01
       </table>
     </div>
 
-    <h3>速度可视化</h3>
+    <h3>吞吐率对比</h3>
     <div class="card">
       <div class="bar-row"><strong>HIP</strong><div class="bar-track"><div class="bar hip"></div></div><span class="bar-label">5913.79 MH/s</span></div>
       <div class="bar-row"><strong>OpenCL</strong><div class="bar-track"><div class="bar opencl"></div></div><span class="bar-label">5913.48 MH/s</span></div>
@@ -597,7 +597,7 @@ Backend Device ID #01
     </div>
     <p>两个后端选择了不同的工作组和加速组合，但最终吞吐一致，说明两条路径均能充分利用该 DCU。HIP 的主机内存占用明显更高，是本次测试中最明确的资源差异。</p>
 
-    <h3>9.4 累计进度为何不直接比较</h3>
+    <h3>累计进度指标的可比性分析</h3>
     <p>最终记录的 HIP 进度为 <code>266,757,734,400</code>，OpenCL 为 <code>270,092,206,080</code>。OpenCL 看似高约 1.25%，但其最终状态落在约 46 秒，而 HIP 为约 45 秒；初始化、状态刷新和 runtime 停止边界也不完全相同。因此报告以 hashcat 的 10 个持续速度样本作为主比较依据，而不以累计进度得出性能结论。</p>
 
     <h3>9.5 gfx906/Z100 多算法 HIP benchmark</h3>
