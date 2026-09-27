@@ -38,9 +38,11 @@
   if (!entries.length) return;
 
   const isChinese = document.documentElement.lang.toLowerCase().startsWith('zh');
+  const wideIndex = window.matchMedia('(min-width: 1200px)').matches;
+  document.body.classList.toggle('report-has-left-index', wideIndex);
   const outline = document.createElement('details');
   outline.className = 'report-outline';
-  outline.open = window.matchMedia('(min-width: 1480px)').matches;
+  outline.open = wideIndex;
   const summary = document.createElement('summary');
   summary.innerHTML = `<span>${isChinese ? '报告导航' : 'REPORT NAVIGATION'}</span><strong>${isChinese ? '章节索引' : 'Section index'}</strong><small>${entries.length} ${isChinese ? '项' : 'entries'}</small><b aria-hidden="true">＋</b>`;
   const list = document.createElement('nav');

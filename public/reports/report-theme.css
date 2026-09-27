@@ -280,7 +280,7 @@ body .content-inner > .report-outline, body main > .report-outline,
 body .container > .report-outline, body .wrap > .report-outline,
 body .page > .report-outline { width: 100% !important; }
 body > .report-outline, body .container > .report-outline { width: min(calc(100% - 40px), var(--report-max)) !important; }
-@media (min-width: 1480px) {
+@media (min-width: 1200px) {
   .report-outline {
     position: fixed;
     z-index: 20;
@@ -347,7 +347,7 @@ body td { color: #c5cec6 !important; background: transparent !important; border-
 body tr:nth-child(even) td { background: rgba(155,234,52,.025) !important; }
 body tr:hover td { background: rgba(155,234,52,.045) !important; }
 
-@media (min-width: 1480px) {
+@media (min-width: 1200px) {
   body .container > .report-outline, body main > .report-outline,
   body .wrap > .report-outline, body .page > .report-outline,
   body .content-inner > .report-outline {
@@ -362,6 +362,25 @@ body tr:hover td { background: rgba(155,234,52,.045) !important; }
     background: rgba(10,13,10,.94);
     backdrop-filter: blur(12px);
   }
+}
+
+@media (min-width: 1200px) {
+  body.report-has-left-index {
+    --report-index-width: min(220px, calc(100vw - var(--report-max) - 60px));
+    --report-content-left: max(calc((100vw - var(--report-max)) / 2), calc(20px + var(--report-index-width) + 32px));
+  }
+  body.report-has-left-index > :is(main, .container, .wrap, .page, .content, .reader-stage, .shell, .layout) {
+    width: min(var(--report-max), calc(100vw - var(--report-content-left) - 20px)) !important;
+    max-width: var(--report-max) !important;
+    margin-left: var(--report-content-left) !important;
+    margin-right: 20px !important;
+  }
+  body.report-has-left-index > header.report-banner {
+    width: min(var(--report-max), calc(100vw - var(--report-content-left) - 20px)) !important;
+    margin-left: var(--report-content-left) !important;
+    margin-right: 20px !important;
+  }
+  body.report-has-left-index .report-outline { width: var(--report-index-width) !important; }
 }
 
 @media print {
