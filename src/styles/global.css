@@ -44,13 +44,14 @@ h1 { max-width: 900px; margin: 18px 0 24px; font-size: clamp(44px, 8vw, 86px); l
 .report-tile-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
 .report-tile-meta span { color: var(--accent); }
 .report-tile .tag-row { min-height: 26px; margin-top: 18px; }
-.report-tile-metric { display: flex; flex-direction: column; gap: 4px; margin: 24px 0 17px; }
-.report-tile-metric strong { color: var(--text); font-size: clamp(24px, 2.4vw, 34px); line-height: 1.1; letter-spacing: -.05em; }
-.report-tile-metric span { color: var(--muted); font-size: 11px; line-height: 1.5; }
-.report-tile h3 { margin: 0; font-size: clamp(19px, 1.8vw, 25px); line-height: 1.18; letter-spacing: -.035em; }
+.report-tile h3 { min-height: 2.36em; margin: 0; font-size: clamp(19px, 1.8vw, 25px); line-height: 1.18; letter-spacing: -.035em; }
 .report-tile > p { display: -webkit-box; overflow: hidden; margin: 11px 0 20px; color: var(--muted); font-size: 13px; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .report-tile-action { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; font-weight: 750; }
-.report-tile-action b { color: var(--accent); font-size: 19px; }
+.tile-metric { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tile-metric strong { color: var(--text); font-size: 18px; line-height: 1.15; letter-spacing: -.025em; }
+.tile-metric small { color: var(--muted); font-size: 10px; font-weight: 500; line-height: 1.4; }
+.tile-cta { flex: none; color: var(--accent); }
+.tile-cta b { font-size: 17px; }
 .report-card, .panel { padding: 26px; background: linear-gradient(145deg, rgba(16,21,16,.98), rgba(7,9,7,.98)); border: 1px solid var(--line); border-radius: 18px; }
 .report-card h2 { margin: 20px 0 6px; font-size: 24px; line-height: 1.35; }
 .report-card h2 a { text-decoration: none; }

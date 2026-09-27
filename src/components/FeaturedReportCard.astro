@@ -7,24 +7,24 @@ interface Props {
   date: Date;
   metric: string;
   metricLabel: string;
+  metricLabelEn?: string;
+  lang?: 'en' | 'zh';
   index: number;
   cta: string;
+  languageLabel: string;
 }
 
-const { title, summary, tags, href, date, metric, metricLabel, index, cta } = Astro.props;
+const { title, summary, tags, href, date, metric, metricLabel, metricLabelEn, lang = 'en', index, cta, languageLabel } = Astro.props;
+const label = lang === 'en' ? (metricLabelEn ?? metricLabel) : metricLabel;
 ---
 
 <a class="report-tile" href={href}>
   <div class="report-tile-meta">
-    <span>FEATURED / {String(index).padStart(2, '0')}</span>
+    <span>{languageLabel} / {String(index).padStart(2, '0')}</span>
     <time datetime={date.toISOString()}>{date.toISOString().slice(0, 10)}</time>
   </div>
   <div class="tag-row">{tags.slice(0, 3).map((tag) => <span class="tag">{tag}</span>)}</div>
-  <div class="report-tile-metric">
-    <strong>{metric}</strong>
-    <span>{metricLabel}</span>
-  </div>
   <h3>{title}</h3>
   <p>{summary}</p>
-  <div class="report-tile-action"><span>{cta}</span><b aria-hidden="true">↗</b></div>
+  <div class="report-tile-action"><span class="tile-metric"><strong>{metric}</strong><small>{label}</small></span><span class="tile-cta">{cta} <b aria-hidden="true">↗</b></span></div>
 </a>

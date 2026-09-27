@@ -6,7 +6,7 @@ import FeaturedReportCard from '../../components/FeaturedReportCard.astro';
 const allReports = await getCollection('reports');
 const reports = allReports
   .filter(({ data }) => data.featured)
-  .sort((a, b) => a.data.homeOrder - b.data.homeOrder)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 4);
 ---
 <BaseLayout
@@ -48,8 +48,11 @@ const reports = allReports
           date={data.date}
           metric={data.metric ?? '研究报告'}
           metricLabel={data.metricLabel ?? ''}
+          metricLabelEn={data.metricLabelEn}
+          lang="zh"
           index={index + 1}
           cta="阅读全文"
+          languageLabel="中文报告"
         />
       ))}
     </div>
