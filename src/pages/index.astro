@@ -87,102 +87,8 @@ const reports = (await getCollection('reports'))
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let width = 0;
     let height = 0;
-    let lastFrameAt = 0;
-    let nextMeteorAt = performance.now() + 1800;
-    let meteor: { startedAt: number; x: number; y: number; dx: number; dy: number } | null = null;
-    let stars: { x: number; y: number; radius: number; phase: number; color: string; vx: number; vy: number }[] = [];
-    let edges: { from: number; to: number; opacity: number }[] = [];
-    let nebula: HTMLCanvasElement | null = null;
+    let stars: { x: number; y: number; radius: number; phase: number; color: string }[] = [];
     let animationFrame = 0;
-
-    const makeNebula = () => {
-      const scale = Math.min(0.45, 680 / width, 680 / height);
-      const texture = document.createElement('canvas');
-      texture.width = Math.max(1, Math.round(width * scale));
-      texture.height = Math.max(1, Math.round(height * scale));
-      const haze = texture.getContext('2d');
-      if (!haze) return texture;
-
-      const w = texture.width;
-      const h = texture.height;
-      const cx = w * 0.72;
-      const cy = h * 0.48;
-      const radius = Math.min(w * 0.88, h * 1.35);
-      haze.globalCompositeOperation = 'screen';
-
-      const core = haze.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.78);
-      core.addColorStop(0, 'rgba(111,151,228,0.19)');
-      core.addColorStop(0.36, 'rgba(87,117,207,0.11)');
-      core.addColorStop(1, 'rgba(65,76,130,0)');
-      haze.fillStyle = core;
-      haze.fillRect(0, 0, w, h);
-
-      const colors = [
-        [117, 133, 255],
-        [77, 196, 224],
-      ];
-      haze.lineCap = 'round';
-      haze.lineJoin = 'round';
-      for (let arm = 0; arm < 2; arm += 1) {
-        const points: { x: number; y: number }[] = [];
-        for (let step = 0; step <= 100; step += 1) {
-          const progress = 0.025 + (step / 100) * 0.975;
-          const angle = progress * Math.PI * 2.7 + arm * Math.PI;
-          const distance = progress * radius;
-          const x = cx + Math.cos(angle) * distance * 1.12;
-          const y = cy + Math.sin(angle) * distance * 0.64;
-          points.push({ x, y });
-        }
-
-        haze.beginPath();
-        points.forEach(({ x, y }, index) => {
-          if (index === 0) haze.moveTo(x, y);
-          else haze.lineTo(x, y);
-        });
-        haze.strokeStyle = 'rgba(91,123,238,0.2)';
-        haze.lineWidth = Math.max(10, h * 0.1);
-        haze.shadowColor = 'rgba(102,137,255,0.46)';
-        haze.shadowBlur = Math.max(12, h * 0.08);
-        haze.stroke();
-        haze.strokeStyle = 'rgba(118,194,226,0.24)';
-        haze.lineWidth = Math.max(3, h * 0.027);
-        haze.shadowColor = 'rgba(114,205,231,0.38)';
-        haze.shadowBlur = Math.max(8, h * 0.035);
-        haze.stroke();
-        haze.shadowBlur = 0;
-
-        for (let step = 0; step < 76; step += 1) {
-          const progress = (step + 1) / 76;
-          const angle = progress * Math.PI * 2.7 + arm * Math.PI;
-          const distance = progress * radius;
-          const x = cx + Math.cos(angle) * distance * 1.12;
-          const y = cy + Math.sin(angle) * distance * 0.64;
-          const puff = 8 + progress * Math.min(w, h) * 0.13;
-          const alpha = 0.1 + Math.sin(progress * Math.PI) * 0.13;
-          const color = colors[arm];
-          const cloud = haze.createRadialGradient(x, y, 0, x, y, puff);
-          cloud.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},${alpha})`);
-          cloud.addColorStop(0.48, `rgba(${color[0]},${color[1]},${color[2]},${alpha * 0.52})`);
-          cloud.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
-          haze.fillStyle = cloud;
-          haze.beginPath();
-          haze.arc(x, y, puff, 0, Math.PI * 2);
-          haze.fill();
-        }
-      }
-
-      // Keep the headline side quieter while letting the arms read on the right.
-      haze.globalCompositeOperation = 'destination-in';
-      const fade = haze.createLinearGradient(0, 0, w, 0);
-      fade.addColorStop(0, 'rgba(255,255,255,0.24)');
-      fade.addColorStop(0.36, 'rgba(255,255,255,0.58)');
-      fade.addColorStop(0.7, 'rgba(255,255,255,0.92)');
-      fade.addColorStop(1, 'rgba(255,255,255,1)');
-      haze.fillStyle = fade;
-      haze.fillRect(0, 0, w, h);
-
-      return texture;
-    };
 
     const resize = () => {
       window.cancelAnimationFrame(animationFrame);
@@ -196,100 +102,29 @@ const reports = (await getCollection('reports'))
       canvas.width = Math.round(width * pixelRatio);
       canvas.height = Math.round(height * pixelRatio);
       context!.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-
-      const count = Math.min(220, Math.max(90, Math.round((width * height) / 10_000)));
+      const count = Math.min(160, Math.max(50, Math.round((width * height) / 18_000)));
       stars = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
-        radius: Math.random() * 1.45 + 0.4,
+        radius: Math.random() * 0.7 + 0.25,
         phase: Math.random() * Math.PI * 2,
-        color: Math.random() > 0.82 ? '155,234,52' : Math.random() > 0.5 ? '178,220,255' : '232,242,255',
-        vx: (Math.random() - 0.5) * 0.62,
-        vy: (Math.random() - 0.5) * 0.44,
+        color: Math.random() > 0.94 ? '155,234,52' : Math.random() > 0.45 ? '208,229,255' : '246,249,255',
       }));
-      edges = [];
-      for (let from = 0; from < stars.length; from += 1) {
-        for (let to = from + 1; to < stars.length; to += 1) {
-          const dx = stars[from].x - stars[to].x;
-          const dy = stars[from].y - stars[to].y;
-          const distance = Math.hypot(dx, dy);
-          if (distance < 108) edges.push({ from, to, opacity: (1 - distance / 108) * 0.16 });
-        }
-      }
-      nebula = makeNebula();
-      lastFrameAt = 0;
       draw(performance.now());
     };
 
     const draw = (time: number) => {
       context!.clearRect(0, 0, width, height);
-      const delta = lastFrameAt ? Math.min(time - lastFrameAt, 50) / 1000 : 0;
-      lastFrameAt = time;
-      if (nebula) context!.drawImage(nebula, 0, 0, width, height);
-
-      if (!reducedMotion.matches) {
-        stars.forEach((star) => {
-          star.x = (star.x + star.vx * delta + width) % width;
-          star.y = (star.y + star.vy * delta + height) % height;
-        });
-      }
-
-      edges.forEach(({ from, to, opacity }) => {
-        context!.strokeStyle = `rgba(171, 205, 224, ${opacity})`;
-        context!.lineWidth = 0.6;
-        context!.beginPath();
-        context!.moveTo(stars[from].x, stars[from].y);
-        context!.lineTo(stars[to].x, stars[to].y);
-        context!.stroke();
-      });
-
       stars.forEach((star) => {
-        const twinkle = reducedMotion.matches ? 0.68 : 0.52 + Math.sin(time * 0.0011 + star.phase) * 0.36;
+        const twinkle = reducedMotion.matches ? 0.75 : 0.35 + (Math.sin(time * 0.001 + star.phase) + 1) * 0.32;
         context!.beginPath();
         context!.fillStyle = `rgba(${star.color}, ${twinkle})`;
-        context!.shadowColor = `rgba(${star.color}, ${twinkle * 0.55})`;
-        context!.shadowBlur = star.radius * 5;
+        context!.shadowColor = `rgba(${star.color}, ${twinkle * 0.65})`;
+        context!.shadowBlur = star.radius > 0.72 ? 4 : 1.8;
         context!.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
         context!.fill();
       });
       context!.shadowBlur = 0;
-
-      if (!reducedMotion.matches) {
-        if (!meteor && time >= nextMeteorAt) {
-          meteor = {
-            startedAt: time,
-            x: width * (0.58 + Math.random() * 0.36),
-            y: height * (0.08 + Math.random() * 0.3),
-            dx: -Math.min(250, width * 0.28),
-            dy: Math.min(145, height * 0.22),
-          };
-          nextMeteorAt = time + 5200 + Math.random() * 4200;
-        }
-
-        if (meteor) {
-          const progress = Math.min((time - meteor.startedAt) / 900, 1);
-          const x = meteor.x + meteor.dx * progress;
-          const y = meteor.y + meteor.dy * progress;
-          const trail = context!.createLinearGradient(x - meteor.dx * 0.42, y - meteor.dy * 0.42, x, y);
-          trail.addColorStop(0, 'rgba(155,234,52,0)');
-          trail.addColorStop(1, 'rgba(218,246,255,0.96)');
-          context!.strokeStyle = trail;
-          context!.lineWidth = 1.7;
-          context!.beginPath();
-          context!.moveTo(x - meteor.dx * 0.42, y - meteor.dy * 0.42);
-          context!.lineTo(x, y);
-          context!.stroke();
-          context!.beginPath();
-          context!.fillStyle = 'rgba(236,250,255,0.95)';
-          context!.shadowColor = 'rgba(155,234,52,0.9)';
-          context!.shadowBlur = 12;
-          context!.arc(x, y, 2, 0, Math.PI * 2);
-          context!.fill();
-          context!.shadowBlur = 0;
-          if (progress >= 1) meteor = null;
-        }
-      }
-
       if (!reducedMotion.matches) animationFrame = window.requestAnimationFrame(draw);
     };
 
@@ -297,7 +132,6 @@ const reports = (await getCollection('reports'))
     window.addEventListener('resize', resize, { passive: true });
     reducedMotion.addEventListener('change', () => {
       window.cancelAnimationFrame(animationFrame);
-      if (!reducedMotion.matches) nextMeteorAt = performance.now() + 1200;
       draw(performance.now());
     });
   }
@@ -305,8 +139,6 @@ const reports = (await getCollection('reports'))
 
 <style>
   .minimal-hero { position: relative; isolation: isolate; min-height: 540px; display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 64px; align-items: end; padding: 74px 0 54px; overflow: hidden; }
-  .minimal-hero::before { position: absolute; z-index: -1; inset: -8% -8% 2% 36%; content: ""; pointer-events: none; background: radial-gradient(ellipse at 68% 40%, rgba(45,91,121,.16), transparent 55%), radial-gradient(ellipse at 76% 34%, rgba(155,234,52,.08), transparent 42%); }
-  .starfield { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .hero-copy, .profile, .signal-line { position: relative; z-index: 1; }
   .overline { color: var(--accent); font: 700 10px/1.4 monospace; letter-spacing: .18em; text-transform: uppercase; }
   .minimal-hero h1 { max-width: 900px; margin: 20px 0 24px; font-size: clamp(58px, 8vw, 112px); font-weight: 610; line-height: .88; letter-spacing: -.075em; }
