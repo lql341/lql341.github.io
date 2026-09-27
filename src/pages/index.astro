@@ -13,7 +13,8 @@ const reports = (await getCollection('reports'))
   bodyClass="home-page"
 >
   <section class="minimal-hero">
-    <div>
+    <canvas class="starfield" aria-hidden="true"></canvas>
+    <div class="hero-copy">
       <div class="overline">Accelerated systems engineering</div>
       <h1>Open systems,<br /><span>accelerated.</span></h1>
       <p class="intro">GPU software adaptation and performance research, published with reproducible evidence.</p>
@@ -79,8 +80,109 @@ const reports = (await getCollection('reports'))
   </section>
 </BaseLayout>
 
+<script>
+  const canvas = document.querySelector<HTMLCanvasElement>('.starfield');
+  const hero = canvas?.closest<HTMLElement>('.minimal-hero');
+  const context = canvas?.getContext('2d');
+
+  if (canvas && hero && context) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let width = 0;
+    let height = 0;
+    let stars: { x: number; y: number; radius: number; phase: number; color: string }[] = [];
+    let animationFrame = 0;
+
+    const resize = () => {
+      window.cancelAnimationFrame(animationFrame);
+      const bounds = hero.getBoundingClientRect();
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      width = bounds.width;
+      height = bounds.height;
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      context!.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+      const count = Math.max(72, Math.round((width * height) / 6200));
+      stars = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.25 + 0.35,
+        phase: Math.random() * Math.PI * 2,
+        color: Math.random() > 0.82 ? '155,234,52' : Math.random() > 0.5 ? '178,220,255' : '232,242,255',
+      }));
+      draw(0);
+    };
+
+    const draw = (time: number) => {
+      context!.clearRect(0, 0, width, height);
+
+      // Connect only nearby stars to form sparse, quiet constellations.
+      for (let i = 0; i < stars.length; i += 1) {
+        const a = stars[i];
+        for (let j = i + 1; j < stars.length; j += 1) {
+          const b = stars[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const distance = Math.hypot(dx, dy);
+          if (distance < 92) {
+            context!.strokeStyle = `rgba(171, 205, 224, ${(1 - distance / 92) * 0.12})`;
+            context!.lineWidth = 0.6;
+            context!.beginPath();
+            context!.moveTo(a.x, a.y);
+            context!.lineTo(b.x, b.y);
+            context!.stroke();
+          }
+        }
+      }
+
+      stars.forEach((star) => {
+        const twinkle = reducedMotion.matches ? 0.72 : 0.48 + Math.sin(time * 0.0007 + star.phase) * 0.24;
+        context!.beginPath();
+        context!.fillStyle = `rgba(${star.color}, ${twinkle})`;
+        context!.shadowColor = `rgba(${star.color}, ${twinkle * 0.55})`;
+        context!.shadowBlur = star.radius * 5;
+        context!.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        context!.fill();
+      });
+      context!.shadowBlur = 0;
+
+      // A small periodic meteor adds motion without competing with the headline.
+      if (!reducedMotion.matches) {
+        const cycle = (time % 9200) / 9200;
+        if (cycle > 0.68 && cycle < 0.76) {
+          const progress = (cycle - 0.68) / 0.08;
+          const x = width * (0.72 - progress * 0.42);
+          const y = height * (0.12 + progress * 0.28);
+          const trail = context!.createLinearGradient(x + 90, y - 58, x, y);
+          trail.addColorStop(0, 'rgba(155,234,52,0)');
+          trail.addColorStop(1, 'rgba(206,246,255,0.78)');
+          context!.strokeStyle = trail;
+          context!.lineWidth = 1.2;
+          context!.beginPath();
+          context!.moveTo(x + 90, y - 58);
+          context!.lineTo(x, y);
+          context!.stroke();
+        }
+      }
+
+      if (!reducedMotion.matches) animationFrame = window.requestAnimationFrame(draw);
+    };
+
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(hero);
+    reducedMotion.addEventListener('change', () => {
+      window.cancelAnimationFrame(animationFrame);
+      draw(0);
+    });
+  }
+</script>
+
 <style>
-  .minimal-hero { min-height: 540px; display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 64px; align-items: end; padding: 74px 0 54px; }
+  .minimal-hero { position: relative; isolation: isolate; min-height: 540px; display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 64px; align-items: end; padding: 74px 0 54px; overflow: hidden; }
+  .minimal-hero::before { position: absolute; z-index: -1; inset: -8% -8% 2% 36%; content: ""; pointer-events: none; background: radial-gradient(ellipse at 68% 40%, rgba(45,91,121,.16), transparent 55%), radial-gradient(ellipse at 76% 34%, rgba(155,234,52,.08), transparent 42%); }
+  .starfield { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .hero-copy, .profile, .signal-line { position: relative; z-index: 1; }
   .overline { color: var(--accent); font: 700 10px/1.4 monospace; letter-spacing: .18em; text-transform: uppercase; }
   .minimal-hero h1 { max-width: 900px; margin: 20px 0 24px; font-size: clamp(58px, 8vw, 112px); font-weight: 610; line-height: .88; letter-spacing: -.075em; }
   .minimal-hero h1 span { color: var(--muted); }
