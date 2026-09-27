@@ -15,7 +15,7 @@ if (files.length === 0) failures.push('No report HTML files were found.');
 
 for (const file of files) {
   const html = await readFile(join(reportDir.pathname, file), 'utf8');
-  if (!html.includes('href="/reports/report-theme.css"')) {
+  if (!/href="\/reports\/report-theme\.css(?:\?[^\"]*)?"/.test(html)) {
     failures.push(`${file}: must load /reports/report-theme.css`);
   }
   if (!/class="[^"]*report-site-nav/.test(html)) {
@@ -24,8 +24,9 @@ for (const file of files) {
   if (!/<title>\s*[^<]+\s*<\/title>/i.test(html)) {
     failures.push(`${file}: must define a document title`);
   }
-  if (!/class="[^"]*report-banner/.test(html)) {
-    failures.push(`${file}: must mark its title block with .report-banner`);
+  const banners = html.match(/class="[^"]*report-banner[^"]*"/g) ?? [];
+  if (banners.length !== 1) {
+    failures.push(`${file}: must mark exactly one title block with .report-banner (found ${banners.length})`);
   }
   if (!/class="[^"]*report-banner[\s\S]{0,3000}<h1\b/i.test(html)) {
     failures.push(`${file}: the report title must be inside its shared banner`);

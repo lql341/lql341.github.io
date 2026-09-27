@@ -5,6 +5,7 @@ Every HTML report in `public/reports/` uses the shared visual system from the ho
 ## Page frame
 
 - Load `/reports/report-theme.css` after any legacy inline stylesheet.
+- When the shared stylesheet changes, bump the `?v=` value on every report link to prevent browsers reusing a stale cached theme.
 - Include the shared `.report-site-nav` navigation shell.
 - Mark exactly one report title block with `.report-banner`.
 - Keep the reading column at a maximum width of 1040 px. A table of contents may sit beside that column on wide screens.
