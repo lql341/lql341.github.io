@@ -495,7 +495,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   <h3>主要结果</h3>
   <div class="conclusion-item">📌 DCU 单卡处理 8 倍原子数，总耗时仅为 CPU 的 1/20</div>
   <div class="conclusion-item">📌 换算为同规模，DCU 单卡相当于约 160 核 CPU 的计算能力</div>
-  <div class="conclusion-item">📌 Pair 计算加速比高达 219 倍，GPU 最擅长的计算密集型任务效果显著</div>
+  <div class="conclusion-item">📌 Pair 计算加速比为 219 倍，表明该计算密集型工作负载在本测试配置下可显著受益于 GPU</div>
   <div class="conclusion-item">📌 Modify 阶段 (Verlet 积分) 在 GPU 上占比 70%，这是因为 KOKKOS 的 full 风格邻居列表导致通信开销较大</div>
   <div class="conclusion-item">📌 DCU 满负荷运行时温度仅 55 °C，功耗 86-122 W，能效比极高</div>
 
@@ -633,7 +633,7 @@ lmp -k on g 1 -sf kk -in input.lj</pre>
   <h3>6.5 GPU 包较慢的原因分析</h3>
   <div class="conclusion-item">📌 <strong>邻居列表在 CPU 构建</strong>：GPU 包输出显示 "Neigh mode: Hybrid (binning on host)"，每次重建都需要 CPU→GPU 数据传输，而 Kokkos 完全在 GPU 上构建邻居列表</div>
   <div class="conclusion-item">📌 <strong>GPU 包设计偏向多 GPU</strong>：单 GPU 场景下开销较大，需要额外的 fix gpu 命令管理资源</div>
-  <div class="conclusion-item">📌 <strong>Kokkos 更深度集成</strong>：所有计算（pair, neighbor, comm）都在 GPU 上，数据传输最少化</div>
+  <div class="conclusion-item">📌 <strong>Kokkos 的 GPU 执行范围更完整</strong>：pair、neighbor 和 comm 均在 GPU 上执行，减少了主机与设备间的数据传输</div>
 
   <h3>6.6 海光原生编译器确认</h3>
   <p>通过分析 DTK 工具链，确认当前方案已经使用<strong>海光原生编译器</strong>：</p>

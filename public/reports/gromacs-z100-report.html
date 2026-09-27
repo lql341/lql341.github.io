@@ -285,7 +285,7 @@
   温度 299.88 K、压强 -1.8 bar，全程无漂移、无异常终止，与短跑一致的 67.5 ns/day。</p>
 </section>
 
-<!-- ═══════════ 踩坑 ═══════════ -->
+<!-- ═══════════ 构建问题与性能分析 ═══════════ -->
 <section>
   <h2>构建问题与性能分析</h2>
 
@@ -303,15 +303,14 @@
       <thead><tr><th>假线索</th><th>实验</th><th>结论</th></tr></thead>
       <tbody>
         <tr><td><code>deviceStream.synchronize()</code> 是同步开销大头</td><td>移除同步点重建对照</td><td class="bad">零变化，不是根因</td></tr>
-        <tr><td>virial 步 CPU 力归约回退（<code>useGpuFBufferOps</code> 在 <code>computeVirial</code> 步退回 CPU）</td><td>源码坐实该回退存在</td><td class="warn">机制真实，但干净节点下不是净瓶颈（被 GPU 整体更快盖过）</td></tr>
+        <tr><td>virial 步 CPU 力归约回退（<code>useGpuFBufferOps</code> 在 <code>computeVirial</code> 步退回 CPU）</td><td>源码确认该回退存在</td><td class="warn">该机制存在；独占节点对照测试未显示其构成主要性能瓶颈</td></tr>
         <tr><td>DPP 归约的动态 lane 转置 → <code>ds_bpermute</code> → 12.8× LDS</td><td>改成原子归约对照</td><td class="bad">零变化，归约不是瓶颈</td></tr>
         <tr><td><code>minBlocksPerMp=8→14</code> 压 vgpr 提占用率</td><td>实测 vgpr 不降反升（32→36）</td><td class="bad"><code>__launch_bounds__</code> 在这版 hipcc 上不按预期生效，收益 ~1%，已回退</td></tr>
       </tbody>
     </table>
   </div>
   <div class="callout">
-    <span class="title">⚠ 这四条的共同教训：</span>先拿到干净、可信的基线，再谈优化。在污染数据上做
-    「kernel 级优化」，所有方向都是错的。
+    <span class="title">基准测试要求：</span>优化前应建立可复现的基线。节点资源争用会影响测量结果，基于受干扰数据开展 kernel 级优化可能导致错误判断。
   </div>
 </section>
 
@@ -319,10 +318,10 @@
 <section>
   <h2>基准测试前置条件</h2>
   <div class="callout">
-    <span class="title">⚠ 确认节点干净 / 独占。</span>HIP 后端对 CPU 争抢极敏感（可达 4× 掉速），
+    <span class="title">基准节点状态：</span>HIP 后端对 CPU 资源争用较敏感（本测试中性能差异最高约 4×），
     CUDA 翻译版相对稳。建议：① <code>squeue</code> 确认节点无其他作业或 <code>--exclusive</code> 独占；
     ② 每点 3 次重复，<strong>sd &gt; 2% 就判污染、重跑</strong>（<code>gmx_bench.slurm</code> 已内置）；
-    ③ 跨节点对比时务必在同一批干净节点上对跑两个后端。
+    ③ 跨节点对比时应在同一批独占节点上运行两个后端。
   </div>
 </section>
 

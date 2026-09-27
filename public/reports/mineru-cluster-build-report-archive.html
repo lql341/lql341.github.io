@@ -315,7 +315,7 @@
           </table>
         </div>
         <div class="callout lesson">
-          <span class="cl-label">一句话</span>
+          <span class="cl-label">结论摘要</span>
           <p>Z100 跑 MinerU 生产服务完全可行，走 pipeline 后端；Triton 生态用不了，但 MinerU 不需要它。</p>
         </div>
       </section>
@@ -425,7 +425,7 @@ bf16: 5.83 TFLOPS</code></pre>
 # &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin   ← 坏路径
 ls &lt;USER_HOME&gt;/software/gcc-11.2.0-install/bin/gcc
 # ls: cannot access ...: No such file or directory</code></pre>
-        <p>看起来像「Triton 挂了」，其实只是路径坏。</p>
+        <p>初始错误表现为 Triton 不可用；检查发现，实际原因是 GCC 路径指向不存在的目录。</p>
 
         <h3>系统 GCC 版本与路径问题</h3>
         <p>指向真实存在的 gcc-11.2.0 后：</p>
@@ -719,7 +719,7 @@ Mooncake is the serving platform for Kimi, a leading LLM service provided by Moo
 # State: R (running)   Threads: 44   kfd handles: 1</code></pre>
 
         <h3>8.2 模型加载主导</h3>
-        <p><strong>最重要的一个数字</strong>：</p>
+        <p><strong>模型加载耗时占比</strong>：</p>
         <div class="metrics">
           <div class="metric"><div class="v">146.8s</div><div class="l">单文档（冷启动）</div></div>
           <div class="metric"><div class="v">22.5s</div><div class="l">批量中的同一文档</div></div>
@@ -1038,7 +1038,7 @@ ldd python3.10                    # Segmentation fault</code></pre>
         <div class="corr">
           <div class="corr-head"><span class="n">12.2</span><span class="t">「vLLM 在 gfx906 上没戏」← 用 Triton 的失败推断 vLLM</span></div>
           <div class="corr-body">
-            <p>最初说「vLLM 依赖 Triton，gfx906 上没戏」。<strong>这个推理是错的</strong>——没有分清依赖层次。
+            <p>初步判断曾将 vLLM 在 gfx906 上的可用性与 Triton 支持状态关联。该判断未区分组件依赖层次。
             vLLM 的 PagedAttention 是手写 HIP kernel，不经 Triton。实测海光把
             <code>_C.abi3.so</code> 编译进了 gfx906，<code>paged_attention_v1</code> 正常工作。</p>
             <div class="callout lesson"><span class="cl-label">教训</span><p>不要用一个组件的失败推断另一个组件，即使它们看起来相关。分层验证。</p></div>
@@ -1069,7 +1069,7 @@ ldd python3.10                    # Segmentation fault</code></pre>
           <div class="corr-body">
             <p>2026-09-27 环境复验时，顶层 Python 已经通过用户态 glibc 2.28 启动，但
             MinerU CLI 拉起的本地 API 子进程重新使用系统 glibc 2.17，报
-            <code>GLIBC_2.27 not found</code>。这看起来像 wheel 已经失效，实际是<strong>进程边界丢失运行时闭包</strong>。</p>
+            <code>GLIBC_2.27 not found</code>。根因是<strong>运行时闭包未传递到该子进程边界</strong>，并非 wheel 本身失效。</p>
             <p>加载 GCC 12.2 与 DTK 26.04 module、用同一个 loader 启动主进程，并让
             multiprocessing 子进程继承该入口后，14 页 pipeline 完整解析并返回 0。</p>
             <div class="callout lesson"><span class="cl-label">教训</span><p>动态库兼容性必须沿完整进程树验证；父进程 import 成功，不能证明 CLI、服务进程和 spawn worker 使用了同一运行时。</p></div>
@@ -1295,7 +1295,7 @@ def main():
 if __name__ == "__main__":
     main()</code></pre>
         <div class="callout warn">
-          <span class="cl-label">为什么必须保留 main guard</span>
+          <span class="cl-label">main guard 的必要性</span>
           <p><code>spawn</code> 会重新 import 主模块；没有
           <code>if __name__ == "__main__":</code>，子进程会重复执行整份解析脚本。</p>
         </div>
