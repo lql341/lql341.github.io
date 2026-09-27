@@ -83,6 +83,9 @@ for (const namingRule of ['项目/软件｜平台/版本', '01 摘要', '02 目�
 for (const selector of ['.report-banner.report-banner', '.report-banner.report-banner h1', 'body > header.report-banner.report-banner', 'body .content-inner > section', '.report-outline-h3', '.report-heading-number']) {
   if (!theme.includes(selector)) failures.push(`Shared theme is missing the ${selector} layout rule.`);
 }
+for (const selector of ['.report-outline > nav { background: transparent !important; }', '.report-outline > summary { background: transparent !important; }']) {
+  if (!theme.includes(selector)) failures.push(`Shared theme is missing the ${selector} reset for legacy navigation styles.`);
+}
 for (const outlineContract of ['report-outline', 'legacy-report-toc', 'report-no-sidebar', 'h2, h3', 'subsectionNumber', 'standardizeHeadingNumber', 'report-outline-number', 'report-heading-number', 'padStart(2, \'0\')']) {
   if (!outlineScript.includes(outlineContract) && !theme.includes(outlineContract)) {
     failures.push(`Shared report outline is missing ${outlineContract}.`);

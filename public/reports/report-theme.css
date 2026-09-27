@@ -255,6 +255,8 @@ main:not(.reader-stage) { padding: 0 0 72px !important; background: transparent 
   border: 1px solid var(--report-line);
   border-radius: 14px;
 }
+.report-outline > nav { background: transparent !important; }
+.report-outline > summary { background: transparent !important; }
 .report-banner + .report-outline { width: min(calc(100% - 40px), var(--report-max)); }
 .report-outline summary {
   min-height: 62px;
