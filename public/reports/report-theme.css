@@ -43,6 +43,22 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif !important;
 }
 
+/* Shared editorial baseline: report-specific markup may arrange content, but
+   every report inherits the homepage palette, type, borders, and rhythm. */
+body { font-size: 15px !important; line-height: 1.72 !important; }
+main, .wrap, .page, .content, .layout, .container, .reader-stage {
+  color: var(--report-text) !important;
+}
+section, .section { scroll-margin-top: 28px; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.25 !important; scroll-margin-top: 26px; }
+h1 { font-size: clamp(30px, 5vw, 54px) !important; }
+h2 { font-size: clamp(23px, 3vw, 32px) !important; }
+h3 { font-size: clamp(18px, 2.2vw, 23px) !important; }
+img, video, svg { max-width: 100%; }
+blockquote { color: var(--report-muted) !important; background: var(--report-accent-soft) !important; border-left: 3px solid var(--report-accent) !important; }
+hr { border: 0 !important; border-top: 1px solid var(--report-line) !important; }
+::selection { color: var(--report-bg); background: var(--report-accent); }
+
 .report-site-nav {
   width: min(1280px, calc(100% - 40px));
   min-height: 72px;
@@ -79,6 +95,17 @@ h3 { color: var(--report-text) !important; }
 p, li { color: inherit; }
 .subtitle, .sub, .meta, .standfirst, .lede, .small, .brand-sub { color: var(--report-muted) !important; }
 .tag, .eyebrow, .idx, .sec-head .idx, .num, .label, .cl-label { color: var(--report-accent) !important; }
+.hero, .reader-hero, .mast, .header, body > header:not(.report-site-nav):not(.reader-toolbar) {
+  color: var(--report-text) !important;
+  background: linear-gradient(145deg, rgba(20,28,15,.98), rgba(8,10,8,.98)) !important;
+  border: 1px solid var(--report-line) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+.hero { padding: clamp(30px, 5vw, 54px) !important; }
+.hero p, .reader-hero p { color: var(--report-muted) !important; }
+.badge, .badges span { color: var(--report-accent) !important; background: var(--report-accent-soft) !important; border-color: var(--report-line-strong) !important; }
+.wrap, .page { max-width: 1040px !important; margin-left: auto !important; margin-right: auto !important; }
 
 /* Consistent surfaces and components. */
 .section, .card, .summary-card, .metric, .mod-file, .highlight-box, .conclusion-item, .gen-box, .corr, .callout {
@@ -88,6 +115,7 @@ p, li { color: inherit; }
   box-shadow: none !important;
 }
 .section, .card { border: 1px solid var(--report-line) !important; border-radius: 16px !important; }
+.wrap > section, .page > section { margin: 16px 0 !important; padding: clamp(22px, 4vw, 34px) !important; border: 1px solid var(--report-line) !important; border-radius: 14px !important; }
 .card { border-left: 3px solid var(--report-accent) !important; }
 .card-header { background: var(--report-surface-2) !important; border-color: var(--report-line) !important; }
 .callout.lesson, .highlight-box { background: var(--report-accent-soft) !important; border-left-color: var(--report-accent) !important; }
@@ -131,6 +159,8 @@ a { color: var(--report-accent); }
   .report-site-nav nav a { font-size: 12px; }
   .header { padding: 30px 22px !important; }
   .section, .card-body { padding: 20px !important; }
+  .report-site-nav { width: min(100% - 28px, 1280px); }
+  .wrap, .page { width: min(100% - 28px, 1040px) !important; }
 }
 
 @media print {

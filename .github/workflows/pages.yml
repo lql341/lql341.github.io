@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Check report style contract
+        run: node scripts/check-report-style.mjs
       - name: Install, build, and upload
         uses: withastro/action@v6
 
