@@ -1,0 +1,30 @@
+---
+interface Props {
+  title: string;
+  summary: string;
+  tags: string[];
+  href: string;
+  date: Date;
+  metric: string;
+  metricLabel: string;
+  index: number;
+  cta: string;
+}
+
+const { title, summary, tags, href, date, metric, metricLabel, index, cta } = Astro.props;
+---
+
+<a class="report-tile" href={href}>
+  <div class="report-tile-meta">
+    <span>FEATURED / {String(index).padStart(2, '0')}</span>
+    <time datetime={date.toISOString()}>{date.toISOString().slice(0, 10)}</time>
+  </div>
+  <div class="tag-row">{tags.slice(0, 3).map((tag) => <span class="tag">{tag}</span>)}</div>
+  <div class="report-tile-metric">
+    <strong>{metric}</strong>
+    <span>{metricLabel}</span>
+  </div>
+  <h3>{title}</h3>
+  <p>{summary}</p>
+  <div class="report-tile-action"><span>{cta}</span><b aria-hidden="true">↗</b></div>
+</a>

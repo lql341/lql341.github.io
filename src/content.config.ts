@@ -8,6 +8,7 @@ const reports = defineCollection({
     title: z.string(),
     titleEn: z.string(),
     summary: z.string(),
+    summaryEn: z.string().optional(),
     date: z.coerce.date(),
     tags: z.array(z.string()),
     tagsZh: z.array(z.string()).optional(),
@@ -16,6 +17,7 @@ const reports = defineCollection({
     homeOrder: z.number().default(99),
     metric: z.string().optional(),
     metricLabel: z.string().optional(),
+    metricLabelEn: z.string().optional(),
   }),
 });
 

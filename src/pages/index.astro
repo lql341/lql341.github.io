@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import FeaturedReportCard from '../components/FeaturedReportCard.astro';
 
-const reports = (await getCollection('reports'))
+const allReports = await getCollection('reports');
+const reports = allReports
   .filter(({ data }) => data.featured)
-  .sort((a, b) => a.data.homeOrder - b.data.homeOrder);
+  .sort((a, b) => a.data.homeOrder - b.data.homeOrder)
+  .slice(0, 3);
 ---
 <BaseLayout
   title="opensource_community · Open Systems, Accelerated"
@@ -30,21 +33,23 @@ const reports = (await getCollection('reports'))
 
   <section id="work" class="work" aria-labelledby="work-title">
     <div class="work-head">
-      <div><div class="overline">Selected work</div><h2 id="work-title">Research index</h2></div>
-      <span>PUBLIC NOTES / 2026</span>
+      <div><div class="overline">Selected work</div><h2 id="work-title">Research highlights</h2></div>
+      <a class="reports-archive-link" href="/reports/">View all {allReports.length} reports <b aria-hidden="true">↗</b></a>
     </div>
 
-    <div class="index">
+    <div class="report-grid">
       {reports.map(({ data }, index) => (
-        <a class="work-row" href={data.href}>
-          <span class="number">{String(index + 1).padStart(2, '0')}</span>
-          <div class="work-title">
-            <h3>{data.titleEn}</h3>
-            <p>{data.tags.join(' · ')}</p>
-          </div>
-          <div class="result"><strong>{data.metric ?? '—'}</strong><span>{data.metricLabel ?? data.summary}</span></div>
-          <span class="arrow" aria-hidden="true">↗</span>
-        </a>
+        <FeaturedReportCard
+          title={data.titleEn}
+          summary={data.summaryEn ?? data.summary}
+          tags={data.tags}
+          href={data.href}
+          date={data.date}
+          metric={data.metric ?? 'Research report'}
+          metricLabel={data.metricLabelEn ?? data.metricLabel ?? ''}
+          index={index + 1}
+          cta="Read report"
+        />
       ))}
     </div>
   </section>
@@ -154,17 +159,9 @@ const reports = (await getCollection('reports'))
   .work { padding: 82px 0 96px; }
   .work-head { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 30px; }
   .work-head h2 { margin: 10px 0 0; font-size: clamp(36px, 4vw, 54px); font-weight: 600; letter-spacing: -.055em; }
-  .work-head > span { color: #5b645d; font: 10px/1.4 monospace; letter-spacing: .12em; }
-  .index { border-top: 1px solid var(--line); }
-  .work-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 210px 30px; gap: 22px; align-items: center; min-height: 0; padding: 22px 0; border-bottom: 1px solid var(--line); text-decoration: none; transition: padding .25s ease, color .25s ease; }
-  .work-row:hover { padding-left: 14px; color: var(--accent); }
-  .number { align-self: start; padding-top: 10px; color: #5b645d; font: 11px/1 monospace; }
-  .work-title h3 { margin: 0; max-width: 760px; font-size: clamp(22px, 2.45vw, 34px); font-weight: 560; line-height: 1.12; letter-spacing: -.045em; }
-  .work-title p { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
-  .result { color: var(--muted); }
-  .result strong { display: block; margin-bottom: 6px; color: var(--text); font-size: 23px; font-weight: 600; letter-spacing: -.045em; }
-  .result span { font: 10px/1.5 monospace; letter-spacing: .06em; text-transform: uppercase; }
-  .arrow { color: var(--accent); font-size: 24px; }
+  .reports-archive-link { display: inline-flex; align-items: center; gap: 14px; padding: 11px 0; color: var(--muted); font-size: 13px; font-weight: 700; text-decoration: none; }
+  .reports-archive-link b { color: var(--accent); font-size: 18px; }
+  .reports-archive-link:hover { color: var(--text); }
 
   .open-source { padding: 92px 0 104px; border-top: 1px solid var(--line); }
   .open-source-head { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 70px; align-items: end; margin-bottom: 46px; }
@@ -197,9 +194,7 @@ const reports = (await getCollection('reports'))
     .minimal-hero { grid-template-columns: 1fr; gap: 55px; align-items: end; }
     .profile { max-width: 360px; }
     .signal-line { grid-column: 1; }
-    .work-row { grid-template-columns: 38px minmax(0, 1fr) 30px; }
-    .result { grid-column: 2; }
-    .arrow { grid-column: 3; grid-row: 1 / 3; }
+    .report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .principle { grid-template-columns: 1fr; }
     .principle p { max-width: 500px; }
     .open-source-head { grid-template-columns: 1fr; gap: 28px; }
@@ -215,8 +210,7 @@ const reports = (await getCollection('reports'))
     .intro { font-size: 16px; }
     .work { padding: 70px 0 90px; }
     .work-head { align-items: flex-start; flex-direction: column; }
-    .work-row { min-height: 0; gap: 15px; padding: 22px 0; }
-    .work-title h3 { font-size: 29px; }
+    .report-grid { grid-template-columns: 1fr; }
     .principle { padding: 82px 0; }
     .open-source { padding: 76px 0 88px; }
     .contact { padding-top: 70px; padding-bottom: 70px; }

@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import FeaturedReportCard from '../../components/FeaturedReportCard.astro';
 
-const reports = (await getCollection('reports'))
+const allReports = await getCollection('reports');
+const reports = allReports
   .filter(({ data }) => data.featured)
-  .sort((a, b) => a.data.homeOrder - b.data.homeOrder);
+  .sort((a, b) => a.data.homeOrder - b.data.homeOrder)
+  .slice(0, 3);
 ---
 <BaseLayout
   lang="zh"
@@ -31,21 +34,23 @@ const reports = (await getCollection('reports'))
 
   <section id="work" class="work" aria-labelledby="work-title">
     <div class="work-head">
-      <div><div class="overline">精选工作</div><h2 id="work-title">研究档案</h2></div>
-      <span>公开记录 / 2026</span>
+      <div><div class="overline">精选工作</div><h2 id="work-title">研究成果</h2></div>
+      <a class="reports-archive-link" href="/reports/">查看全部 {allReports.length} 篇报告 <b aria-hidden="true">↗</b></a>
     </div>
 
-    <div class="index">
+    <div class="report-grid">
       {reports.map(({ data }, index) => (
-        <a class="work-row" href={data.href}>
-          <span class="number">{String(index + 1).padStart(2, '0')}</span>
-          <div class="work-title">
-            <h3>{data.title}</h3>
-            <p>{(data.tagsZh ?? data.tags).join(' · ')}</p>
-          </div>
-          <div class="result"><strong>{data.metric ?? '—'}</strong><span>{data.metricLabel ?? data.summary}</span></div>
-          <span class="arrow" aria-hidden="true">↗</span>
-        </a>
+        <FeaturedReportCard
+          title={data.title}
+          summary={data.summary}
+          tags={data.tagsZh ?? data.tags}
+          href={data.href}
+          date={data.date}
+          metric={data.metric ?? '研究报告'}
+          metricLabel={data.metricLabel ?? ''}
+          index={index + 1}
+          cta="阅读全文"
+        />
       ))}
     </div>
   </section>
