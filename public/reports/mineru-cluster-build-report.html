@@ -254,7 +254,7 @@
 <div class="shell">
   <nav class="sidebar" id="sidebar">
     <div class="brand">MinerU · Z100 DCU</div>
-    <div class="brand-sub">兼容性与部署测试<br>测试集群 · gfx906 · 2026-08-12~13</div>
+    <div class="brand-sub">兼容性与部署测试<br>测试集群 · gfx906 · 2026-08-12~13<br>环境复验 · 2026-09-27</div>
     <ul class="toc" id="toc">
       <li><a href="#s1"><span class="num">01</span>结论速览</a></li>
       <li><a href="#s2"><span class="num">02</span>起点与问题定义</a></li>
@@ -269,8 +269,9 @@
       <li><a href="#s11"><span class="num">11</span>走死的路径</a></li>
       <li><a href="#s12"><span class="num">12</span>被推翻的判断</a></li>
       <li><a href="#s13"><span class="num">13</span>裸金属部署</a></li>
-      <li><a href="#s14"><span class="num">14</span>附录：命令速查</a></li>
-      <li><a href="#s15"><span class="num">·</span>数据来源索引</a></li>
+      <li><a href="#s14"><span class="num">14</span>环境恢复与完整复现</a></li>
+      <li><a href="#s15"><span class="num">15</span>附录：命令速查</a></li>
+      <li><a href="#s16"><span class="num">·</span>数据来源索引</a></li>
     </ul>
   </nav>
 
@@ -289,7 +290,7 @@
           <span><b>硬件</b> 海光 Z100 DCU (gfx906) × 4</span>
           <span><b>系统</b> CentOS 7.6 / glibc 2.17</span>
           <span><b>软件栈</b> DTK 26.04</span>
-          <span><b>时间</b> 2026-08-12 ~ 2026-08-13</span>
+          <span><b>时间</b> 2026-08-12 ~ 2026-08-13；复验 2026-09-27</span>
           <span><b>交付形态</b> 裸金属（systemd）</span>
         </div>
       </header>
@@ -309,6 +310,7 @@
             <tr><td>Triton / <code>torch.compile</code></td><td><span class="badge boundary">✕ 架构边界</span> gfx906 不支持</td><td>§4</td></tr>
             <tr><td>vLLM HIP kernel</td><td><span class="badge verified">✓ 可用</span> PagedAttention 实测可用</td><td>§5</td></tr>
             <tr><td>CPU 队列</td><td>产出等价，稳态慢 8.9×</td><td>§8.3</td></tr>
+            <tr><td>环境漂移后复现</td><td><span class="badge verified">✓ 通过</span> 14 页 pipeline，返回码 0</td><td>§14</td></tr>
           </table>
         </div>
         <div class="callout lesson">
@@ -335,7 +337,7 @@
             <tr><td>venv</td><td><code>&lt;USER_HOME&gt;/mineru-venv-py310</code>（Python 3.10.14）</td></tr>
             <tr><td>torch</td><td>2.7.1+das.opt1.dtk2604</td></tr>
             <tr><td>MinerU</td><td>3.4.4（editable，源码已改 magika 兼容）</td></tr>
-            <tr><td>glibc 2.28</td><td><code>&lt;USER_HOME&gt;/glibc-2.28-rpm/</code>（CentOS 8 RPM 提取）</td></tr>
+            <tr><td>glibc 2.28</td><td><code>&lt;USER_HOME&gt;/glibc-2.28-rpm/</code>（当时路径；复验时已迁移，见 §14）</td></tr>
             <tr><td>包装器</td><td><code>dcu-python</code> / <code>mineru</code> / <code>mineru-api</code></td></tr>
           </table>
         </div>
@@ -1060,6 +1062,18 @@ ldd python3.10                    # Segmentation fault</code></pre>
             <div class="callout lesson"><span class="cl-label">教训</span><p>按内容实际形态选检验方法，不能用一种格式的缺席推断功能缺失。</p></div>
           </div>
         </div>
+
+        <div class="corr">
+          <div class="corr-head"><span class="n">12.5</span><span class="t">「ONNX Runtime 已无法运行」← 子进程绕过 loader</span></div>
+          <div class="corr-body">
+            <p>2026-09-27 环境复验时，顶层 Python 已经通过用户态 glibc 2.28 启动，但
+            MinerU CLI 拉起的本地 API 子进程重新使用系统 glibc 2.17，报
+            <code>GLIBC_2.27 not found</code>。这看起来像 wheel 已经失效，实际是<strong>进程边界丢失运行时闭包</strong>。</p>
+            <p>加载 GCC 12.2 与 DTK 26.04 module、用同一个 loader 启动主进程，并让
+            multiprocessing 子进程继承该入口后，14 页 pipeline 完整解析并返回 0。</p>
+            <div class="callout lesson"><span class="cl-label">教训</span><p>动态库兼容性必须沿完整进程树验证；父进程 import 成功，不能证明 CLI、服务进程和 spawn worker 使用了同一运行时。</p></div>
+          </div>
+        </div>
       </section>
 
       <!-- §13 -->
@@ -1122,28 +1136,282 @@ curl http://<host>:8000/pool/status</code></pre>
 
       <!-- §14 -->
       <section id="s14">
-        <div class="sec-head"><span class="idx">14</span><h2>附录：命令速查</h2></div>
+        <div class="sec-head"><span class="idx">14</span><h2>环境恢复与完整复现</h2></div>
+        <p class="lede">2026-09-27，在原实验目录经过归档和路径迁移后，从零审计运行时闭包，并重新完成一份 14 页 PDF 的端到端 pipeline 解析。</p>
 
-        <h3>14.1 环境</h3>
+        <div class="callout lesson">
+          <span class="cl-label">最终结论</span>
+          <p>昆山 module 系统<strong>没有独立 glibc module</strong>。可复现条件是：
+          GCC 12.2 + DTK 26.04 module、用户态 glibc 2.28 loader、正确的本地模型配置，
+          以及主进程和 multiprocessing 子进程共用同一个 Python 启动入口。</p>
+        </div>
+
+        <h3>14.1 复现范围与证据边界</h3>
+        <div class="tw">
+          <table>
+            <tr><th>层次</th><th>验证内容</th><th>证据类型</th></tr>
+            <tr><td>登录节点</td><td>module 清单中无独立 glibc；GCC 12.2、DTK 26.04 可用</td><td><code>module avail/show</code></td></tr>
+            <tr><td>计算节点</td><td>Torch 导入、设备枚举、FP32/FP16/BF16 GEMM</td><td>1 卡受控探针</td></tr>
+            <tr><td>进程树</td><td>主 Python、PDF render spawn worker 使用同一 loader</td><td>multiprocessing 实测</td></tr>
+            <tr><td>端到端</td><td>14 页 PDF → Markdown / JSON / 图片 / 可视化 PDF</td><td>pipeline 返回码 0</td></tr>
+          </table>
+        </div>
+        <p>公开版省略用户名、集群地址、节点名、实际作业号和真实目录，只保留版本、错误类型、
+        命令结构、性能数字与验收条件。</p>
+
+        <h3>14.2 先审计环境漂移</h3>
+        <p>不要直接重跑旧命令。先检查包装器、配置和模型路径是否仍然存在：</p>
+        <pre><code>module -t avail 2&gt;&amp;1 | grep -Ei '(^|/)glibc([/-]|$)|compat-glibc'
+# 预期：无输出。glibc 2.28 不是 module 提供的。
+
+for f in \
+  &lt;VENV&gt;/bin/dcu-python \
+  &lt;VENV&gt;/bin/mineru \
+  &lt;VENV&gt;/bin/mineru-api \
+  &lt;VENV&gt;/lib/python3.10/site-packages/sitecustomize.py
+do
+  echo "=== $f ==="
+  sed -n '1,80p' "$f"
+done
+
+test -x &lt;GLIBC_ROOT&gt;/lib64/ld-linux-x86-64.so.2
+test -x &lt;VENV&gt;/bin/python3.10
+test -f &lt;MODEL_CONFIG&gt;
+test -d &lt;PIPELINE_MODEL_ROOT&gt;</code></pre>
+        <p>本次复验发现，旧的四个入口仍硬编码已经被归档的 glibc 目录；
+        模型权重仍在，但配置文件移动到了新的脚本目录。<strong>环境内容未必丢失，入口路径可能先失效。</strong></p>
+
+        <h3>14.3 加载完整 module 组合</h3>
+        <pre><code>module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;VENV&gt;/bin/activate
+
+module list
+# compiler/gcc/12.2.0
+# compiler/dtk/26.04
+
+gcc --version | head -1
+# gcc (GCC) 12.2.0
+
+echo "$ROCM_PATH"
+# &lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04</code></pre>
+        <p>DTK module 提供 HIP/数学库；GCC module 提供新版 <code>libstdc++.so.6</code>。
+        两者都不替代 glibc。只加载 DTK、或只把 glibc 放进 <code>--library-path</code>，
+        仍可能报 <code>CXXABI_1.3.8 not found</code>。</p>
+
+        <h3>14.4 建立单一 Python launcher</h3>
+        <p>不要分别维护多个稍有差异的包装器。建立一个入口，CLI、服务和 spawn worker 都调用它：</p>
+        <pre><code>#!/bin/bash
+set -u
+
+GLIBC_ROOT="${GLIBC_ROOT:-&lt;USER_HOME&gt;/softwares/runtime/glibc-2.28}"
+GCC_ROOT="${GCC_ROOT:-&lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0}"
+DTK_ROOT="${DTK_ROOT:-&lt;SOFTWARE_ROOT&gt;/compiler/rocm/dtk-26.04}"
+VENV="${VENV:-&lt;USER_HOME&gt;/mineru-venv-py310}"
+
+LD_SO="$GLIBC_ROOT/lib64/ld-linux-x86-64.so.2"
+PYTHON="$VENV/bin/python3.10"
+ALL_LIBS="$GLIBC_ROOT/lib64:$GCC_ROOT/lib64:\
+$DTK_ROOT/.hyhal/rocm_smi/lib:$DTK_ROOT/lib:$DTK_ROOT/lib64:\
+$DTK_ROOT/hip/lib:$DTK_ROOT/dcc/lib:$DTK_ROOT/dcc/gcvm/lib:\
+/usr/local/lib64:/usr/lib64"
+
+exec "$LD_SO" --library-path "$ALL_LIBS" "$PYTHON" "$@"</code></pre>
+        <p>保存为 <code>&lt;RUN_DIR&gt;/dcu-python</code> 并执行 <code>chmod +x</code>。预检：</p>
+        <pre><code>&lt;RUN_DIR&gt;/dcu-python - &lt;&lt;'PY'
+import ctypes, platform, sys
+import onnxruntime, torch
+print("python", sys.version.split()[0])
+print("libc", platform.libc_ver())
+print("torch", torch.__version__)
+print("onnxruntime", onnxruntime.__version__)
+print("devices", torch.cuda.device_count())
+print("arch", torch.cuda.get_device_properties(0).gcnArchName)
+PY</code></pre>
+
+        <h3>14.5 固化本地模型配置</h3>
+        <p>不要依赖旧工作目录里的默认文件名。为复现实验显式指定一个配置：</p>
+        <pre><code>{
+  "models-dir": {
+    "pipeline": "&lt;PIPELINE_MODEL_ROOT&gt;",
+    "vlm": "&lt;VLM_MODEL_ROOT&gt;"
+  },
+  "model-source": "local",
+  "device-mode": "cuda"
+}</code></pre>
+        <pre><code>export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1</code></pre>
+        <p>若配置路径不存在，模型初始化会在较晚阶段报
+        <code>AttributeError: 'NoneType' object has no attribute 'get'</code>。
+        这不是模型损坏，也不是 DCU 算子错误。</p>
+
+        <h3>14.6 让 spawn 子进程继承 loader</h3>
+        <p>MinerU 3.4.4 的 PDF render executor 使用 <code>spawn</code>。复现脚本必须在创建进程池前覆盖 executable：</p>
+        <pre><code>import multiprocessing
+
+LAUNCHER = "&lt;RUN_DIR&gt;/dcu-python"
+multiprocessing.set_executable(LAUNCHER)
+try:
+    multiprocessing.get_context("spawn").set_executable(LAUNCHER)
+except Exception:
+    pass</code></pre>
+        <p>生产环境可以把相同逻辑放进 <code>sitecustomize.py</code>；一次性复现实验更建议在脚本中显式设置，
+        避免修改共享 venv。两种方式都要求 launcher 路径真实存在。</p>
+
+        <h3>14.7 直接调用 pipeline API</h3>
+        <p>本次复验不走 <code>mineru.cli.client</code>：旧 CLI 会启动本地 API 子进程，
+        若该子进程使用裸 <code>sys.executable</code>，就会重新落回系统 glibc 2.17。</p>
+        <pre><code>import multiprocessing
+import sys, time
+from pathlib import Path
+
+LAUNCHER = "&lt;RUN_DIR&gt;/dcu-python"
+multiprocessing.set_executable(LAUNCHER)
+try:
+    multiprocessing.get_context("spawn").set_executable(LAUNCHER)
+except Exception:
+    pass
+
+from mineru.cli.common import do_parse, read_fn
+
+def main():
+    pdf = Path(sys.argv[1])
+    output = Path(sys.argv[2])
+    data = read_fn(str(pdf))
+    started = time.perf_counter()
+    do_parse(
+        output_dir=str(output),
+        pdf_file_names=[pdf.stem],
+        pdf_bytes_list=[data],
+        p_lang_list=["ch"],
+        backend="pipeline",
+    )
+    print(f"PARSE_ELAPSED={time.perf_counter() - started:.3f}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+        <div class="callout warn">
+          <span class="cl-label">为什么必须保留 main guard</span>
+          <p><code>spawn</code> 会重新 import 主模块；没有
+          <code>if __name__ == "__main__":</code>，子进程会重复执行整份解析脚本。</p>
+        </div>
+
+        <h3>14.8 最小 Slurm 作业</h3>
+        <pre><code>#!/bin/bash -l
+#SBATCH -p &lt;DCU_PARTITION&gt;
+#SBATCH --gres=dcu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=27gb
+#SBATCH --time=00:20:00
+#SBATCH -J mineru-reproduce
+#SBATCH -o &lt;LOG_DIR&gt;/mineru-reproduce-%j.out
+#SBATCH -e &lt;LOG_DIR&gt;/mineru-reproduce-%j.err
+
+set -u
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
+source &lt;VENV&gt;/bin/activate
+
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export MINERU_MODEL_SOURCE=local
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
+export OMP_NUM_THREADS=8
+export ORT_NUM_THREADS=8
+
+&lt;RUN_DIR&gt;/dcu-python \
+  &lt;RUN_DIR&gt;/reproduce.py \
+  &lt;INPUT_PDF&gt; \
+  &lt;OUTPUT_DIR&gt;
+rc=$?
+echo "PARSE_EXIT_RC=$rc"
+exit "$rc"</code></pre>
+        <p>提交后同时检查调度器状态和工作负载退出码：</p>
+        <pre><code>sbatch reproduce.slurm
+sacct -j &lt;JOB_ID&gt; -X -o State,ExitCode,Elapsed -P -n
+grep -E "PARSE_ELAPSED|PARSE_EXIT_RC" &lt;LOG_FILE&gt;
+# COMPLETED | 0:0
+# PARSE_EXIT_RC=0</code></pre>
+
+        <h3>14.9 结果与产物验收</h3>
+        <div class="tw">
+          <table>
+            <tr><th>项目</th><th>2026-09-27 复验</th></tr>
+            <tr><td>输入</td><td>14 页技术论文 PDF</td></tr>
+            <tr><td>pipeline 返回码</td><td><span class="badge verified">0</span></td></tr>
+            <tr><td>冷启动解析时间</td><td><strong>142.9 s</strong></td></tr>
+            <tr><td>模型初始化</td><td>17.2 s</td></tr>
+            <tr><td>processing-window 推理</td><td>45.6 s，0.307 page/s</td></tr>
+            <tr><td>FP32 / FP16 / BF16</td><td>9.123 / 16.147 / 5.764 TFLOPS</td></tr>
+            <tr><td>Markdown</td><td>30,483 bytes</td></tr>
+            <tr><td><code>middle.json</code></td><td>893,576 bytes</td></tr>
+            <tr><td>提取图片</td><td>27 文件</td></tr>
+          </table>
+        </div>
+        <pre><code>test -s &lt;OUTPUT_DIR&gt;/*/auto/*.md
+test -s &lt;OUTPUT_DIR&gt;/*/auto/*_middle.json
+test -s &lt;OUTPUT_DIR&gt;/*/auto/*_layout.pdf
+
+find &lt;OUTPUT_DIR&gt; -type f | sort
+grep -c '^#' &lt;OUTPUT_DIR&gt;/*/auto/*.md
+grep -o '!\[\](images/' &lt;OUTPUT_DIR&gt;/*/auto/*.md | wc -l</code></pre>
+        <p>返回码 0 只是第一层验收；还应检查 Markdown 非空、结构化 JSON 能解析、
+        图片实际落盘，以及标题、公式和图注是否出现在内容中。</p>
+
+        <h3>14.10 错误链与定位表</h3>
+        <div class="tw">
+          <table>
+            <tr><th>现象</th><th>真实原因</th><th>处理</th></tr>
+            <tr><td><code>ld-linux... No such file</code> / rc 127</td><td>包装器硬编码旧 glibc 目录</td><td>重新解析现存 runtime 路径，不改系统 ELF</td></tr>
+            <tr><td><code>CXXABI_1.3.8 not found</code></td><td>只加载 glibc/DTK，缺 GCC runtime</td><td>加载 GCC 12.2 module，并把其 <code>lib64</code> 放入闭包</td></tr>
+            <tr><td><code>GLIBC_2.27 not found</code></td><td>CLI 启动的 API 子进程绕过 loader</td><td>直调 <code>do_parse()</code>，或修好服务入口包装器</td></tr>
+            <tr><td><code>BrokenProcessPool</code></td><td>spawn worker 使用裸 Python</td><td><code>multiprocessing.set_executable()</code></td></tr>
+            <tr><td><code>NoneType ... get</code></td><td>模型配置路径已移动</td><td>显式设置并预检 <code>MINERU_TOOLS_CONFIG_JSON</code></td></tr>
+            <tr><td><code>pthread_setaffinity</code> 刷屏</td><td>ONNX Runtime 线程亲和性与 cgroup 不匹配</td><td>限制线程；本次不影响结果正确性</td></tr>
+            <tr><td><code>torchvision.io</code> 的 zlib warning</td><td>可选 image extension 解析到系统 zlib</td><td>本次 pipeline 成功；若使用该 extension 必须另做功能验证</td></tr>
+          </table>
+        </div>
+
+        <div class="callout note">
+          <span class="cl-label">适用边界</span>
+          <p>这套步骤证明 MinerU 3.4.4 pipeline 可在该 Z100 / DTK 26.04 环境中恢复运行，
+          不代表所有 CLI 服务入口、VLM 引擎或未来版本自动继承兼容性。升级任何 wheel、
+          module 或模型后，都应从 14.2 的审计重新开始。</p>
+        </div>
+      </section>
+
+      <!-- §15 -->
+      <section id="s15">
+        <div class="sec-head"><span class="idx">15</span><h2>附录：命令速查</h2></div>
+
+        <h3>15.1 环境</h3>
         <pre><code># 连接
 ssh -p &lt;SSH_PORT&gt; &lt;CLUSTER_HOST&gt;
 
 # 作业里必须先
-module load compiler/dtk/26.04
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
 source &lt;USER_HOME&gt;/mineru-venv-py310/bin/activate
 
 # 离线声明（计算节点无外网）
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 export MINERU_MODEL_SOURCE=local
-export MINERU_TOOLS_CONFIG_JSON=&lt;USER_HOME&gt;/mineru.json
+export MINERU_DEVICE_MODE=cuda
+export MINERU_TOOLS_CONFIG_JSON=&lt;MODEL_CONFIG&gt;
 
 # 唯一可用的 gcc（gcc-11.2.0 / 13.3.0 都缺 libisl.so.15）
 export CC=&lt;SOFTWARE_ROOT&gt;/compiler/gcc-12.2.0/bin/gcc
 
 # 多 worker 共享机器时限制线程
-export OMP_NUM_THREADS=4 ORT_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4</code></pre>
+export OMP_NUM_THREADS=4 ORT_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
 
-        <h3>14.2 作业模板</h3>
+# CentOS 7 复现必须通过 §14 的统一 launcher 启动 Python；
+# 裸 python / 裸 sys.executable 会回到系统 glibc 2.17。</code></pre>
+
+        <h3>15.2 作业模板</h3>
         <pre><code>#!/bin/bash
 #SBATCH -p kshdnormal
 #SBATCH --gres=dcu:4              # QOS 强制至少 1
@@ -1152,7 +1420,8 @@ export OMP_NUM_THREADS=4 ORT_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREAD
 #SBATCH --time=02:00:00
 #SBATCH -o job-%j.out
 #SBATCH -e job-%j.err
-module load compiler/dtk/26.04
+module purge
+module load compiler/gcc/12.2.0 compiler/dtk/26.04
 source &lt;USER_HOME&gt;/mineru-venv-py310/bin/activate
 ...
 rc=$?; echo "EXIT_RC=$rc"; exit $rc     # ★ 必须，否则 sacct 状态会骗人</code></pre>
@@ -1162,17 +1431,17 @@ rc=$?; echo "EXIT_RC=$rc"; exit $rc     # ★ 必须，否则 sacct 状态会骗
 # "Requested node configuration is not available" → 无空闲节点（配额没问题）
 # "too much memory" → 超配额</code></pre>
 
-        <h3>14.3 服务池</h3>
+        <h3>15.3 服务池</h3>
         <pre><code>~/mineru_pool_ctl.sh status       # 作业 + 存活 worker + 网关健康
 ~/mineru_pool_ctl.sh scale 2      # 保持 2 个池作业（每个 4 卡）
 ~/mineru_pool_ctl.sh stop         # 停止并清注册表
 ~/mineru_pool_ctl.sh endpoints    # 打印网关地址</code></pre>
 
-        <h3>14.4 压测</h3>
+        <h3>15.4 压测</h3>
         <pre><code>python3 loadtest.py <host:port> <corpus_dir> <concurrency> <rounds>
 python3 loadtest.py &lt;SERVICE_ENDPOINT&gt; ~/pdf-corpus 12 4</code></pre>
 
-        <h3>14.5 排查</h3>
+        <h3>15.5 排查</h3>
         <pre><code># ★ 不要只看 sacct 的 State，必须读日志
 sacct -j &lt;ID&gt; -X -o State,Elapsed,ExitCode -P -n
 
@@ -1186,13 +1455,13 @@ ssh <node> "ls /proc/<pid>/fd | grep -c kfd"     # >0 说明持有 DCU 句柄
 # 查 wheel 的真实 glibc 要求（必须 sort -V）
 objdump -T <lib>.so | grep -oE "GLIBC_[0-9.]+" | sort -u -V | tail -3</code></pre>
 
-        <h3>14.6 manylinux 重打标签强装</h3>
+        <h3>15.6 manylinux 重打标签强装</h3>
         <p>运行时已在 glibc 2.28 下时，pip 的平台检查是多余的：</p>
         <pre><code>cp pkg-1.0-cp310-cp310-manylinux_2_28_x86_64.whl \
    pkg-1.0-cp310-cp310-manylinux2014_x86_64.whl
 pip install --no-deps --force-reinstall pkg-1.0-cp310-cp310-manylinux2014_x86_64.whl</code></pre>
 
-        <h3>14.7 海光 DCU 软件下载</h3>
+        <h3>15.7 海光 DCU 软件下载</h3>
         <pre><code># 目录结构（注意 torchvision 在 vision/ 下）
 curl -sL "https://download.sourcefind.cn:65024/directlink/4/"
 curl -sL "https://download.sourcefind.cn:65024/directlink/4/vision/DAS1.8/"
@@ -1202,7 +1471,7 @@ curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"</cod
       </section>
 
       <!-- data index -->
-      <section id="s15">
+      <section id="s16">
         <div class="sec-head"><span class="idx">·</span><h2>数据来源索引</h2></div>
         <div class="tw">
           <table>
@@ -1218,11 +1487,13 @@ curl -sL "https://download.sourcefind.cn:65024/directlink/4/triton/DAS1.8/"</cod
             <tr><td>vLLM kernel</td><td><code>&lt;JOB_ID&gt;</code></td><td>同上</td></tr>
             <tr><td>服务池 v1</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/loadtest.log</code></td></tr>
             <tr><td>服务池 v2</td><td><code>&lt;JOB_ID&gt;</code></td><td><code>data/loadtest2.log</code>、<code>data/soak.log</code></td></tr>
+            <tr><td>环境漂移恢复</td><td><code>&lt;JOB_ID&gt;</code></td><td>脱敏后的 module、loader、配置路径与错误链记录</td></tr>
+            <tr><td>2026-09-27 完整复验</td><td><code>&lt;JOB_ID&gt;</code></td><td>14 页 pipeline 日志与 Markdown / JSON / 图片产物清单</td></tr>
           </table>
         </div>
       </section>
 
-      <div class="foot">文档生成：2026-08-13 · 数据来自脱敏后的实测记录 · 公开报告版本</div>
+      <div class="foot">初版：2026-08-13 · 环境恢复复验：2026-09-27 · 数据来自脱敏后的实测记录 · 公开报告版本</div>
 
     </div>
   </main>
