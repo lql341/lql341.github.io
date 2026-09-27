@@ -13,7 +13,6 @@ const reports = (await getCollection('reports'))
   bodyClass="home-page"
 >
   <section class="minimal-hero">
-    <canvas class="starfield" aria-hidden="true"></canvas>
     <div class="hero-copy">
       <div class="overline">Accelerated systems engineering</div>
       <h1>Open systems,<br /><span>accelerated.</span></h1>
@@ -82,39 +81,52 @@ const reports = (await getCollection('reports'))
 
 <script>
   const canvas = document.querySelector<HTMLCanvasElement>('.starfield');
-  const hero = canvas?.closest<HTMLElement>('.minimal-hero');
   const context = canvas?.getContext('2d');
 
-  if (canvas && hero && context) {
+  if (canvas && context) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let width = 0;
     let height = 0;
-    let stars: { x: number; y: number; radius: number; phase: number; color: string }[] = [];
+    let lastFrameAt = 0;
+    let nextMeteorAt = performance.now() + 1800;
+    let meteor: { startedAt: number; x: number; y: number; dx: number; dy: number } | null = null;
+    let stars: { x: number; y: number; radius: number; phase: number; color: string; vx: number; vy: number }[] = [];
     let animationFrame = 0;
 
     const resize = () => {
       window.cancelAnimationFrame(animationFrame);
-      const bounds = hero.getBoundingClientRect();
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-      width = bounds.width;
-      height = bounds.height;
+      width = window.innerWidth;
+      height = window.innerHeight;
       canvas.width = Math.round(width * pixelRatio);
       canvas.height = Math.round(height * pixelRatio);
       context!.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-      const count = Math.max(72, Math.round((width * height) / 6200));
+      const count = Math.max(90, Math.round((width * height) / 5600));
       stars = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
-        radius: Math.random() * 1.25 + 0.35,
+        radius: Math.random() * 1.45 + 0.4,
         phase: Math.random() * Math.PI * 2,
         color: Math.random() > 0.82 ? '155,234,52' : Math.random() > 0.5 ? '178,220,255' : '232,242,255',
+        vx: (Math.random() - 0.5) * 0.62,
+        vy: (Math.random() - 0.5) * 0.44,
       }));
-      draw(0);
+      lastFrameAt = 0;
+      draw(performance.now());
     };
 
     const draw = (time: number) => {
       context!.clearRect(0, 0, width, height);
+      const delta = lastFrameAt ? Math.min(time - lastFrameAt, 50) / 1000 : 0;
+      lastFrameAt = time;
+
+      if (!reducedMotion.matches) {
+        stars.forEach((star) => {
+          star.x = (star.x + star.vx * delta + width) % width;
+          star.y = (star.y + star.vy * delta + height) % height;
+        });
+      }
 
       // Connect only nearby stars to form sparse, quiet constellations.
       for (let i = 0; i < stars.length; i += 1) {
@@ -125,7 +137,7 @@ const reports = (await getCollection('reports'))
           const dy = a.y - b.y;
           const distance = Math.hypot(dx, dy);
           if (distance < 92) {
-            context!.strokeStyle = `rgba(171, 205, 224, ${(1 - distance / 92) * 0.12})`;
+            context!.strokeStyle = `rgba(171, 205, 224, ${(1 - distance / 92) * 0.16})`;
             context!.lineWidth = 0.6;
             context!.beginPath();
             context!.moveTo(a.x, a.y);
@@ -136,7 +148,7 @@ const reports = (await getCollection('reports'))
       }
 
       stars.forEach((star) => {
-        const twinkle = reducedMotion.matches ? 0.72 : 0.48 + Math.sin(time * 0.0007 + star.phase) * 0.24;
+        const twinkle = reducedMotion.matches ? 0.68 : 0.52 + Math.sin(time * 0.0011 + star.phase) * 0.36;
         context!.beginPath();
         context!.fillStyle = `rgba(${star.color}, ${twinkle})`;
         context!.shadowColor = `rgba(${star.color}, ${twinkle * 0.55})`;
@@ -146,22 +158,39 @@ const reports = (await getCollection('reports'))
       });
       context!.shadowBlur = 0;
 
-      // A small periodic meteor adds motion without competing with the headline.
       if (!reducedMotion.matches) {
-        const cycle = (time % 9200) / 9200;
-        if (cycle > 0.68 && cycle < 0.76) {
-          const progress = (cycle - 0.68) / 0.08;
-          const x = width * (0.72 - progress * 0.42);
-          const y = height * (0.12 + progress * 0.28);
-          const trail = context!.createLinearGradient(x + 90, y - 58, x, y);
+        if (!meteor && time >= nextMeteorAt) {
+          meteor = {
+            startedAt: time,
+            x: width * (0.58 + Math.random() * 0.36),
+            y: height * (0.08 + Math.random() * 0.3),
+            dx: -Math.min(250, width * 0.28),
+            dy: Math.min(145, height * 0.22),
+          };
+          nextMeteorAt = time + 5200 + Math.random() * 4200;
+        }
+
+        if (meteor) {
+          const progress = Math.min((time - meteor.startedAt) / 900, 1);
+          const x = meteor.x + meteor.dx * progress;
+          const y = meteor.y + meteor.dy * progress;
+          const trail = context!.createLinearGradient(x - meteor.dx * 0.42, y - meteor.dy * 0.42, x, y);
           trail.addColorStop(0, 'rgba(155,234,52,0)');
-          trail.addColorStop(1, 'rgba(206,246,255,0.78)');
+          trail.addColorStop(1, 'rgba(218,246,255,0.96)');
           context!.strokeStyle = trail;
-          context!.lineWidth = 1.2;
+          context!.lineWidth = 1.7;
           context!.beginPath();
-          context!.moveTo(x + 90, y - 58);
+          context!.moveTo(x - meteor.dx * 0.42, y - meteor.dy * 0.42);
           context!.lineTo(x, y);
           context!.stroke();
+          context!.beginPath();
+          context!.fillStyle = 'rgba(236,250,255,0.95)';
+          context!.shadowColor = 'rgba(155,234,52,0.9)';
+          context!.shadowBlur = 12;
+          context!.arc(x, y, 2, 0, Math.PI * 2);
+          context!.fill();
+          context!.shadowBlur = 0;
+          if (progress >= 1) meteor = null;
         }
       }
 
@@ -169,11 +198,11 @@ const reports = (await getCollection('reports'))
     };
 
     resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(hero);
+    window.addEventListener('resize', resize, { passive: true });
     reducedMotion.addEventListener('change', () => {
       window.cancelAnimationFrame(animationFrame);
-      draw(0);
+      if (!reducedMotion.matches) nextMeteorAt = performance.now() + 1200;
+      draw(performance.now());
     });
   }
 </script>

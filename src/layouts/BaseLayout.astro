@@ -30,6 +30,7 @@ const isHome = bodyClass === 'home-page';
     <title>{title}</title>
   </head>
   <body class={bodyClass}>
+    {isHome && <canvas class="starfield" aria-hidden="true"></canvas>}
     <div class="shell">
       <Header lang={lang} variant={headerVariant} />
       <main><slot /></main>
