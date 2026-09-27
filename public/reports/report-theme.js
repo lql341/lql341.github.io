@@ -24,15 +24,30 @@
 
   const headings = [...main.querySelectorAll('h2, h3')];
   const paperPages = [...main.querySelectorAll('.paper-page')];
+  let sectionNumber = 0;
+  let subsectionNumber = 0;
+  const cleanHeadingLabel = (heading) => heading.textContent.trim()
+    .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '')
+    .replace(/^\s*(?:(?:\d{1,2}\.\d+|\d{1,2})[、.)\s]+|[一二三四五六七八九十]+[、.])\s*/, '')
+    .replace(/^\s*第\s*\d+\s*[章节层]\s*[：:、.]?\s*/, '')
+    .trim();
   const entries = headings.map((heading, index) => {
     if (!heading.id) heading.id = `report-section-${String(index + 1).padStart(2, '0')}`;
-    return { id: heading.id, label: heading.textContent.trim(), kind: heading.tagName.toLowerCase() };
+    if (heading.tagName === 'H2') {
+      sectionNumber += 1;
+      subsectionNumber = 0;
+      const number = String(sectionNumber).padStart(2, '0');
+      return { id: heading.id, label: cleanHeadingLabel(heading), number, kind: 'h2' };
+    }
+    if (!sectionNumber) sectionNumber = 1;
+    subsectionNumber += 1;
+    return { id: heading.id, label: cleanHeadingLabel(heading), number: `${String(sectionNumber).padStart(2, '0')}.${subsectionNumber}`, kind: 'h3' };
   });
 
   if (!entries.length && paperPages.length) {
     paperPages.forEach((page, index) => {
       page.id = `report-page-${String(index + 1).padStart(2, '0')}`;
-      entries.push({ id: page.id, label: page.querySelector('figcaption')?.textContent.trim() || `Page ${index + 1}`, kind: 'page' });
+      entries.push({ id: page.id, label: page.querySelector('figcaption')?.textContent.trim() || '', number: `P${String(index + 1).padStart(2, '0')}`, kind: 'page' });
     });
   }
   if (!entries.length) return;
@@ -48,10 +63,16 @@
   const list = document.createElement('nav');
   list.setAttribute('aria-label', isChinese ? '报告章节索引' : 'Report section index');
 
-  entries.forEach(({ id, label, kind }) => {
+  entries.forEach(({ id, label, number, kind }) => {
     const link = document.createElement('a');
     link.href = `#${id}`;
-    link.textContent = label;
+    const numberLabel = document.createElement('span');
+    numberLabel.className = 'report-outline-number';
+    numberLabel.textContent = number;
+    const titleLabel = document.createElement('span');
+    titleLabel.className = 'report-outline-label';
+    titleLabel.textContent = label || (isChinese ? '未命名章节' : 'Untitled section');
+    link.append(numberLabel, titleLabel);
     link.className = `report-outline-link report-outline-${kind}`;
     list.append(link);
   });

@@ -9,6 +9,7 @@ Every HTML report in `public/reports/` uses the shared visual system from the ho
 - Include the shared `.report-site-nav` navigation shell.
 - Mark exactly one report title block with `.report-banner`.
 - Use the shared chapter index: it appears as a fixed, scrollable left rail on wide screens and as a collapsible panel on smaller screens. Legacy duplicate TOCs are hidden.
+- Number index entries independently of legacy heading text: top-level headings display `01`, `02`, … and subsections display `01.1`, `01.2`, …; page-image readers display `P01`, `P02`, …. The index strips duplicated old numbering and decorative emoji while preserving each heading's wording and anchor.
 - Keep the reading column at a maximum width of 1040 px. A table of contents may sit beside that column on wide screens.
 - Use the shared dark background, `--report-banner` muted green gradient, fine borders, and lime accent defined by the theme tokens.
 
@@ -31,5 +32,6 @@ Legacy report-specific CSS may arrange specialized content such as a TOC or page
 - Use one primary report title. Keep dates, authors, software versions, and test environment in the metadata line rather than appending them as a second title.
 - Top-level chapters use two-digit order and a concise noun phrase: `01 摘要`, `02 环境与范围`, `03 方法与实现`, `04 结果与验证`, `05 限制与复现`.
 - Subsections use decimal numbering (`03.1`, `03.2`) and remain nested under their parent chapter. Use the same language and punctuation style throughout a report.
+- Keep chapter names short, parallel, and specific to the report; prefer noun phrases and use consistent punctuation. The shared index normalizes numbering, while the report headings remain the source of the chapter wording.
 - Add one `<meta name="keywords">` list with 4–8 comma-separated entries. Order entries from project/software, platform/version, method or workload, then measured topic; use canonical product spelling, avoid duplicates, hashtags, and generic terms such as “report” or “technology”.
 - CI checks title separators and chapter numbering for new report files and checks keyword metadata for every report.
