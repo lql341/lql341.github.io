@@ -22,11 +22,11 @@
     }
   });
 
-  const headings = [...main.querySelectorAll('h2')];
+  const headings = [...main.querySelectorAll('h2, h3')];
   const paperPages = [...main.querySelectorAll('.paper-page')];
   const entries = headings.map((heading, index) => {
     if (!heading.id) heading.id = `report-section-${String(index + 1).padStart(2, '0')}`;
-    return { id: heading.id, label: heading.textContent.trim(), kind: 'section' };
+    return { id: heading.id, label: heading.textContent.trim(), kind: heading.tagName.toLowerCase() };
   });
 
   if (!entries.length && paperPages.length) {
@@ -40,10 +40,11 @@
   const isChinese = document.documentElement.lang.toLowerCase().startsWith('zh');
   const outline = document.createElement('details');
   outline.className = 'report-outline';
+  outline.open = window.matchMedia('(min-width: 1480px)').matches;
   const summary = document.createElement('summary');
-  summary.innerHTML = `<span>${isChinese ? '报告导航' : 'REPORT NAVIGATION'}</span><strong>${isChinese ? '章节目录' : 'Contents'}</strong><small>${entries.length} ${isChinese ? '项' : 'sections'}</small><b aria-hidden="true">＋</b>`;
+  summary.innerHTML = `<span>${isChinese ? '报告导航' : 'REPORT NAVIGATION'}</span><strong>${isChinese ? '章节索引' : 'Section index'}</strong><small>${entries.length} ${isChinese ? '项' : 'entries'}</small><b aria-hidden="true">＋</b>`;
   const list = document.createElement('nav');
-  list.setAttribute('aria-label', isChinese ? '报告章节' : 'Report sections');
+  list.setAttribute('aria-label', isChinese ? '报告章节索引' : 'Report section index');
 
   entries.forEach(({ id, label, kind }) => {
     const link = document.createElement('a');

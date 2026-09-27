@@ -275,10 +275,31 @@ main:not(.reader-stage) { padding: 0 0 72px !important; background: transparent 
 .report-outline-link { display: block; overflow: hidden; padding: 10px 4px; color: var(--report-muted) !important; border-bottom: 1px solid var(--report-line); font-size: 12px; line-height: 1.5; text-decoration: none; text-overflow: ellipsis; }
 .report-outline-link:hover { color: var(--report-accent) !important; }
 .report-outline-page { text-align: center; }
+.report-outline-h3 { padding-left: 18px; font-size: 11px; }
 body .content-inner > .report-outline, body main > .report-outline,
 body .container > .report-outline, body .wrap > .report-outline,
 body .page > .report-outline { width: 100% !important; }
 body > .report-outline, body .container > .report-outline { width: min(calc(100% - 40px), var(--report-max)) !important; }
+@media (min-width: 1480px) {
+  .report-outline {
+    position: fixed;
+    z-index: 20;
+    top: 96px;
+    left: 20px;
+    width: min(220px, calc((100vw - var(--report-max)) / 2 - 40px));
+    max-height: calc(100vh - 116px);
+    margin: 0;
+    overflow: auto;
+    background: rgba(10,13,10,.94);
+    backdrop-filter: blur(12px);
+  }
+  .report-outline summary { min-height: 58px; flex-wrap: wrap; gap: 5px 10px; padding: 12px; }
+  .report-outline summary > strong { margin-left: 0; }
+  .report-outline summary > small { margin-left: auto; }
+  .report-outline nav { display: flex; flex-direction: column; gap: 0; padding: 0 12px 12px; }
+  .report-outline-link { padding: 7px 3px; }
+  .report-outline-h3 { padding-left: 15px; font-size: 11px; }
+}
 main:not(.reader-stage) p, main:not(.reader-stage) li { font-size: var(--report-body-size) !important; }
 body .report-banner p, body .report-banner .subtitle, body .report-banner .standfirst,
 body .report-banner .meta, body .report-banner .reader-meta, body .report-banner .runline { font-size: 13px !important; }
@@ -325,6 +346,23 @@ body th { color: var(--report-text) !important; background: var(--report-surface
 body td { color: #c5cec6 !important; background: transparent !important; border-color: var(--report-line) !important; }
 body tr:nth-child(even) td { background: rgba(155,234,52,.025) !important; }
 body tr:hover td { background: rgba(155,234,52,.045) !important; }
+
+@media (min-width: 1480px) {
+  body .container > .report-outline, body main > .report-outline,
+  body .wrap > .report-outline, body .page > .report-outline,
+  body .content-inner > .report-outline {
+    position: fixed;
+    z-index: 20;
+    top: 96px;
+    left: 20px;
+    width: min(220px, calc((100vw - var(--report-max)) / 2 - 40px)) !important;
+    max-height: calc(100vh - 116px);
+    margin: 0;
+    overflow: auto;
+    background: rgba(10,13,10,.94);
+    backdrop-filter: blur(12px);
+  }
+}
 
 @media print {
   .report-site-nav { display: none; }
