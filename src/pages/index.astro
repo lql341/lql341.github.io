@@ -111,30 +111,58 @@ const reports = (await getCollection('reports'))
       haze.globalCompositeOperation = 'screen';
 
       const core = haze.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.78);
-      core.addColorStop(0, 'rgba(90,126,194,0.09)');
-      core.addColorStop(0.36, 'rgba(79,102,172,0.055)');
+      core.addColorStop(0, 'rgba(111,151,228,0.19)');
+      core.addColorStop(0.36, 'rgba(87,117,207,0.11)');
       core.addColorStop(1, 'rgba(65,76,130,0)');
       haze.fillStyle = core;
       haze.fillRect(0, 0, w, h);
 
       const colors = [
-        [108, 125, 220],
-        [95, 181, 208],
-        [155, 234, 52],
+        [117, 133, 255],
+        [77, 196, 224],
       ];
-      for (let arm = 0; arm < 3; arm += 1) {
-        for (let step = 0; step < 54; step += 1) {
-          const progress = (step + 1) / 54;
-          const angle = progress * Math.PI * 3.2 + (arm * Math.PI * 2) / 3;
+      haze.lineCap = 'round';
+      haze.lineJoin = 'round';
+      for (let arm = 0; arm < 2; arm += 1) {
+        const points: { x: number; y: number }[] = [];
+        for (let step = 0; step <= 100; step += 1) {
+          const progress = 0.025 + (step / 100) * 0.975;
+          const angle = progress * Math.PI * 2.7 + arm * Math.PI;
           const distance = progress * radius;
           const x = cx + Math.cos(angle) * distance * 1.12;
           const y = cy + Math.sin(angle) * distance * 0.64;
-          const puff = 7 + progress * Math.min(w, h) * 0.095;
-          const alpha = 0.035 + Math.sin(progress * Math.PI) * 0.035;
+          points.push({ x, y });
+        }
+
+        haze.beginPath();
+        points.forEach(({ x, y }, index) => {
+          if (index === 0) haze.moveTo(x, y);
+          else haze.lineTo(x, y);
+        });
+        haze.strokeStyle = 'rgba(91,123,238,0.2)';
+        haze.lineWidth = Math.max(10, h * 0.1);
+        haze.shadowColor = 'rgba(102,137,255,0.46)';
+        haze.shadowBlur = Math.max(12, h * 0.08);
+        haze.stroke();
+        haze.strokeStyle = 'rgba(118,194,226,0.24)';
+        haze.lineWidth = Math.max(3, h * 0.027);
+        haze.shadowColor = 'rgba(114,205,231,0.38)';
+        haze.shadowBlur = Math.max(8, h * 0.035);
+        haze.stroke();
+        haze.shadowBlur = 0;
+
+        for (let step = 0; step < 76; step += 1) {
+          const progress = (step + 1) / 76;
+          const angle = progress * Math.PI * 2.7 + arm * Math.PI;
+          const distance = progress * radius;
+          const x = cx + Math.cos(angle) * distance * 1.12;
+          const y = cy + Math.sin(angle) * distance * 0.64;
+          const puff = 8 + progress * Math.min(w, h) * 0.13;
+          const alpha = 0.1 + Math.sin(progress * Math.PI) * 0.13;
           const color = colors[arm];
           const cloud = haze.createRadialGradient(x, y, 0, x, y, puff);
           cloud.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},${alpha})`);
-          cloud.addColorStop(0.48, `rgba(${color[0]},${color[1]},${color[2]},${alpha * 0.42})`);
+          cloud.addColorStop(0.48, `rgba(${color[0]},${color[1]},${color[2]},${alpha * 0.52})`);
           cloud.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
           haze.fillStyle = cloud;
           haze.beginPath();
@@ -142,6 +170,16 @@ const reports = (await getCollection('reports'))
           haze.fill();
         }
       }
+
+      // Keep the headline side quieter while letting the arms read on the right.
+      haze.globalCompositeOperation = 'destination-in';
+      const fade = haze.createLinearGradient(0, 0, w, 0);
+      fade.addColorStop(0, 'rgba(255,255,255,0.24)');
+      fade.addColorStop(0.36, 'rgba(255,255,255,0.58)');
+      fade.addColorStop(0.7, 'rgba(255,255,255,0.92)');
+      fade.addColorStop(1, 'rgba(255,255,255,1)');
+      haze.fillStyle = fade;
+      haze.fillRect(0, 0, w, h);
 
       return texture;
     };
