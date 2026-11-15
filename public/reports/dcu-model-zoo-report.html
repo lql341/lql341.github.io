@@ -8,10 +8,12 @@
 <meta name="keywords" content="SGLang, vLLM, Hygon DCU, gfx936, 长上下文, 推理吞吐, 参数优化">
 <meta name="description" content="在单一代国产加速卡上移植 20 个开源大模型的完整技术记录：跨引擎基准对比、失效根因分析、参数优化与可复现的工程约束。">
 <style>
-  /* 仅保留共享主题未覆盖的局部组件；配色、字族、卡片、表格、代码块均由
-     report-theme.css 统一接管（#9bea34 NVIDIA 绿 / #050605 底）。 */
+  /* Only components the shared theme does not cover live here. Palette, type,
+     cards, tables and code blocks are all handled by report-theme.css
+     (#9bea34 accent on #050605). */
 
-  /* 两栏布局：共享主题只给了 .layout 的 max-width，grid 需本地定义 */
+  /* Two-column shell: the shared theme only sets max-width on .layout,
+     so the grid has to be defined locally. */
   .layout {
     display: grid;
     grid-template-columns: minmax(220px, 300px) minmax(0, 980px);
@@ -212,8 +214,7 @@
 
 <blockquote>在单一代国产加速卡（GCN gfx936，64 GiB HBM）上移植 20 个开源大模型的完整记录：跨引擎基准对比、两项长期误判的根因分析、可用与不可用的性能边界，以及 59 项可复现的工程约束。</blockquote>
 
-<blockquote>
-    <h2 id="01-摘要">01 摘要</h2>
+<h2 id="01-摘要">01 摘要</h2>
     <p>
       本报告记录在单一代国产加速卡上移植 20 个开源模型的工作，覆盖三类负载：
       文本生成与理解、图像与视频生成、语音识别与对齐。评价标准为：在精度误差可接受的前提下最大化推理吞吐。
@@ -627,6 +628,54 @@
       而非可由参数调节的某一环节。
     </p>
 
+    <h3 id="05-3-调度异步化的实测效果">05.3 调度异步化的实测效果</h3>
+    <p>
+      针对上述固定开销，测了调度异步化（<code>--async-scheduling</code>）一项。
+      另一项候选「开启编译模式」在测量前即被排除：该条目的编译模式本来就是
+      <code>VLLM_COMPILE</code>，不存在「再开启」的余地。
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>表 8　调度异步化的同条件对照（4K 档）</caption>
+        <thead>
+          <tr><th>变体</th><th class="num">c1 吞吐</th><th class="num">c1 TPOT</th><th class="num">c8 吞吐</th><th class="num">c8 TTFT</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>基线</td><td class="num">39.78</td><td class="num">24.35 ms</td><td class="num">239.16</td><td class="num">3949 ms</td></tr>
+          <tr class="emphasis">
+            <td>调度异步化</td>
+            <td class="num"><strong>41.63</strong><br><small>+4.6%</small></td>
+            <td class="num">23.58 ms<br><small>−3.2%</small></td>
+            <td class="num"><strong>294.69</strong><br><small>+23.2%</small></td>
+            <td class="num"><strong>1511 ms</strong><br><small>−61.7%</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>两项观察方向相反，恰好印证 05.2 节的归因：</p>
+    <ul class="plain">
+      <li>
+        <strong>并发档收益显著。</strong>c8 吞吐提升 23.2%，同时 TTFT 降低 61.7%，
+        说明调度层与计算层重叠确实消除了大量等待。
+      </li>
+      <li>
+        <strong>单流档几乎无改善。</strong>c1 的 TPOT 只降 3.2%（24.35 → 23.58 ms）。
+        若 24 ms 主体来自逐层即时发射与张量并行同步，异步调度无法触及；
+        实测 41.63 tok/s 正好贴着 05.2 节推算的上界（≈41 tok/s）。
+      </li>
+    </ul>
+
+    <div class="highlight-box caution">
+      <div class="title">结论的适用范围</div>
+      <p>
+        调度异步化可作为该条目并发场景的默认配置，但它不解决单流延迟问题。
+        单流性能仍受制于「注意力层无法进入完整计算图」这一引擎层限制，
+        只能通过自建镜像或更换内核路径处理。
+      </p>
+    </div>
+
     <div class="highlight-box">
       <div class="title">与既有结论的区分</div>
       <p>
@@ -636,7 +685,7 @@
       </p>
     </div>
 
-    <h3 id="05-3-启动阶段的访存异常-未解决">05.3 启动阶段的访存异常（未解决）</h3>
+    <h3 id="05-4-启动阶段的访存异常-未解决">05.4 启动阶段的访存异常（未解决）</h3>
     <p>
       Recon2Reason-4B 与 RoboBrain2.5-8B 的 SGLang 路径在启动后健康检查始终返回 503，
       约 20 秒后进程中止。崩溃位置的调用链如下：
@@ -657,7 +706,7 @@ grid:   x:16384, y:8, z:16</code></pre>
 
     <div class="table-wrap">
       <table>
-        <caption>表 8　排除性实验</caption>
+        <caption>表 9　排除性实验</caption>
         <thead><tr><th>假设</th><th>对照结果</th></tr></thead>
         <tbody>
           <tr><td>节点故障</td><td>三个不同节点表现一致</td></tr>
@@ -690,7 +739,7 @@ grid:   x:16384, y:8, z:16</code></pre>
       </p>
     </div>
 
-    <h3 id="05-4-镜像可复现性核查">05.4 镜像可复现性核查</h3>
+    <h3 id="05-5-镜像可复现性核查">05.5 镜像可复现性核查</h3>
     <p>
       实验期间曾出现归档镜像摘要与锁定记录不一致的现象，一度被记为镜像被上游替换的风险。
       经完整核查，该判断不成立。
@@ -698,7 +747,7 @@ grid:   x:16384, y:8, z:16</code></pre>
 
     <div class="table-wrap">
       <table>
-        <caption>表 9　镜像摘要的两种口径</caption>
+        <caption>表 10　镜像摘要的两种口径</caption>
         <thead><tr><th>口径</th><th>含义</th><th>是否应相等</th></tr></thead>
         <tbody>
           <tr><td>镜像仓库 manifest 摘要</td><td>registry 上 manifest 的摘要，用于按摘要精确拉取</td><td>锁定记录中即为此值</td></tr>
@@ -761,7 +810,7 @@ grid:   x:16384, y:8, z:16</code></pre>
 
     <div class="table-wrap">
       <table>
-        <caption>表 10　明确不再投入的方向</caption>
+        <caption>表 11　明确不再投入的方向</caption>
         <thead><tr><th>对象</th><th>结论</th><th>依据</th></tr></thead>
         <tbody>
           <tr>
@@ -805,7 +854,7 @@ grid:   x:16384, y:8, z:16</code></pre>
 
     <div class="table-wrap">
       <table>
-        <caption>表 11　参数失效的三种形态</caption>
+        <caption>表 12　参数失效的三种形态</caption>
         <thead><tr><th>形态</th><th>实例</th><th>后果</th></tr></thead>
         <tbody>
           <tr><td>同名变量重复导出</td><td>同一附加参数变量在配置文件内定义两次</td><td>先前定义被整体覆盖</td></tr>
