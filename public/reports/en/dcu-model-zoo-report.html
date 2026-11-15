@@ -51,6 +51,12 @@
     main { padding: 28px 22px 40px; }
   }
 
+  /* 主题只给了 blockquote 左边框，没有内边距，文字会贴住竖线 */
+  main blockquote {
+    margin: 1.5rem 0 !important;
+    padding: 14px 20px !important;
+    line-height: 1.75 !important;
+  }
   .metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

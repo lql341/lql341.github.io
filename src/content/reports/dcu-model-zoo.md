@@ -7,6 +7,7 @@ date: 2026-11-15
 tags: [DCU, gfx936, vLLM, SGLang, Inference]
 tagsZh: [海光 DCU, gfx936, vLLM, SGLang, 推理优化]
 href: /reports/dcu-model-zoo-report.html
+hrefEn: /reports/en/dcu-model-zoo-report.html
 featured: true
 homeOrder: 2
 metric: +10.5%
