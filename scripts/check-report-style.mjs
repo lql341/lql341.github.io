@@ -58,6 +58,54 @@ for (const file of files) {
   if (!/class="[^"]*report-banner[\s\S]{0,3000}<h1\b/i.test(html)) {
     failures.push(`${file}: the report title must be inside its shared banner`);
   }
+  // Bilingual convention: the language link appears only on the English page.
+  const enPath = join(reportDir.pathname, 'en', file);
+  let hasEnglishEdition = false;
+  try {
+    await readFile(enPath, 'utf8');
+    hasEnglishEdition = true;
+  } catch {
+    hasEnglishEdition = false;
+  }
+  const navBlock = html.match(/<div class="report-site-nav">[\s\S]*?<\/div>/)?.[0] ?? '';
+  const navLinksToEn = /href="\/reports\/en\/[^"]+"/.test(navBlock);
+  if (navLinksToEn) {
+    failures.push(`${file}: the Chinese page must not link to the English edition from its nav; English pages carry the language link instead`);
+  }
+  if (hasEnglishEdition) {
+    const archiveEdition = file === 'mineru-cluster-build-report-archive.html';
+    const enHtml = await readFile(enPath, 'utf8');
+    const enNav = enHtml.match(/<div class="report-site-nav">[\s\S]*?<\/div>/)?.[0] ?? '';
+    if (!archiveEdition && !new RegExp(`href="/reports/${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>Chinese<`).test(enNav)) {
+      failures.push(`en/${file}: must link back to the Chinese edition with a Chinese link in its nav`);
+    }
+  }
+
+  // Layout scaffold: the theme sets max-width on .layout but not its grid.
+  if (/class="[^"]*layout/.test(html)) {
+    const localCss = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+    if (!/grid-template-columns/.test(localCss)) {
+      failures.push(`${file}: .layout is used but no local grid-template-columns is defined; the sidebar and main column will stack`);
+    }
+  }
+
+  // A report title block must sit inside main, and chapters must not be wrapped in .section cards.
+  const mainBlock = html.match(/<main[\s\S]*?<\/main>/)?.[0] ?? '';
+  if (mainBlock) {
+    if (/<div class="section"/.test(mainBlock)) {
+      failures.push(`${file}: chapters must not be wrapped in .section cards; the theme styles bare headings inside main`);
+    }
+    for (const quote of mainBlock.matchAll(/<blockquote>([\s\S]*?)<\/blockquote>/g)) {
+      if (/<h[1-4][\s>]/.test(quote[1])) {
+        failures.push(`${file}: a blockquote wraps a chapter heading, which puts the accent bar across body text`);
+        break;
+      }
+    }
+    if (/<blockquote/.test(mainBlock) && !/blockquote\s*\{[^}]*padding/.test(html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '')) {
+      failures.push(`${file}: blockquote is used but no local padding is defined; text will touch the accent border`);
+    }
+  }
+
   if (!existingReports.has(file)) {
     const title = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() ?? '';
     const headingText = (tag) => [...html.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi'))]
