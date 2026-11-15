@@ -8,240 +8,8 @@
 <meta name="keywords" content="海光 DCU, BW1000, gfx936, SGLang, vLLM, 推理优化, 吞吐, 长上下文, 国产加速卡">
 <meta name="description" content="在单一代国产加速卡上移植 20 个开源大模型的完整技术记录：跨引擎基准对比、失效根因分析、参数优化与可复现的工程约束。">
 <style>
-  :root {
-    --bg: #07101d;
-    --surface: #0d1a2b;
-    --surface-strong: #12233a;
-    --line: #243954;
-    --text: #eef5fc;
-    --muted: #9eb0c7;
-    --accent: #5eead4;
-    --accent-2: #60a5fa;
-    --success: #a6e3a1;
-    --warning: #f9e2af;
-    --danger: #f38ba8;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: radial-gradient(circle at 12% 0, #11385f 0, transparent 34%), var(--bg);
-    color: var(--text);
-    line-height: 1.8;
-    padding: 18px 20px 40px;
-    -webkit-font-smoothing: antialiased;
-  }
-  .top-nav { max-width: 1000px; margin: 0 auto 18px; }
-  .top-nav a { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 14px; }
-  .top-nav a:hover { text-decoration: underline; }
-  .container { max-width: 1000px; margin: 0 auto; }
-
-  .header {
-    background: linear-gradient(145deg, rgba(18,35,58,.98), rgba(10,23,40,.98));
-    padding: 50px 40px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    margin-bottom: 30px;
-    box-shadow: 0 18px 50px rgba(0,0,0,.24);
-  }
-  .header .eyebrow {
-    color: var(--accent);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-  .header h1 {
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: .4px;
-    line-height: 1.32;
-  }
-  .header .subtitle {
-    margin-top: 12px;
-    font-size: 15px;
-    color: var(--muted);
-    line-height: 1.75;
-    max-width: 780px;
-  }
-  .header .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 26px;
-    margin-top: 22px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line);
-    font-family: "Fira Code", Consolas, monospace;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .header .meta b { color: var(--accent); font-weight: 600; }
-
-  .abstract {
-    background: linear-gradient(145deg, rgba(18,35,58,.97), rgba(10,23,40,.97));
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
-    border-radius: 18px;
-    padding: 30px 35px;
-    margin-bottom: 24px;
-  }
-  .abstract h2 {
-    font-size: 15px;
-    color: var(--accent);
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-  .abstract p { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
-  .abstract p:last-child { margin-bottom: 0; }
-
-  .section {
-    background: linear-gradient(145deg, rgba(18,35,58,.97), rgba(10,23,40,.97));
-    border-radius: 18px;
-    padding: 30px 35px;
-    margin-bottom: 24px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.18);
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
-  }
-  .section h2 {
-    font-size: 20px;
-    color: var(--accent);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--line);
-  }
-  .section h2 .num {
-    font-family: "Fira Code", Consolas, monospace;
-    font-size: 15px;
-    color: var(--muted);
-    margin-right: 10px;
-  }
-  .section h3 {
-    font-size: 16px;
-    color: var(--accent-2);
-    margin: 24px 0 10px;
-  }
-  .section h3:first-of-type { margin-top: 8px; }
-  .section p { margin-bottom: 12px; font-size: 14.5px; }
-  .section > p:last-child { margin-bottom: 0; }
-  .lede { color: var(--muted); font-size: 14px; }
-
-  code {
-    background: rgba(94,234,212,.08);
-    color: var(--accent);
-    border: 1px solid rgba(94,234,212,.15);
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-family: "Fira Code", "Cascadia Code", "Source Code Pro", Consolas, monospace;
-    font-size: 13px;
-    word-break: break-word;
-  }
-  pre {
-    background: #081321;
-    color: var(--text);
-    border: 1px solid var(--line);
-    padding: 16px 18px;
-    border-radius: 8px;
-    overflow-x: auto;
-    font-family: "Fira Code", "Cascadia Code", "Source Code Pro", Consolas, monospace;
-    font-size: 12.5px;
-    line-height: 1.62;
-    margin: 14px 0;
-  }
-  pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
-  pre.err { border-left: 3px solid var(--danger); }
-  pre.ok { border-left: 3px solid var(--success); }
-  pre .comment { color: #71869f; }
-
-  .table-wrap { overflow-x: auto; margin: 14px 0; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-    min-width: 520px;
-  }
-  caption {
-    caption-side: top;
-    text-align: left;
-    color: var(--muted);
-    font-size: 12px;
-    padding-bottom: 8px;
-    letter-spacing: .02em;
-  }
-  th {
-    background: #173351;
-    color: var(--text);
-    padding: 9px 13px;
-    text-align: left;
-    font-weight: 600;
-    white-space: nowrap;
-    vertical-align: bottom;
-  }
-  th:first-child { border-radius: 6px 0 0 0; }
-  th:last-child { border-radius: 0 6px 0 0; }
-  td {
-    padding: 9px 13px;
-    color: var(--muted);
-    border-bottom: 1px solid var(--line);
-    vertical-align: top;
-  }
-  td.num, th.num {
-    text-align: right;
-    font-family: "Fira Code", Consolas, monospace;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  td.mono { font-family: "Fira Code", Consolas, monospace; font-size: 12.5px; }
-  tr:nth-child(even) td { background: rgba(96,165,250,.045); }
-  tr:hover td { background: rgba(94,234,212,.07); }
-  tr.emphasis td { background: rgba(94,234,212,.1); }
-  tr.emphasis td strong { color: var(--accent); }
-
-  .highlight-box {
-    background: rgba(94,234,212,.055);
-    border: 1px solid rgba(94,234,212,.22);
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin: 16px 0;
-  }
-  .highlight-box.caution {
-    background: rgba(249,226,175,.05);
-    border-color: rgba(249,226,175,.25);
-  }
-  .highlight-box.negative {
-    background: rgba(243,139,168,.05);
-    border-color: rgba(243,139,168,.25);
-  }
-  .highlight-box .title {
-    font-weight: 700;
-    color: var(--accent);
-    margin-bottom: 8px;
-    font-size: 13px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-  }
-  .highlight-box.caution .title { color: var(--warning); }
-  .highlight-box.negative .title { color: var(--danger); }
-  .highlight-box p { font-size: 13.5px; margin-bottom: 8px; }
-  .highlight-box p:last-child { margin-bottom: 0; }
-  .highlight-box ul { list-style: none; padding: 0; }
-  .highlight-box ul li {
-    padding: 4px 0 4px 20px;
-    position: relative;
-    font-size: 13.5px;
-    color: var(--muted);
-  }
-  .highlight-box ul li::before {
-    content: "▸";
-    position: absolute;
-    left: 0;
-    color: var(--accent);
-    font-weight: 700;
-  }
-  .highlight-box.caution ul li::before { color: var(--warning); }
-
+  /* 仅保留共享主题未覆盖的局部组件；配色、字族、卡片、表格、代码块均由
+     report-theme.css 统一接管（#9bea34 NVIDIA 绿 / #050605 底）。 */
   .metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -249,8 +17,8 @@
     margin: 20px 0;
   }
   .metric {
-    background: rgba(96,165,250,.055);
-    border: 1px solid var(--line);
+    background: var(--report-surface-2);
+    border: 1px solid var(--report-line);
     border-radius: 10px;
     padding: 16px 18px;
   }
@@ -259,7 +27,7 @@
     font-size: 11px;
     letter-spacing: .1em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--report-muted);
     margin-bottom: 8px;
   }
   .metric .v {
@@ -269,39 +37,27 @@
     font-weight: 600;
     line-height: 1.1;
     letter-spacing: -.02em;
+    color: var(--report-text);
   }
-  .metric .v small { font-size: 13px; font-weight: 400; color: var(--muted); }
+  .metric .v small { font-size: 13px; font-weight: 400; color: var(--report-muted); }
   .metric .n {
     display: block;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--report-muted);
     margin-top: 7px;
     line-height: 1.45;
   }
-  .metric.pos .v { color: var(--success); }
-  .metric.hot .v { color: var(--accent); }
-  .metric.neu .v { color: var(--accent-2); }
-  .metric.neg .v { color: var(--warning); }
-
-  .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .tag.ok { color: var(--success); background: rgba(166,227,161,.1); border: 1px solid rgba(166,227,161,.28); }
-  .tag.warn { color: var(--warning); background: rgba(249,226,175,.1); border: 1px solid rgba(249,226,175,.28); }
-  .tag.crit { color: var(--danger); background: rgba(243,139,168,.1); border: 1px solid rgba(243,139,168,.28); }
-  .tag.neu { color: var(--muted); background: rgba(158,176,199,.08); border: 1px solid rgba(158,176,199,.22); }
+  .metric.pos .v { color: var(--report-success); }
+  .metric.hot .v { color: var(--report-accent); }
+  .metric.neu .v { color: var(--report-accent); }
+  .metric.neg .v { color: var(--report-warning); }
 
   .bars { display: grid; gap: 18px; margin: 18px 0; }
   .bargroup .glabel {
     font-size: 12px;
     letter-spacing: .06em;
     text-transform: uppercase;
-    color: var(--accent-2);
+    color: var(--report-accent);
     margin-bottom: 8px;
   }
   .barrow {
@@ -314,18 +70,18 @@
   .barrow .eng {
     font-family: "Fira Code", Consolas, monospace;
     font-size: 11.5px;
-    color: var(--muted);
+    color: var(--report-muted);
     text-align: right;
   }
-  .bartrack { height: 12px; background: rgba(36,57,84,.55); border-radius: 3px; overflow: hidden; }
+  .bartrack { height: 12px; background: var(--report-surface-3); border-radius: 3px; overflow: hidden; }
   .barfill { display: block; height: 100%; border-radius: 3px; }
-  .barfill.v { background: linear-gradient(90deg, #5eead4, #60a5fa); }
-  .barfill.s { background: linear-gradient(90deg, #3d7a6a, #2d5a80); }
+  .barfill.v { background: linear-gradient(90deg, #9bea34, #c5ff7d); }
+  .barfill.s { background: linear-gradient(90deg, #4a6b32, #2e4220); }
   .barrow .val {
     font-family: "Fira Code", Consolas, monospace;
     font-size: 12px;
     font-variant-numeric: tabular-nums;
-    color: var(--muted);
+    color: var(--report-muted);
   }
   .axis {
     display: grid;
@@ -339,58 +95,39 @@
   .axis .ticks {
     display: flex;
     justify-content: space-between;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--report-line);
     padding-top: 4px;
   }
   figcaption {
     font-size: 12px;
-    color: var(--muted);
+    color: var(--report-muted);
     margin-top: 10px;
     line-height: 1.55;
   }
-
+  .metrics { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  td.num, th.num { text-align: right; font-family: "Fira Code", Consolas, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.mono { font-family: "Fira Code", Consolas, monospace; font-size: 12.5px; }
+  tr.emphasis td { background: rgba(155,234,52,.09); }
   ol.steps, ul.plain { padding-left: 22px; }
-  ol.steps li, ul.plain li { margin-bottom: 9px; font-size: 14px; color: var(--muted); }
-  ol.steps li strong, ul.plain li strong { color: var(--text); }
-
-  .footer {
-    max-width: 1000px;
-    margin: 34px auto 0;
-    padding-top: 20px;
-    border-top: 1px solid var(--line);
-    font-family: "Fira Code", Consolas, monospace;
-    font-size: 12px;
-    color: #71869f;
-    line-height: 1.9;
-  }
-  .footer a { color: var(--accent); text-decoration: none; }
-  .footer a:hover { text-decoration: underline; }
-
+  ol.steps li, ul.plain li { margin-bottom: 9px; }
   @media (max-width: 720px) {
-    body { padding: 12px 14px 30px; }
-    .header, .section, .abstract { padding: 24px 20px; }
-    .header h1 { font-size: 23px; }
-    .section h2 { font-size: 18px; }
     .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .barrow { grid-template-columns: 54px 1fr 54px; gap: 7px; }
     .axis { grid-template-columns: 54px 1fr 54px; }
-    pre { font-size: 11.5px; padding: 12px 13px; }
   }
-  @media (max-width: 420px) {
-    .metrics { grid-template-columns: 1fr; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-  }
+  @media (max-width: 420px) { .metrics { grid-template-columns: 1fr; } }
 </style>
+<link rel="stylesheet" href="/reports/report-theme.css?v=20260927-20">
+<script src="/reports/report-theme.js?v=20260927-20" defer></script>
 </head>
 <body>
 
-<div class="top-nav"><a href="/reports/">← 返回报告列表</a></div>
+<div class="report-site-nav">
+  <a class="report-brand" href="/">opensource_community</a>
+  <nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav>
+</div>
 
-<div class="container">
-
-  <div class="header">
+<div class="report-banner header">
     <div class="eyebrow">技术报告 · 国产加速卡适配</div>
     <h1>海光 DCU 大模型适配与吞吐调优实测报告</h1>
     <p class="subtitle">
@@ -1162,9 +899,7 @@ grid:   x:16384, y:8, z:16</code></pre>
     </p>
   </div>
 
-</div>
-
-<div class="footer">
+<div class="footer site-footer">
   <p>报告数据来自可复现的基准记录与作业日志，全部数值可逐条核验。</p>
   <p>相关：<a href="/reports/">全部技术报告</a> · <a href="/">返回首页</a></p>
   <p style="margin-top:12px">2026-11-15</p>
