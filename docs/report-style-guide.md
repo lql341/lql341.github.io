@@ -40,7 +40,7 @@ Legacy report-specific CSS may arrange specialized content such as a TOC or page
 
 ## Bilingual pages and collection metadata
 
-Every report exists as a Chinese page at `public/reports/<name>.html` and, where an English edition exists, at `public/reports/en/<name>.html`. The two files share a filename; only the directory differs. English pages are full translations, not excerpts: a reader who lands on one should not encounter Chinese body text.
+Every report exists as a Chinese page at `public/reports/<name>.html` and, where an English edition exists, at `public/reports/en/<name>.html`. Both files share a filename; only the directory differs. An English page is a complete translation of its Chinese counterpart, containing no Chinese body text.
 
 ### Navigation links
 
@@ -51,7 +51,7 @@ The language link appears in one direction only.
 | Chinese `public/reports/<name>.html` | none |
 | English `public/reports/en/<name>.html` | `<a href="/reports/<name>.html">Chinese</a>`, appended after `About` |
 
-Do not add an `English` link to the Chinese page. Visitors reach the English edition through the report card on `/reports/`, which links to it directly. The one exception is `latex-bilingual-toolchain-report.html`, which predates this rule and links both ways.
+The Chinese page carries no language link. The English edition is reached through the report card on `/reports/`. `latex-bilingual-toolchain-report.html` links in both directions and is exempt.
 
 ### Collection entry
 
@@ -62,19 +62,19 @@ href: /reports/<name>.html
 hrefEn: /reports/en/<name>.html
 ```
 
-`ReportCard.astro` renders `<a href={hrefEn ?? href}>`. Omitting `hrefEn` does not fail the build; the card silently falls back to `href`, so the English listing opens a Chinese page. This is the most common way a bilingual report goes wrong, and no automated check catches it. Verify by opening `/reports/` and confirming the card points at `/reports/en/`.
+`ReportCard.astro` renders `<a href={hrefEn ?? href}>`. Omitting `hrefEn` does not fail the build: the expression falls back to `href` and the English listing opens the Chinese page. No automated check covers this field; verify by opening `/reports/` and confirming the card target is `/reports/en/`.
 
 Also provide `titleEn` and `summaryEn`; both are rendered on the English listing in place of the Chinese fields.
 
 ### CSS comments
 
-The English page is checked only for text content, but keep comments in English too so the file has no Chinese outside the language slot.
+Style-sheet comments in the English page are written in English, so the file contains no Chinese outside the language slot.
 
-## Layout scaffold the theme does not supply
+## Local layout scaffold
 
-`report-theme.css` sets `max-width` on `.layout` but does not define its grid. The two-column shell is therefore each report's local responsibility. Without it the sidebar and the main column stack vertically and the page collapses into one narrow strip.
+`report-theme.css` sets `max-width` on `.layout` without defining its grid. Each report defines the two-column shell locally. In the absence of a grid, the sidebar and main column stack vertically.
 
-Copy this block into the report's `<style>` and keep it consistent across reports:
+The block below is the required local scaffold:
 
 ```css
 .layout {
@@ -110,33 +110,33 @@ main {
 }
 ```
 
-Structure: `<div class="report-site-nav">`, then `<div class="layout">` containing `<aside>` with the chapter list and `<main>` with the banner and body. Do not wrap chapters in `.section` cards; the theme styles bare headings and paragraphs inside `main`.
+Document structure: `<div class="report-site-nav">`, then `<div class="layout">` containing `<aside>` with the chapter list and `<main>` with the banner and body. Chapters inside `main` are not wrapped in `.section` cards; the theme styles bare headings and paragraphs.
 
-Two details the checker enforces indirectly:
+Two constraints the checker enforces indirectly:
 
-- The `<aside>` label must not be an `<h2>`. Every `h2` is read as a chapter and must carry a two-digit number, and the exemption list for older reports does not extend to new files. Use a `<div class="report-outline-label">`.
-- Heading numbering must be in the heading text itself, not in a `<span>`. The checker reads text content with tags stripped, so a numbered span leaves the heading unnumbered.
+- The `<aside>` label is not an `<h2>`. Every `h2` is read as a chapter and must carry a two-digit number; the exemption list for older reports does not extend to new files. The label element is `<div class="report-outline-label">`.
+- Heading numbering appears in the heading text, not in a `<span>`. The checker reads text content with tags stripped; a numbered span leaves the heading unnumbered.
 
 ### Blockquote
 
-The theme gives `blockquote` a 3px accent border and no horizontal padding, so text touches the bar. If the report opens with a standfirst quote, add local padding:
+The theme applies a 3px accent border to `blockquote` without horizontal padding, so text touches the border. A report that opens with a standfirst quote adds local padding:
 
 ```css
 main blockquote { margin: 1.5rem 0 !important; padding: 14px 20px !important; line-height: 1.75 !important; }
 ```
 
-Keep blockquotes to one or two short lead paragraphs. A blockquote is not a container for a chapter: wrapping a whole section in one puts the accent bar across body text.
+A blockquote carries one or two lead paragraphs. It does not wrap a chapter, which would place the accent border across body text.
 
-## Checking a report before publishing
+## Verification before publishing
 
-`scripts/check-report-style.mjs` runs in CI before the build and fails the deploy, so a report that violates it never reaches the site. Run it locally first:
+`scripts/check-report-style.mjs` runs in CI before the build and fails the deploy. It is run locally before publishing:
 
 ```bash
 node scripts/check-report-style.mjs   # style contract
 npm run build                          # Astro build, then open dist/reports/...
 ```
 
-The checker covers the theme link, the shared nav, exactly one `.report-banner`, keyword count and uniqueness, title separators, and chapter numbering for files not in the legacy exemption list. It does **not** cover the bilingual nav convention, `hrefEn`, the `.layout` grid, or blockquote padding, so verify those by opening the built page.
+The checker verifies the theme link, the shared nav, exactly one `.report-banner`, keyword count and uniqueness, title separators, and chapter numbering for files outside the legacy exemption list. It does not verify the bilingual nav convention, `hrefEn`, the `.layout` grid, or blockquote padding; confirm those in the built page.
 
 ## Prose and evidence
 
