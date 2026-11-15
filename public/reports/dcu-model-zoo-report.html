@@ -10,6 +10,45 @@
 <style>
   /* 仅保留共享主题未覆盖的局部组件；配色、字族、卡片、表格、代码块均由
      report-theme.css 统一接管（#9bea34 NVIDIA 绿 / #050605 底）。 */
+
+  /* 两栏布局：共享主题只给了 .layout 的 max-width，grid 需本地定义 */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 980px);
+    gap: 28px;
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 28px;
+  }
+  aside {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    background: var(--report-surface);
+    border: 1px solid var(--report-line);
+    border-radius: 12px;
+    padding: 18px 18px 14px;
+  }
+  aside .report-outline-label { margin: 0 0 10px; font-size: 17px; font-weight: 700; color: var(--report-text); }
+  aside ul { margin: 0; padding-left: 18px; }
+  aside li { margin: 4px 0; font-size: 14px; }
+  aside a { color: var(--report-muted); text-decoration: none; }
+  aside a:hover { color: var(--report-accent); }
+  main {
+    min-width: 0;
+    background: var(--report-surface);
+    border: 1px solid var(--report-line);
+    border-radius: 12px;
+    padding: 44px 54px 64px;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; padding: 14px; gap: 16px; }
+    aside { position: static; max-height: none; }
+    main { padding: 28px 22px 40px; }
+  }
+
   .metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -124,7 +163,7 @@
 
 <div class="report-site-nav">
   <a class="report-brand" href="/">opensource_community</a>
-  <nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a></nav>
+  <nav><a href="/projects/">Projects</a><a href="/reports/" aria-current="page">Reports</a><a href="/about/">About</a><a href="/reports/en/dcu-model-zoo-report.html">English</a></nav>
 </div>
 
 <div class="layout">
